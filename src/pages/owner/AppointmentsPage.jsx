@@ -157,7 +157,16 @@ export default function AppointmentsPage() {
     }
 
     try {
-      await api.post("/owner/appointments", { ...form, items: activeItems });
+      const sortedStarts = activeItems.map((item) => item.startAt).sort();
+      const sortedEnds = activeItems.map((item) => item.endAt).sort();
+      const payload = {
+        ...form,
+        items: activeItems,
+        startAt: sortedStarts[0],
+        endAt: sortedEnds[sortedEnds.length - 1],
+        primaryStaffUserId: activeItems[0]?.staffUserIds?.[0] || form.items[0]?.staffUserIds?.[0] || ""
+      };
+      await api.post("/owner/appointments", payload);
       setStatus({ error: "", success: "Appointment created." });
       setIsCreateModalOpen(false);
       await loadAppointments();
@@ -173,7 +182,7 @@ export default function AppointmentsPage() {
 
   const formatDate = (date) => date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).replace(/ /g, "-");
 
-  const getAppointmentForSlot = (staffId, slotTime) => {
+  const getAppointmentsForSlot = (staffId, slotTime) => {
     const [time, modifier] = slotTime.split(" ");
     let [hours, minutes] = time.split(":");
     hours = Number.parseInt(hours, 10);
@@ -183,7 +192,7 @@ export default function AppointmentsPage() {
     const slotDate = new Date(currentDate);
     slotDate.setHours(hours, Number.parseInt(minutes, 10), 0, 0);
 
-    return rows.find((row) => {
+    return rows.filter((row) => {
       const apptStart = new Date(row.startAt);
       const apptEnd = new Date(row.endAt);
       const hasStaff = row.items?.some((item) => (item.assignedStaff || []).some((assigned) => assigned.userSalonId === staffId)) || row.primaryStaffUserId === staffId;
@@ -198,7 +207,14 @@ export default function AppointmentsPage() {
       nextItem.staffUserIds = [];
     }
     nextItems[index] = nextItem;
-    setForm((current) => ({ ...current, items: nextItems }));
+    const nextStarts = nextItems.map((item) => item.startAt).filter(Boolean).sort();
+    const nextEnds = nextItems.map((item) => item.endAt).filter(Boolean).sort();
+    setForm((current) => ({
+      ...current,
+      items: nextItems,
+      startAt: nextStarts[0] || current.startAt,
+      endAt: nextEnds[nextEnds.length - 1] || current.endAt
+    }));
   };
 
   const filteredServices = useMemo(() => {
@@ -375,12 +391,15 @@ export default function AppointmentsPage() {
           cursor: pointer;
         }
         .calendar-cell:hover { background: #f8fafc; }
-        .appt-block {
+        .appt-stack {
           position: absolute;
-          top: 2px;
-          left: 2px;
-          right: 2px;
-          bottom: 2px;
+          inset: 2px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          z-index: 2;
+        }
+        .appt-block {
           background: #eff6ff;
           border-left: 4px solid #3b82f6;
           border-radius: 4px;
@@ -388,8 +407,14 @@ export default function AppointmentsPage() {
           font-size: 0.75rem;
           color: #1e3a8a;
           overflow: hidden;
-          z-index: 2;
           box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+          min-height: 0;
+        }
+        .appt-block.more {
+          background: #dbeafe;
+          color: #1d4ed8;
+          font-weight: 700;
+          text-align: center;
         }
         .slide-panel-overlay {
           position: fixed;
@@ -402,7 +427,8 @@ export default function AppointmentsPage() {
           top: 0;
           right: 0;
           bottom: 0;
-          width: 450px;
+          width: min(450px, 100vw);
+          max-width: 100vw;
           background: #f8fafc;
           z-index: 1050;
           display: flex;
@@ -485,7 +511,8 @@ export default function AppointmentsPage() {
           background: white;
           box-sizing: border-box;
         }
-        .sp-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .sp-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .sp-grid-2 > * { min-width: 0; }
         .sp-footer {
           padding: 16px 24px;
           background: white;
@@ -516,6 +543,28 @@ export default function AppointmentsPage() {
           cursor: pointer;
         }
         .sp-btn-primary:hover { background: #2563eb; }
+        @media (max-width: 900px) {
+          .slide-panel {
+            width: 100vw;
+          }
+          .sp-body {
+            padding: 16px;
+          }
+          .sp-card {
+            padding: 16px;
+          }
+          .sp-card-title {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 8px;
+          }
+          .sp-grid-2 {
+            grid-template-columns: 1fr;
+          }
+          .sp-footer {
+            padding: 14px 16px;
+          }
+        }
         .add-link {
           color: #3b82f6;
           text-decoration: none;
@@ -582,13 +631,24 @@ export default function AppointmentsPage() {
               <tr key={slot}>
                 <td className="calendar-time-cell">{slot}</td>
                 {filteredStaffUsers.map((staff) => {
-                  const appt = getAppointmentForSlot(staff.id, slot);
+                  const appts = getAppointmentsForSlot(staff.id, slot);
+                  const visibleAppts = appts.slice(0, 2);
+                  const hiddenCount = Math.max(appts.length - visibleAppts.length, 0);
                   return (
-                    <td key={`${slot}-${staff.id}`} className="calendar-cell" onClick={() => !appt && handleCellClick(staff.id, slot)}>
-                      {appt && (
-                        <div className="appt-block" onClick={(event) => { event.stopPropagation(); navigate(`/admin/appointments/${appt.id}`); }}>
-                          <div style={{ fontWeight: 600 }}>{appt.customer?.name || "Walk-in"}</div>
-                          <div>{appt.items?.[0]?.service?.name || "Service"}</div>
+                    <td key={`${slot}-${staff.id}`} className="calendar-cell" onClick={() => !appts.length && handleCellClick(staff.id, slot)}>
+                      {appts.length > 0 && (
+                        <div className="appt-stack">
+                          {visibleAppts.map((appt) => (
+                            <div key={appt.id} className="appt-block" onClick={(event) => { event.stopPropagation(); navigate(`/admin/appointments/${appt.id}`); }}>
+                              <div style={{ fontWeight: 600 }}>{appt.customer?.name || "Walk-in"}</div>
+                              <div>{appt.items?.[0]?.service?.name || "Service"}</div>
+                            </div>
+                          ))}
+                          {hiddenCount > 0 && (
+                            <div className="appt-block more" onClick={(event) => event.stopPropagation()}>
+                              +{hiddenCount} more
+                            </div>
+                          )}
                         </div>
                       )}
                     </td>

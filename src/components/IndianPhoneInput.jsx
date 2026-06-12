@@ -13,6 +13,7 @@ export default function IndianPhoneInput({
   id
 }) {
   const digits = extractIndianPhoneDigits(value);
+  const emitDigits = (rawValue) => onChange?.(`+91${normalizeIndianPhoneInputDigits(rawValue)}`);
 
   return (
     <div
@@ -42,15 +43,19 @@ export default function IndianPhoneInput({
       <input
         id={id}
         name={name}
-        type="tel"
+        type="text"
         inputMode="numeric"
-        autoComplete="tel-national"
+        autoComplete="off"
         required={required}
         disabled={disabled}
         value={digits}
         maxLength={10}
         placeholder={placeholder}
-        onChange={(event) => onChange?.(`+91${normalizeIndianPhoneInputDigits(event.target.value)}`)}
+        onChange={(event) => emitDigits(event.target.value)}
+        onPaste={(event) => {
+          event.preventDefault();
+          emitDigits(event.clipboardData?.getData("text") || "");
+        }}
         style={{
           flex: 1,
           border: "none",
