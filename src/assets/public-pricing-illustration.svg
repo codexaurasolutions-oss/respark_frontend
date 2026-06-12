@@ -1,0 +1,38 @@
+<svg width="760" height="560" viewBox="0 0 760 560" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pbg" x1="52" y1="46" x2="710" y2="510" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF8ED"/>
+      <stop offset="1" stop-color="#F5F8F7"/>
+    </linearGradient>
+    <linearGradient id="pteal" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#2B9C90"/>
+      <stop offset="1" stop-color="#144C48"/>
+    </linearGradient>
+    <linearGradient id="pamber" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#F5C66F"/>
+      <stop offset="1" stop-color="#D98212"/>
+    </linearGradient>
+  </defs>
+  <rect x="24" y="24" width="712" height="512" rx="38" fill="url(#pbg)"/>
+  <ellipse cx="118" cy="462" rx="86" ry="50" fill="#B5DED8" fill-opacity="0.58"/>
+  <ellipse cx="650" cy="102" rx="78" ry="46" fill="#FFD59A" fill-opacity="0.54"/>
+  <rect x="110" y="164" width="148" height="258" rx="28" fill="#FFFDFB" stroke="#F5E0BC"/>
+  <rect x="290" y="120" width="168" height="302" rx="32" fill="url(#pteal)"/>
+  <rect x="490" y="146" width="148" height="276" rx="28" fill="#FFF5E5" stroke="#F5E0BC"/>
+  <rect x="146" y="208" width="78" height="10" rx="5" fill="#E5ECEB"/>
+  <rect x="146" y="236" width="50" height="50" rx="18" fill="#F5C66F"/>
+  <rect x="146" y="308" width="76" height="10" rx="5" fill="#E5ECEB"/>
+  <rect x="146" y="334" width="82" height="10" rx="5" fill="#E5ECEB"/>
+  <rect x="328" y="164" width="92" height="12" rx="6" fill="#FFF8ED" fill-opacity="0.62"/>
+  <circle cx="374" cy="230" r="46" fill="#FFF8ED"/>
+  <path d="M374 202V258" stroke="#D98212" stroke-width="10" stroke-linecap="round"/>
+  <path d="M346 230H402" stroke="#D98212" stroke-width="10" stroke-linecap="round"/>
+  <rect x="330" y="316" width="90" height="12" rx="6" fill="#FFF8ED" fill-opacity="0.68"/>
+  <rect x="320" y="346" width="112" height="12" rx="6" fill="#FFF8ED" fill-opacity="0.44"/>
+  <rect x="528" y="188" width="70" height="10" rx="5" fill="#E5ECEB"/>
+  <rect x="528" y="216" width="50" height="50" rx="18" fill="url(#pteal)"/>
+  <rect x="528" y="288" width="76" height="10" rx="5" fill="#E5ECEB"/>
+  <rect x="528" y="314" width="82" height="10" rx="5" fill="#E5ECEB"/>
+  <circle cx="374" cy="94" r="34" fill="#FFFDFB" stroke="#F1D7AB"/>
+  <path d="M356 94L368 106L394 80" stroke="#2B9C90" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
