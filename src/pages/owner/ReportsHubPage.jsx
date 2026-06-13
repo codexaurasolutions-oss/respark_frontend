@@ -44,7 +44,7 @@ const ALL_REPORTS = [
 
 const COLUMNS = {
   sales_summary: ["SR. NO.", "DATE", "TIME", "INVOICE NO", "GUEST NAME", "GUEST NUMBER", "ITEMS", "GROSS AMOUNT", "DISCOUNT", "TAX", "NET TOTAL", "PAID AMOUNT", "DUE AMOUNT", "PAYMENT MODE"],
-  product_sales: ["Product", "Category", "Qty", "Sales"],
+  product_sales: ["SR. NO.", "Date", "Time", "Guest Name", "Guest Number", "Staff", "Invoice No", "Product", "Category", "Qty", "Unit Price", "Discount", "Complimentary", "Redemption Amount", "Redemption Sources", "Tax", "Subtotal", "Total"],
   service_sales: ["SR. NO.", "Date", "Time", "Guest Name", "Guest Number", "Staff", "Invoice No", "Service", "Category", "Duration", "Qty", "Unit Price", "Discount", "Complimentary", "Redemption Amount", "Redemption Sources", "Tax", "Subtotal", "Total"],
   staff_performance: ["Staff", "Appointments", "Completed", "Revenue", "Commission", "Qty"],
   monthly_sale: ["Month", "Invoices", "Gross Sales", "Discounts", "Net Sales", "Paid", "Due"],
