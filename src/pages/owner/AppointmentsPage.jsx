@@ -17,6 +17,40 @@ for (let h = 9; h <= 21; h++) {
 const emptyItem = { serviceId: "", staffUserIds: [], startAt: "", endAt: "", notes: "" };
 const toApiDateTime = (value) => (value ? new Date(value).toISOString() : "");
 
+const formatTimeForSelect = (isoString) => {
+  if (!isoString) return "";
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return "";
+  const h = d.getHours();
+  const m = d.getMinutes();
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+  const hourText = String(hour12).padStart(2, "0");
+  const minuteText = String(m).padStart(2, "0");
+  return `${hourText}:${minuteText} ${ampm}`;
+};
+
+const combineDateAndTime = (baseDate, timeString) => {
+  if (!timeString) return "";
+  const match = timeString.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!match) return "";
+  let hours = parseInt(match[1]);
+  const minutes = parseInt(match[2]);
+  const ampm = match[3].toUpperCase();
+  if (ampm === "PM" && hours < 12) hours += 12;
+  if (ampm === "AM" && hours === 12) hours = 0;
+  
+  const d = new Date(baseDate);
+  d.setHours(hours, minutes, 0, 0);
+  
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+};
+
 export default function AppointmentsPage() {
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -731,6 +765,9 @@ export default function AppointmentsPage() {
                         const match = customers.find(c => c.name === e.target.value || c.phone === e.target.value);
                         if (match) {
                           setForm(current => ({ ...current, customerId: match.id }));
+                          if (match.gender) {
+                            setServiceGenderFilter(match.gender.toUpperCase());
+                          }
                         } else {
                           setForm(current => ({ ...current, customerId: "" }));
                         }
@@ -747,6 +784,9 @@ export default function AppointmentsPage() {
                             onMouseDown={() => {
                               setGuestSearchInput(c.name);
                               setForm(current => ({ ...current, customerId: c.id }));
+                              if (c.gender) {
+                                setServiceGenderFilter(c.gender.toUpperCase());
+                              }
                               setShowCustomerDropdown(false);
                             }}
                           >
@@ -831,11 +871,17 @@ export default function AppointmentsPage() {
                       <div className="sp-time-grid">
                         <div>
                           <label style={{ fontSize: "0.8rem", color: "#94a3b8", display: "block", marginBottom: 4 }}>From Time</label>
-                          <input type="datetime-local" className="sp-input" value={item.startAt} onChange={(event) => handleUpdateItem(idx, "startAt", event.target.value)} required />
+                          <select className="sp-input" value={item.startAt ? formatTimeForSelect(item.startAt) : ""} onChange={(event) => handleUpdateItem(idx, "startAt", combineDateAndTime(currentDate, event.target.value))} required>
+                            <option value="">Select Time</option>
+                            {TIME_SLOTS.map(slot => <option key={slot} value={slot}>{slot}</option>)}
+                          </select>
                         </div>
                         <div>
                           <label style={{ fontSize: "0.8rem", color: "#94a3b8", display: "block", marginBottom: 4 }}>To Time</label>
-                          <input type="datetime-local" className="sp-input" value={item.endAt} onChange={(event) => handleUpdateItem(idx, "endAt", event.target.value)} required />
+                          <select className="sp-input" value={item.endAt ? formatTimeForSelect(item.endAt) : ""} onChange={(event) => handleUpdateItem(idx, "endAt", combineDateAndTime(currentDate, event.target.value))} required disabled={!item.startAt}>
+                            <option value="">Select Time</option>
+                            {TIME_SLOTS.map(slot => <option key={slot} value={slot}>{slot}</option>)}
+                          </select>
                         </div>
                       </div>
                     </div>
