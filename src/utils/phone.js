@@ -2,9 +2,17 @@ export const normalizeIndianPhone = (value) => {
   const raw = String(value ?? "").trim();
   if (!raw) return "";
   let digits = raw.replace(/\D/g, "");
-  if (digits.startsWith("0091")) digits = digits.slice(2);
-  if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2);
-  if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
+  if (raw.startsWith("+91") && digits.startsWith("91")) {
+    digits = digits.slice(2);
+  } else if (digits.startsWith("0091")) {
+    digits = digits.slice(4);
+  } else if (digits.startsWith("091")) {
+    digits = digits.slice(3);
+  } else if (digits.length === 12 && digits.startsWith("91")) {
+    digits = digits.slice(2);
+  } else if (digits.length === 11 && digits.startsWith("0")) {
+    digits = digits.slice(1);
+  }
   return `+91${digits}`;
 };
 
@@ -19,10 +27,17 @@ export const normalizeIndianPhoneInputDigits = (value) => {
   let digits = String(value ?? "").replace(/\D/g, "");
   if (!digits) return "";
 
-  if (digits.startsWith("0091")) digits = digits.slice(4);
-  else if (digits.startsWith("091")) digits = digits.slice(3);
-  else if (digits.length > 10 && digits.startsWith("91")) digits = digits.slice(2);
-  else if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
+  if (String(value ?? "").trim().startsWith("+91") && digits.startsWith("91")) {
+    digits = digits.slice(2);
+  } else if (digits.startsWith("0091")) {
+    digits = digits.slice(4);
+  } else if (digits.startsWith("091")) {
+    digits = digits.slice(3);
+  } else if (digits.length > 10 && digits.startsWith("91")) {
+    digits = digits.slice(2);
+  } else if (digits.length === 11 && digits.startsWith("0")) {
+    digits = digits.slice(1);
+  }
 
   return digits.slice(0, 10);
 };
