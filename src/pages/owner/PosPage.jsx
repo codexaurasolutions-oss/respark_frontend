@@ -792,7 +792,6 @@ export default function PosPage() {
                 value={newGuestForm.phone}
                 onChange={(phone) => setNewGuestForm(c => ({ ...c, phone }))}
                 style={{ width: "100%", borderRadius: 6 }}
-                inputStyle={{ padding: "10px" }}
               />
               <input style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: 6, width: "100%", boxSizing: "border-box", outline: "none" }} type="email" placeholder="Email (Optional)" value={newGuestForm.email} onChange={e => setNewGuestForm(c => ({ ...c, email: e.target.value }))} />
               <select style={{ padding: "10px", border: "1px solid #e2e8f0", borderRadius: 6, width: "100%", boxSizing: "border-box", outline: "none" }} value={newGuestForm.gender} onChange={e => setNewGuestForm(c => ({ ...c, gender: e.target.value }))}>
@@ -805,7 +804,6 @@ export default function PosPage() {
                 value={newGuestForm.alternatePhone}
                 onChange={(alternatePhone) => setNewGuestForm(c => ({ ...c, alternatePhone }))}
                 style={{ width: "100%", borderRadius: 6 }}
-                inputStyle={{ padding: "10px" }}
                 placeholder="Alternate Phone"
               />
               <div style={{ display: "flex", gap: 8 }}>

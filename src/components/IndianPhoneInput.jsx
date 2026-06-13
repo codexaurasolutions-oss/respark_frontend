@@ -40,6 +40,7 @@ export default function IndianPhoneInput({
         borderRadius: 8,
         background: disabled ? "#f8fafc" : "#fff",
         overflow: "hidden",
+        flexShrink: 0,
         ...style
       }}
     >
