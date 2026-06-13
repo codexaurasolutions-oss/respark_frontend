@@ -30,6 +30,8 @@ export default function AppointmentsPage() {
   const [serviceGenderFilter, setServiceGenderFilter] = useState("FEMALE");
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState({ error: "", success: "" });
+  const [guestSearchInput, setGuestSearchInput] = useState("");
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [form, setForm] = useState({
     customerId: "",
     branchId: "",
@@ -717,11 +719,43 @@ export default function AppointmentsPage() {
                       {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
                     </select>
                   </div>
-                  <div className="sp-input-group">
-                    <select className="sp-input" value={form.customerId} onChange={(event) => setForm({ ...form, customerId: event.target.value })} required>
-                      <option value="">Search By Name Or No.</option>
-                      {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} ({customer.phone})</option>)}
-                    </select>
+                  <div className="sp-input-group" style={{ position: "relative" }}>
+                    <input 
+                      type="text" 
+                      className="sp-input"
+                      placeholder="Search By Name Or No." 
+                      value={guestSearchInput} 
+                      onChange={(e) => {
+                        setGuestSearchInput(e.target.value);
+                        setShowCustomerDropdown(true);
+                        const match = customers.find(c => c.name === e.target.value || c.phone === e.target.value);
+                        if (match) {
+                          setForm(current => ({ ...current, customerId: match.id }));
+                        } else {
+                          setForm(current => ({ ...current, customerId: "" }));
+                        }
+                      }}
+                      onFocus={() => setShowCustomerDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowCustomerDropdown(false), 200)}
+                    />
+                    {showCustomerDropdown && guestSearchInput && (
+                      <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "white", border: "1px solid #e2e8f0", borderRadius: "8px", marginTop: "4px", maxHeight: "250px", overflowY: "auto", zIndex: 50, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}>
+                        {customers.filter(c => c.name?.toLowerCase().includes(guestSearchInput.toLowerCase()) || c.phone?.includes(guestSearchInput)).map((c) => (
+                          <div 
+                            key={c.id} 
+                            style={{ padding: "10px 14px", borderBottom: "1px solid #f1f5f9", cursor: "pointer", fontSize: 14 }}
+                            onMouseDown={() => {
+                              setGuestSearchInput(c.name);
+                              setForm(current => ({ ...current, customerId: c.id }));
+                              setShowCustomerDropdown(false);
+                            }}
+                          >
+                            <div style={{ fontWeight: 600, color: "#1e293b", marginBottom: 2 }}>{c.name}</div>
+                            <div style={{ color: "#64748b", fontSize: 12 }}>{c.phone}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
