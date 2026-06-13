@@ -61,10 +61,12 @@ export default function AppointmentsPage() {
       const staff = contextResponse.data.staffUsers || [];
       console.log('Fetched staffUsers:', staff);
       setStaffUsers(staff);
-      setBranches(contextResponse.data.branches || []);
+      const branches = contextResponse.data.branches || [];
+      setBranches(branches);
+      const defaultBranch = branches.find(b => b.name.toLowerCase().includes("main")) || branches[0];
       setForm((current) => ({
         ...current,
-        branchId: current.branchId || contextResponse.data.branches?.[0]?.id || ""
+        branchId: current.branchId || defaultBranch?.id || ""
       }));
     } catch (error) {
       console.error(error);
