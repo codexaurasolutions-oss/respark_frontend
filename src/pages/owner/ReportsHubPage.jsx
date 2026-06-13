@@ -53,7 +53,7 @@ const COLUMNS = {
   complimentary: ["Date", "Service", "Staff", "Customer", "Reason", "Value"],
   cancelled_invoices: ["Invoice", "Customer", "Branch", "Status", "Total", "Paid", "Refunded"],
   pnl_report: ["Month", "Revenue", "COGS", "Gross Profit", "Expenses", "Net Profit", "Margin Percentage"],
-  customers: ["Customer", "Phone", "Email", "Total Visits", "Last Visit", "Total Spend", "Loyalty Pts"],
+  customers: ["SR. NO.", "GUEST NAME", "GUEST NUMBER", "COUNT", "TAXES", "GIFT CARD", "COUPON", "REFERRAL", "LOYALTY", "BALANCE PENDING", "ADVANCE UTILIZED", "PACKAGE REDEMPTION", "BALANCE CLEARED", "MEMBERSHIP REDEMPTION", "ONLINE", "OFFLINE", "TOTAL"],
   service_reminder: ["Customer", "Phone", "Last Service", "Service", "Due Date", "Status"],
   feedback: ["Date", "Customer", "Staff", "Service", "Rating", "Comment"],
   guest_followups: ["Customer", "Phone", "Last Visit", "Days Since", "Follow-up Status"],
