@@ -89,7 +89,7 @@ const ALL_REPORTS = REPORT_GROUPS.flatMap((g) => g.reports);
 const COLUMNS = {
   sales_summary: ["Date", "Invoice #", "Customer", "Services", "Products", "Discount", "Tax", "Total", "Paid", "Due"],
   product_sales: ["Product", "Category", "Qty", "Sales"],
-  service_sales: ["Service", "Qty", "Sales"],
+  service_sales: ["SR. NO.", "Date", "Time", "Guest Name", "Guest Number", "Staff", "Invoice No", "Service", "Category", "Duration", "Qty", "Unit Price", "Discount", "Complimentary", "Redemption Amount", "Redemption Sources", "Tax", "Subtotal", "Total"],
   staff_performance: ["Staff", "Appointments", "Completed", "Revenue", "Commission", "Qty"],
   monthly_sale: ["Month", "Invoices", "Gross Sales", "Discounts", "Net Sales", "Paid", "Due"],
   day_wise: ["Date", "Invoices", "Cash", "Card", "UPI", "Online", "Total"],
@@ -193,17 +193,17 @@ function ReportTable({ reportKey, rows, loading }) {
         .crm-table th {
           background: #f8fafc;
           color: #475569;
-          font-size: 0.75rem;
+          font-size: 0.65rem;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          padding: 16px;
+          padding: 10px 8px;
           text-align: left;
           border-bottom: 2px solid #e2e8f0;
         }
         .crm-table td {
-          padding: 14px 16px;
-          font-size: 0.85rem;
+          padding: 8px;
+          font-size: 0.75rem;
           color: #334155;
           border-bottom: 1px solid #f1f5f9;
           vertical-align: middle;
@@ -234,7 +234,7 @@ function ReportTable({ reportKey, rows, loading }) {
           ) : rows?.length ? rows.map((row, ri) => (
             <tr key={ri}>
               {cols.map((col, ci) => {
-                let val = getCellValue(row, col);
+                let val = col === "SR. NO." ? (ri + 1) : getCellValue(row, col);
                 return (
                   <td key={ci}>
                     {val ?? "—"}
