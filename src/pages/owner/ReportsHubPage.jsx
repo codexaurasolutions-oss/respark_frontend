@@ -278,39 +278,28 @@ export default function ReportsHubPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search reports..."
-              style={{ width: "100%", padding: "8px 10px 8px 30px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: "0.85rem", color: "#f8fafc", background: "#f8fafc", outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "8px 10px 8px 30px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: "0.85rem", color: "#334155", background: "#f8fafc", outline: "none", boxSizing: "border-box" }}
             />
           </div>
         </div>
         <div style={{ flex: 1, padding: "8px 0" }}>
-          {filteredGroups.map((group) => (
-            <div key={group.label}>
-              <button
-                type="button"
-                onClick={() => toggleGroup(group.label)}
-                style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: "0.78rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "left" }}>
-                <span>{group.icon}</span>
-                <span style={{ flex: 1 }}>{group.label}</span>
-                <span style={{ fontSize: "0.7rem", transition: "transform 0.2s", transform: expandedGroups[group.label] ? "rotate(90deg)" : "none" }}>▶</span>
-              </button>
-              {expandedGroups[group.label] && group.reports.map((report) => (
-                <button
-                  key={report.key}
-                  type="button"
-                  onClick={() => { setActiveReport(report.key); setSearch(""); }}
-                  style={{
-                    width: "100%", display: "block", padding: "9px 14px 9px 32px", background: activeReport === report.key ? "#eff6ff" : "none",
-                    border: "none", borderLeft: activeReport === report.key ? "3px solid #3b82f6" : "3px solid transparent",
-                    cursor: "pointer", fontSize: "0.85rem", color: activeReport === report.key ? "#1d4ed8" : "#475569",
-                    fontWeight: activeReport === report.key ? 600 : 400, textAlign: "left", transition: "all 0.15s"
-                  }}>
-                  {report.label}
-                </button>
-              ))}
-            </div>
+          {filteredReports.map((report) => (
+            <button
+              key={report.key}
+              type="button"
+              onClick={() => { setActiveReport(report.key); setSearch(""); }}
+              style={{
+                width: "100%", display: "block", padding: "12px 14px 12px 20px", background: activeReport === report.key ? "white" : "none",
+                border: "none", borderLeft: activeReport === report.key ? "4px solid #1e293b" : "4px solid transparent",
+                cursor: "pointer", fontSize: "0.85rem", color: activeReport === report.key ? "#0f172a" : "#cbd5e1",
+                fontWeight: activeReport === report.key ? 700 : 500, textAlign: "left", transition: "all 0.15s"
+              }}>
+              {report.label}
+            </button>
           ))}
         </div>
       </div>
+
 
       {/* MAIN CONTENT */}
       <div id="printable-report" style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
