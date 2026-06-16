@@ -8,6 +8,7 @@ export default function HomePage() {
   const [services, setServices] = useState([]);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [genericSettings, setGenericSettings] = useState({});
   const [visibility, setVisibility] = useState({});
   const categoryRollerRef = useRef(null);
@@ -52,6 +53,7 @@ export default function HomePage() {
       setProducts(res.data.products || []);
       setGenericSettings(res.data.genericSettings || {});
       setVisibility(res.data.visibility || {});
+      setBranches(res.data.branches || []);
       // Extract unique categories from services for the collections view
       const cats = [...new Set(res.data.services?.map(s => s.categoryId).filter(Boolean))];
       setCategories(cats);
@@ -78,6 +80,23 @@ export default function HomePage() {
           )}
         </div>
       </section>
+
+      {/* Branch Selector */}
+      {genericSettings?.showAllBranchesInCatalogue && branches.length > 0 && (
+        <section className="sf-section" style={{ background: '#fff', padding: '40px 20px' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center' }}>
+            <h3 style={{ marginBottom: 20, fontSize: '1.1rem', color: 'var(--sf-text-light)' }}>Our Locations</h3>
+            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {branches.map((b) => (
+                <div key={b.id} style={{ padding: '12px 24px', border: '1px solid var(--sf-border)', borderRadius: 'var(--sf-radius-md)', background: '#fafafa' }}>
+                  <strong>{b.name}</strong>
+                  {b.address && <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--sf-text-light)' }}>{b.address}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Section 2: Featured Collections */}
       <section className="sf-section" style={{ background: '#fafafa' }}>

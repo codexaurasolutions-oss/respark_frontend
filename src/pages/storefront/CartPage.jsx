@@ -1,7 +1,15 @@
 import { Link, useOutletContext } from "react-router-dom";
+import { formatCurrency, normalizeCurrencyCode } from "../../utils/currency";
 
 export default function CartPage() {
-  const { salon } = useOutletContext();
+  const { salon, genericSettings } = useOutletContext();
+  const currencyCode = normalizeCurrencyCode(
+    genericSettings?.defaultCurrency || genericSettings?.currency || salon?.defaultCurrency || salon?.currency || "INR"
+  );
+  const money = (value) => formatCurrency(value, currencyCode);
+  const minOrder = Number(genericSettings?.minimumOrderValue) || 0;
+  const cartTotal = 120;
+  const belowMinOrder = minOrder > 0 && cartTotal < minOrder;
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto', padding: '80px 20px', minHeight: '60vh' }}>
@@ -15,15 +23,22 @@ export default function CartPage() {
             <h3 style={{ margin: '0 0 8px', fontSize: '1.2rem' }}>Luxury Styling Treatment</h3>
             <p style={{ margin: 0, color: 'var(--sf-text-light)' }}>Signature Service</p>
           </div>
-          <div style={{ fontWeight: 700, fontSize: '1.2rem' }}>$120.00</div>
+          <div style={{ fontWeight: 700, fontSize: '1.2rem' }}>{money(cartTotal)}</div>
           <button style={{ background: 'transparent', border: 'none', color: 'red', cursor: 'pointer', padding: 8 }}>Remove</button>
         </div>
       </div>
 
-      <div style={{ background: '#fafafa', padding: 32, borderRadius: 'var(--sf-radius-lg)', textAlign: 'right' }}>
-        <p style={{ fontSize: '1.2rem', margin: '0 0 8px', color: 'var(--sf-text-light)' }}>Subtotal: $120.00</p>
-        <p style={{ fontSize: '1.5rem', margin: '0 0 24px', fontWeight: 700 }}>Total: $120.00</p>
-        <Link to={`/site/${salon.slug}/checkout`} className="sf-btn sf-btn-primary" style={{ padding: '16px 48px' }}>Proceed to Checkout</Link>
+      <div style={{ background: '#fafafa', padding: 32, borderRadius: 'var(--sf-radius-lg)' }}>
+        {minOrder > 0 && (
+          <div style={{ fontSize: '0.85rem', color: belowMinOrder ? '#dc2626' : '#16a34a', marginBottom: 16, padding: '8px 12px', background: belowMinOrder ? '#fef2f2' : '#f0fdf4', borderRadius: 6, textAlign: 'center' }}>
+            Minimum order: {money(minOrder)} {belowMinOrder ? `(add ${money(minOrder - cartTotal)} more)` : '✓ Met'}
+          </div>
+        )}
+        <div style={{ textAlign: 'right' }}>
+          <p style={{ fontSize: '1.2rem', margin: '0 0 8px', color: 'var(--sf-text-light)' }}>Subtotal: {money(cartTotal)}</p>
+          <p style={{ fontSize: '1.5rem', margin: '0 0 24px', fontWeight: 700 }}>Total: {money(cartTotal)}</p>
+          <Link to={`/site/${salon.slug}/checkout`} className="sf-btn sf-btn-primary" style={{ padding: '16px 48px', opacity: belowMinOrder ? 0.5 : 1, pointerEvents: belowMinOrder ? 'none' : 'auto' }}>Proceed to Checkout</Link>
+        </div>
       </div>
     </div>
   );
