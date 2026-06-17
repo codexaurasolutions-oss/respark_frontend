@@ -85,7 +85,8 @@ export default function CustomersPage() {
   const [showAssignMembershipModal, setShowAssignMembershipModal] = useState(false);
   const [membershipPlans, setMembershipPlans] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState(null);
-  const [membershipForm, setMembershipForm] = useState({ validityDays: "", price: "", staffId: "", online: "", offline: "" });
+  const [membershipForm, setMembershipForm] = useState({ validityDays: "", price: "", staffId: "", online: "", offline: "", purchaseDate: new Date().toISOString().slice(0, 10) });
+  const [membershipSearch, setMembershipSearch] = useState("");
   const [showAddAdvanceModal, setShowAddAdvanceModal] = useState(false);
   const [advanceForm, setAdvanceForm] = useState({ amount: "", mode: "Online", remark: "" });
   const [staffUsers, setStaffUsers] = useState([]);
@@ -99,7 +100,8 @@ export default function CustomersPage() {
   const [showPackageModal, setShowPackageModal] = useState(false);
   const [packagePlans, setPackagePlans] = useState([]);
   const [selectedPackage, setSelectedPackage] = useState(null);
-  const [packageForm, setPackageForm] = useState({ validityDays: "", price: "", staffId: "" });
+  const [packageForm, setPackageForm] = useState({ validityDays: "", price: "", staffId: "", purchaseDate: new Date().toISOString().slice(0, 10) });
+  const [packageSearch, setPackageSearch] = useState("");
   const [showFamilyModal, setShowFamilyModal] = useState(false);
   const [familyForm, setFamilyForm] = useState({ name: "", phone: "", relation: "" });
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
@@ -223,7 +225,7 @@ export default function CustomersPage() {
 
   const fetchStaffUsers = async () => {
     try {
-      const res = await api.get("/owner/staff");
+      const res = await api.get("/owner/staff-users");
       setStaffUsers(res.data || []);
     } catch (e) {
       console.error("Failed to load staff", e);
@@ -259,10 +261,11 @@ export default function CustomersPage() {
         staffId: membershipForm.staffId || undefined,
         online: membershipForm.online ? Number(membershipForm.online) : undefined,
         offline: membershipForm.offline ? Number(membershipForm.offline) : undefined,
+        startsAt: membershipForm.purchaseDate || undefined,
       });
       setShowAssignMembershipModal(false);
       setSelectedPlan(null);
-      setMembershipForm({ validityDays: "", price: "", staffId: "", online: "", offline: "" });
+      setMembershipForm({ validityDays: "", price: "", staffId: "", online: "", offline: "", purchaseDate: new Date().toISOString().slice(0, 10) });
       const res = await api.get(`/owner/customers/${selectedCustomer.id}`);
       setCustomerDetail(res.data);
     } catch (e) {
@@ -361,10 +364,11 @@ export default function CustomersPage() {
         validityDays: packageForm.validityDays ? Number(packageForm.validityDays) : undefined,
         price: packageForm.price ? Number(packageForm.price) : undefined,
         staffId: packageForm.staffId || undefined,
+        startsAt: packageForm.purchaseDate || undefined,
       });
       setShowPackageModal(false);
       setSelectedPackage(null);
-      setPackageForm({ validityDays: "", price: "", staffId: "" });
+      setPackageForm({ validityDays: "", price: "", staffId: "", purchaseDate: new Date().toISOString().slice(0, 10) });
       const res = await api.get(`/owner/customers/${selectedCustomer.id}`);
       setCustomerDetail(res.data);
     } catch (e) {
@@ -814,16 +818,6 @@ export default function CustomersPage() {
           .cust-add-btn { background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; padding:10px 20px; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all .15s; }
           .cust-add-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(37,99,235,0.3); }
           /* Membership modal plan cards */
-          .cust-plan-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; margin-bottom:16px; }
-          .cust-plan-card { padding:14px; border-radius:10px; cursor:pointer; border:2px solid transparent; transition:all .15s; text-align:center; }
-          .cust-plan-card.pink { background:linear-gradient(135deg,#fce7f3,#fbcfe8); color:#9d174d; }
-          .cust-plan-card.purple { background:linear-gradient(135deg,#f3e8ff,#e9d5ff); color:#7c3aed; }
-          .cust-plan-card.blue { background:linear-gradient(135deg,#dbeafe,#bfdbfe); color:#2563eb; }
-          .cust-plan-card.teal { background:linear-gradient(135deg,#ccfbf1,#99f6e4); color:#0d9488; }
-          .cust-plan-card.selected { border-color:#2563eb; box-shadow:0 0 0 2px rgba(59,130,246,0.3); }
-          .cust-plan-name { font-size:0.85rem; font-weight:700; }
-          .cust-plan-price { font-size:1rem; font-weight:800; margin-top:4px; }
-          .cust-plan-validity { font-size:0.7rem; opacity:0.8; margin-top:2px; }
           /* Advance paymode toggle */
           .cust-paymode-toggle { display:flex; gap:0; border-radius:8px; overflow:hidden; border:1px solid #e2e8f0; }
           .cust-paymode-btn { flex:1; padding:8px 16px; border:none; background:#f8fafc; color:#64748b; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:all .15s; }
@@ -1298,7 +1292,7 @@ export default function CustomersPage() {
                               );
                             })
                           )}
-                          <button className="cust-assign-btn" onClick={() => { fetchMembershipPlans(); fetchStaffUsers(); setShowAssignMembershipModal(true); }}>
+                          <button className="cust-assign-btn" onClick={() => { fetchMembershipPlans(); fetchStaffUsers(); setSelectedPlan(null); setMembershipForm({ validityDays: "", price: "", staffId: "", online: "", offline: "", purchaseDate: new Date().toISOString().slice(0, 10) }); setMembershipSearch(""); setShowAssignMembershipModal(true); }}>
                             <CreditCard size={16} /> Assign Membership
                           </button>
                         </div>
@@ -1431,7 +1425,7 @@ export default function CustomersPage() {
                               );
                             })
                           )}
-                          <button className="cust-assign-btn" onClick={() => { fetchPackagePlans(); fetchStaffUsers(); setShowPackageModal(true); }}>
+                          <button className="cust-assign-btn" onClick={() => { fetchPackagePlans(); fetchStaffUsers(); setSelectedPackage(null); setPackageForm({ validityDays: "", price: "", staffId: "", purchaseDate: new Date().toISOString().slice(0, 10) }); setPackageSearch(""); setShowPackageModal(true); }}>
                             <Package size={16} /> Assign Package
                           </button>
                         </div>
@@ -1580,79 +1574,90 @@ export default function CustomersPage() {
       {/* Assign Membership Modal */}
       {showAssignMembershipModal && (
         <div className="modal-overlay" onClick={() => setShowAssignMembershipModal(false)}>
-          <div className="modal-content" style={{ width: "min(90vw, 600px)" }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Assign Membership</h3>
-              <button className="modal-close" onClick={() => setShowAssignMembershipModal(false)}><X size={20} /></button>
+          <div className="modal-content" style={{ width: "min(95vw, 900px)", borderRadius: 16, padding: 0, overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ padding: "18px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ fontWeight: 700, fontSize: "1.2rem", color: "#0f172a" }}>Assign Membership</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ position: "relative" }}>
+                  <input placeholder="Search For Membership" value={membershipSearch} onChange={(e) => setMembershipSearch(e.target.value)} style={{ padding: "8px 12px", paddingRight: 32, border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", width: 220 }} />
+                  <span style={{ position: "absolute", right: 10, top: 8, color: "#94a3b8" }}>&#128269;</span>
+                </div>
+                <button onClick={() => setShowAssignMembershipModal(false)} style={{ background: "none", border: "none", fontSize: "1.4rem", cursor: "pointer", color: "#94a3b8" }}>&#x2715;</button>
+              </div>
             </div>
-            <div className="modal-body">
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 24, flex: 1, maxHeight: "70vh", overflowY: "auto" }}>
               {membershipPlans.length === 0 ? (
                 <div className="cust-empty-state">No membership plans available</div>
               ) : (
-                <div className="cust-plan-cards">
-                  {membershipPlans.map((plan, idx) => {
-                    const colors = ["pink", "purple", "blue", "teal"];
-                    const colorClass = colors[idx % colors.length];
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 16, maxHeight: 300, overflowY: "auto", paddingRight: 8 }}>
+                  {membershipPlans.filter((plan) => plan.name.toLowerCase().includes(membershipSearch.toLowerCase())).map((plan) => {
+                    const isSelected = selectedPlan?.id === plan.id;
                     return (
-                      <div
-                        key={plan.id}
-                        className={`cust-plan-card ${colorClass}${selectedPlan?.id === plan.id ? " selected" : ""}`}
-                        onClick={() => {
-                          setSelectedPlan(plan);
-                          setMembershipForm(prev => ({
-                            ...prev,
-                            validityDays: plan.validityDays || "",
-                            price: plan.price || "",
-                          }));
-                        }}
-                      >
-                        <div className="cust-plan-name">{plan.name}</div>
-                        <div className="cust-plan-price">{formatMoney(plan.price)}</div>
-                        <div className="cust-plan-validity">{plan.validityDays} days</div>
+                      <div key={plan.id} onClick={() => {
+                        setSelectedPlan(plan);
+                        setMembershipForm((prev) => ({
+                          ...prev,
+                          validityDays: String(plan.validityDays || ""),
+                          price: String(plan.price || ""),
+                        }));
+                      }} style={{ background: isSelected ? "#eff6ff" : "#f8fafc", border: isSelected ? "2px solid #3b82f6" : "1px solid #e2e8f0", borderRadius: 12, padding: 16, cursor: "pointer", transition: "all 0.2s" }}>
+                        <div style={{ fontSize: "0.95rem", fontWeight: 700, color: isSelected ? "#1e40af" : "#334155", marginBottom: 8, textTransform: "uppercase" }}>{plan.name}</div>
+                        <div style={{ fontSize: "0.85rem", color: "#475569", marginBottom: 4 }}>Fee: {formatMoney(Number(plan.price || 0))}</div>
+                        <div style={{ fontSize: "0.85rem", color: "#475569", marginBottom: 12 }}>Validity: {plan.validityDays} Days</div>
+                        {plan.rewardPointsMultiplier && <div style={{ fontSize: "0.8rem", color: "#059669", fontWeight: 600 }}>Earn {plan.rewardPointsMultiplier}x Points</div>}
+                        {plan.walletAmount > 0 && <div style={{ fontSize: "0.8rem", color: "#059669", fontWeight: 600 }}>Wallet: {formatMoney(plan.walletAmount)}</div>}
                       </div>
                     );
                   })}
                 </div>
               )}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div className="form-group">
-                  <label>Validity (Days)</label>
-                  <input type="number" value={membershipForm.validityDays} onChange={(e) => setMembershipForm(prev => ({ ...prev, validityDays: e.target.value }))} />
+
+              {selectedPlan && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ fontWeight: 600, color: "#64748b", fontSize: "0.9rem" }}>Selected services</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {(selectedPlan.services || []).map((s, idx) => (
+                      <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
+                        <span style={{ fontSize: "0.9rem", color: "#0f172a", fontWeight: 500 }}>{s.service?.name || s.name}</span>
+                        <span style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 600 }}>Included</span>
+                      </div>
+                    ))}
+                    {(selectedPlan.services || []).length === 0 && <div style={{ padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", color: "#94a3b8", fontSize: "0.9rem" }}>No services included in this membership</div>}
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Price</label>
-                  <input type="number" value={membershipForm.price} onChange={(e) => setMembershipForm(prev => ({ ...prev, price: e.target.value }))} />
+              )}
+
+              <div style={{ display: "flex", gap: 16, alignItems: "flex-end", flexWrap: "wrap" }}>
+                <div style={{ flex: 1, minWidth: 150 }}>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Name</label>
+                  <input readOnly value={selectedPlan ? selectedPlan.name : ""} placeholder="Select above" style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", background: "#f8fafc", color: "#94a3b8", boxSizing: "border-box" }} />
                 </div>
-                <div className="form-group">
-                  <label>Staff</label>
-                  <select value={membershipForm.staffId} onChange={(e) => setMembershipForm(prev => ({ ...prev, staffId: e.target.value }))}>
+                <div style={{ flex: 1, minWidth: 120 }}>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Validity (Days)</label>
+                  <input type="number" placeholder="Enter Validity" value={membershipForm.validityDays} onChange={(e) => setMembershipForm((prev) => ({ ...prev, validityDays: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 120 }}>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Price</label>
+                  <input type="number" placeholder="Enter Price" value={membershipForm.price} onChange={(e) => setMembershipForm((prev) => ({ ...prev, price: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
+                </div>
+                <div style={{ flex: 1.2, minWidth: 150 }}>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Staff</label>
+                  <select value={membershipForm.staffId} onChange={(e) => setMembershipForm((prev) => ({ ...prev, staffId: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }}>
                     <option value="">Select Staff</option>
                     {staffUsers.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                      <option key={s.id} value={s.id}>{s.user?.name || s.name || s.id}</option>
                     ))}
                   </select>
                 </div>
-                <div className="form-group">
-                  <label>Balance</label>
-                  <input type="number" value={selectedPlan ? (Number(selectedPlan.price || 0) - Number(membershipForm.online || 0) - Number(membershipForm.offline || 0)) : 0} disabled />
-                </div>
-                <div className="form-group">
-                  <label>Advance</label>
-                  <input type="number" value={selectedPlan ? selectedPlan.price : 0} disabled />
-                </div>
-                <div className="form-group">
-                  <label>Online</label>
-                  <input type="number" value={membershipForm.online} onChange={(e) => setMembershipForm(prev => ({ ...prev, online: e.target.value }))} placeholder="0" />
-                </div>
-                <div className="form-group">
-                  <label>Offline</label>
-                  <input type="number" value={membershipForm.offline} onChange={(e) => setMembershipForm(prev => ({ ...prev, offline: e.target.value }))} placeholder="0" />
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Purchase date</label>
+                  <input type="date" value={membershipForm.purchaseDate} onChange={(e) => setMembershipForm((prev) => ({ ...prev, purchaseDate: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
-              <button className="crm-btn" onClick={() => setShowAssignMembershipModal(false)}>Cancel</button>
-              <button className="crm-btn" onClick={handleAssignMembership} disabled={!selectedPlan}>Add Membership</button>
+            <div style={{ padding: "16px 24px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end", gap: 12 }}>
+              <button onClick={() => setShowAssignMembershipModal(false)} style={{ padding: "10px 24px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", color: "#475569" }}>Cancel</button>
+              <button onClick={handleAssignMembership} disabled={!selectedPlan} style={{ padding: "10px 24px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: selectedPlan ? "pointer" : "not-allowed", opacity: selectedPlan ? 1 : 0.6 }}>Add Membership</button>
             </div>
           </div>
         </div>
@@ -1757,63 +1762,98 @@ export default function CustomersPage() {
       {/* Assign Package Modal */}
       {showPackageModal && (
         <div className="modal-overlay" onClick={() => setShowPackageModal(false)}>
-          <div className="modal-content" style={{ width: "min(90vw, 600px)" }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Assign Package</h3>
-              <button className="modal-close" onClick={() => setShowPackageModal(false)}><X size={20} /></button>
+          <div className="modal-content" style={{ width: "min(95vw, 900px)", borderRadius: 16, padding: 0, overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ padding: "18px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ fontWeight: 700, fontSize: "1.2rem", color: "#0f172a" }}>Assign Package</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ position: "relative" }}>
+                  <input placeholder="Search For Package" value={packageSearch} onChange={(e) => setPackageSearch(e.target.value)} style={{ padding: "8px 12px", paddingRight: 32, border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", width: 220 }} />
+                  <span style={{ position: "absolute", right: 10, top: 8, color: "#94a3b8" }}>&#128269;</span>
+                </div>
+                <button onClick={() => setShowPackageModal(false)} style={{ background: "none", border: "none", fontSize: "1.4rem", cursor: "pointer", color: "#94a3b8" }}>&#x2715;</button>
+              </div>
             </div>
-            <div className="modal-body">
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 24, flex: 1, maxHeight: "70vh", overflowY: "auto" }}>
               {packagePlans.length === 0 ? (
                 <div className="cust-empty-state">No package plans available</div>
               ) : (
-                <div className="cust-plan-cards">
-                  {packagePlans.map((pkg, idx) => {
-                    const colors = ["pink", "purple", "blue", "teal"];
-                    const colorClass = colors[idx % colors.length];
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 16, maxHeight: 300, overflowY: "auto", paddingRight: 8 }}>
+                  {packagePlans.filter((pkg) => pkg.name.toLowerCase().includes(packageSearch.toLowerCase())).map((pkg) => {
+                    const isSelected = selectedPackage?.id === pkg.id;
                     return (
-                      <div
-                        key={pkg.id}
-                        className={`cust-plan-card ${colorClass}${selectedPackage?.id === pkg.id ? " selected" : ""}`}
-                        onClick={() => {
-                          setSelectedPackage(pkg);
-                          setPackageForm(prev => ({
-                            ...prev,
-                            validityDays: pkg.validityDays || "",
-                            price: pkg.price || "",
-                          }));
-                        }}
-                      >
-                        <div className="cust-plan-name">{pkg.name}</div>
-                        <div className="cust-plan-price">{formatMoney(pkg.price)}</div>
-                        <div className="cust-plan-validity">{pkg.validityDays} days</div>
+                      <div key={pkg.id} onClick={() => {
+                        setSelectedPackage(pkg);
+                        setPackageForm((prev) => ({
+                          ...prev,
+                          validityDays: String(pkg.validityDays || ""),
+                          price: String(pkg.price || ""),
+                        }));
+                      }} style={{ background: isSelected ? "#eff6ff" : "#f8fafc", border: isSelected ? "2px solid #3b82f6" : "1px solid #e2e8f0", borderRadius: 12, padding: 16, cursor: "pointer", transition: "all 0.2s" }}>
+                        <div style={{ fontSize: "0.95rem", fontWeight: 700, color: isSelected ? "#1e40af" : "#334155", marginBottom: 8, textTransform: "uppercase" }}>{pkg.name}</div>
+                        <div style={{ fontSize: "0.85rem", color: "#475569", marginBottom: 4 }}>Fee: {formatMoney(Number(pkg.price || 0))}</div>
+                        <div style={{ fontSize: "0.85rem", color: "#475569", marginBottom: 12 }}>Validity: {pkg.validityDays} Days</div>
+                        <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>Services:</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {(pkg.services || []).map((s, i) => (
+                            <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "#475569" }}>
+                              <span>{s.service?.name || s.name}</span>
+                              <span style={{ fontWeight: 600 }}>{s.sessions || 1}</span>
+                            </div>
+                          ))}
+                          {(pkg.services || []).length === 0 && <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>No services included</span>}
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               )}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginTop: "16px" }}>
-                <div className="form-group">
-                  <label>Validity (Days)</label>
-                  <input type="number" value={packageForm.validityDays} onChange={(e) => setPackageForm(prev => ({ ...prev, validityDays: e.target.value }))} />
+
+              {selectedPackage && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ fontWeight: 600, color: "#64748b", fontSize: "0.9rem" }}>Selected services</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {(selectedPackage.services || []).map((s, idx) => (
+                      <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
+                        <span style={{ fontSize: "0.9rem", color: "#0f172a", fontWeight: 500 }}>{s.service?.name || s.name}</span>
+                        <span style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 600 }}>Qty: {s.sessions || 1}</span>
+                      </div>
+                    ))}
+                    {(selectedPackage.services || []).length === 0 && <div style={{ padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", color: "#94a3b8", fontSize: "0.9rem" }}>No services included in this package</div>}
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Price</label>
-                  <input type="number" value={packageForm.price} onChange={(e) => setPackageForm(prev => ({ ...prev, price: e.target.value }))} />
+              )}
+
+              <div style={{ display: "flex", gap: 16, alignItems: "flex-end", flexWrap: "wrap" }}>
+                <div style={{ flex: 1, minWidth: 150 }}>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Name</label>
+                  <input readOnly value={selectedPackage ? selectedPackage.name : ""} placeholder="Select above" style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", background: "#f8fafc", color: "#94a3b8", boxSizing: "border-box" }} />
                 </div>
-                <div className="form-group">
-                  <label>Staff</label>
-                  <select value={packageForm.staffId} onChange={(e) => setPackageForm(prev => ({ ...prev, staffId: e.target.value }))}>
+                <div style={{ flex: 1, minWidth: 120 }}>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Validity (Days)</label>
+                  <input type="number" placeholder="Enter Validity" value={packageForm.validityDays} onChange={(e) => setPackageForm((prev) => ({ ...prev, validityDays: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 120 }}>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Price</label>
+                  <input type="number" placeholder="Enter Price" value={packageForm.price} onChange={(e) => setPackageForm((prev) => ({ ...prev, price: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
+                </div>
+                <div style={{ flex: 1.2, minWidth: 150 }}>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Staff</label>
+                  <select value={packageForm.staffId} onChange={(e) => setPackageForm((prev) => ({ ...prev, staffId: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }}>
                     <option value="">Select Staff</option>
                     {staffUsers.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                      <option key={s.id} value={s.id}>{s.user?.name || s.name || s.id}</option>
                     ))}
                   </select>
                 </div>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Purchase date</label>
+                  <input type="date" value={packageForm.purchaseDate} onChange={(e) => setPackageForm((prev) => ({ ...prev, purchaseDate: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
+                </div>
               </div>
             </div>
-            <div className="modal-footer">
-              <button className="crm-btn" onClick={() => setShowPackageModal(false)}>Cancel</button>
-              <button className="crm-btn" onClick={handleAssignPackage} disabled={!selectedPackage}>Assign Package</button>
+            <div style={{ padding: "16px 24px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end", gap: 12 }}>
+              <button onClick={() => setShowPackageModal(false)} style={{ padding: "10px 24px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", color: "#475569" }}>Cancel</button>
+              <button onClick={handleAssignPackage} disabled={!selectedPackage} style={{ padding: "10px 24px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: selectedPackage ? "pointer" : "not-allowed", opacity: selectedPackage ? 1 : 0.6 }}>Assign Package</button>
             </div>
           </div>
         </div>
