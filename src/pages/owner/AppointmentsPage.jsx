@@ -423,6 +423,9 @@ export default function AppointmentsPage() {
     nextItems[index] = nextItem;
     const nextStarts = nextItems.map((item) => item.startAt).filter(Boolean).sort();
     const nextEnds = nextItems.map((item) => item.endAt).filter(Boolean).sort();
+    if (typeof window !== "undefined" && window.console) {
+      console.log("[handleUpdateItem]", { field, value, newEndAt: nextItem.endAt, newStartAt: nextItem.startAt, allEnds: nextEnds });
+    }
     setForm((current) => ({
       ...current,
       items: nextItems,
@@ -508,9 +511,16 @@ export default function AppointmentsPage() {
     if (!isCreateModalOpen || !editMode || !editingAppointmentId) return rows;
     const idx = rows.findIndex((r) => r.id === editingAppointmentId);
     if (idx === -1) return rows;
-    return rows.map((r, i) => {
+    const result = rows.map((r, i) => {
       if (i !== idx) return r;
       const formItems = (form.items || []).filter((fi) => fi.serviceId && fi.startAt && fi.endAt && fi.staffUserIds?.length);
+      if (typeof window !== "undefined" && window.console) {
+        console.log("[displayedRows debug]", {
+          appointmentId: r.id,
+          formItems: formItems.map(fi => ({ serviceId: fi.serviceId, startAt: fi.startAt, endAt: fi.endAt, staffUserIds: fi.staffUserIds })),
+          savedItems: (r.items || []).map(it => ({ id: it.id, serviceId: it.serviceId, startAt: it.startAt, endAt: it.endAt }))
+        });
+      }
       if (formItems.length === 0) return r;
       const updatedItems = (r.items || []).map((item) => {
         const matched = formItems.find((fi) => fi.serviceId === item.serviceId);
@@ -530,6 +540,7 @@ export default function AppointmentsPage() {
         items: updatedItems
       };
     });
+    return result;
   }, [rows, isCreateModalOpen, editMode, editingAppointmentId, form.items]);
 
   const appointmentsByStaffStartSlot = useMemo(() => {
