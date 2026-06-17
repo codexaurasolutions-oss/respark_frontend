@@ -90,7 +90,7 @@ const getCellValue = (row, col) => {
     "Staff": ["staffName", "name"],
     "Completed": ["completedAppointments"],
     "Qty": ["qty", "quantity"],
-    "Customer": ["name", "customerName"],
+    "Customer": ["customerName"],
     "Total Visits": ["totalVisits"],
     "Last Visit": ["lastVisitDate"],
     "Loyalty Pts": ["rewardPoints"],
@@ -99,6 +99,23 @@ const getCellValue = (row, col) => {
     "Date": ["date", "createdAt"],
     "Sales": ["sales", "revenue"]
   };
+
+  if (col === "Customer") {
+    if (row.customer?.name) return row.customer.name;
+    if (row.guestName) return row.guestName;
+  }
+  if (col === "Guest Name") {
+    if (row.customer?.name) return row.customer.name;
+    if (row.guestName) return row.guestName;
+  }
+  if (col === "Guest Number") {
+    if (row.customer?.phone) return row.customer.phone;
+    if (row.guestNumber) return row.guestNumber;
+  }
+  if (col === "Branch") {
+    if (row.branch?.name) return row.branch.name;
+    if (row.branchName) return row.branchName;
+  }
 
   if (aliases[col]) {
     for (const key of aliases[col]) {
@@ -116,6 +133,15 @@ const getCellValue = (row, col) => {
   
   let val = row[col] ?? row[defaultKey] ?? row[defaultKey2];
   if (col === "Invoice #") val = row.invoiceNumber || row.invoice;
+  if (col === "Invoice") val = row.invoiceNumber || row.invoice || val;
+  if (col === "Total") val = row.total ?? row.amount ?? val;
+  if (col === "Paid") val = row.paidAmount ?? val;
+  if (col === "Refunded") val = row.refundAmount ?? val;
+  if (col === "Status") val = row.status ?? val;
+  
+  if (val !== null && val !== undefined && typeof val === "object") {
+    return val.name || val.label || JSON.stringify(val);
+  }
   
   return val;
 };
