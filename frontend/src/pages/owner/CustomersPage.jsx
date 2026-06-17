@@ -226,7 +226,7 @@ export default function CustomersPage() {
 
   const fetchStaffUsers = async () => {
     try {
-      const res = await api.get("/owner/staff");
+      const res = await api.get("/owner/staff-users");
       setStaffUsers(res.data || []);
     } catch (e) {
       console.error("Failed to load staff", e);
@@ -1654,7 +1654,7 @@ export default function CustomersPage() {
                   <select value={membershipForm.staffId} onChange={(e) => setMembershipForm((prev) => ({ ...prev, staffId: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }}>
                     <option value="">Select Staff</option>
                     {staffUsers.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                      <option key={s.id} value={s.id}>{s.user?.name || s.name || s.id}</option>
                     ))}
                   </select>
                 </div>
@@ -1792,7 +1792,7 @@ export default function CustomersPage() {
                   <select value={giftCardForm.staffId} onChange={(e) => setGiftCardForm((prev) => ({ ...prev, staffId: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }}>
                     <option value="">Select Staff</option>
                     {staffUsers.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                      <option key={s.id} value={s.id}>{s.user?.name || s.name || s.id}</option>
                     ))}
                   </select>
                 </div>
@@ -1899,7 +1899,7 @@ export default function CustomersPage() {
                   <select value={packageForm.staffId} onChange={(e) => setPackageForm((prev) => ({ ...prev, staffId: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }}>
                     <option value="">Select Staff</option>
                     {staffUsers.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                      <option key={s.id} value={s.id}>{s.user?.name || s.name || s.id}</option>
                     ))}
                   </select>
                 </div>
