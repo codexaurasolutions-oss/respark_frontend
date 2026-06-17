@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Search, Filter, Plus, Download, Upload, MoreVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, X, ChevronDown, Trash2, GitMerge, MessageCircle } from "lucide-react";
+import { Search, Filter, Plus, Download, Upload, MoreVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, X, ChevronDown, Trash2, GitMerge, MessageCircle, User, FileText, CreditCard, Gift, Wallet, AlertCircle, Package, Users, UserCog, Tag, Phone, StickyNote, Edit3, CheckCircle, Circle } from "lucide-react";
 import { api } from "../../api/client";
 import IndianPhoneInput from "../../components/IndianPhoneInput";
 import { useSalonSettings } from "../../context/SalonSettingsContext";
@@ -82,6 +82,18 @@ export default function CustomersPage() {
   const [customerDetail, setCustomerDetail] = useState(null);
   const [customerDetailLoading, setCustomerDetailLoading] = useState(false);
   const [detailTab, setDetailTab] = useState("profile");
+  const [showAssignMembershipModal, setShowAssignMembershipModal] = useState(false);
+  const [membershipPlans, setMembershipPlans] = useState([]);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [membershipForm, setMembershipForm] = useState({ validityDays: "", price: "", staffId: "", online: "", offline: "" });
+  const [showAddAdvanceModal, setShowAddAdvanceModal] = useState(false);
+  const [advanceForm, setAdvanceForm] = useState({ amount: "", mode: "Online", remark: "" });
+  const [staffUsers, setStaffUsers] = useState([]);
+  const [giftCards, setGiftCards] = useState([]);
+  const [customerGiftCards, setCustomerGiftCards] = useState([]);
+  const [customerAdvances, setCustomerAdvances] = useState([]);
+  const [updateForm, setUpdateForm] = useState({ name: "", phone: "", email: "", gender: "", dateOfBirth: "", anniversary: "" });
+  const [notes, setNotes] = useState("");
   const actionMenuRef = useRef(null);
   const [formData, setFormData] = useState({
     phone: "",
@@ -119,6 +131,23 @@ export default function CustomersPage() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [activeMenuRowId]);
 
+  useEffect(() => {
+    if (!selectedCustomer) return;
+    if (detailTab === "membership" && membershipPlans.length === 0) {
+      fetchMembershipPlans();
+      fetchStaffUsers();
+    }
+    if (detailTab === "giftcard") {
+      fetchCustomerGiftCards(selectedCustomer.id);
+    }
+    if (detailTab === "advance") {
+      fetchCustomerAdvances(selectedCustomer.id);
+    }
+    if (detailTab === "duebalance") {
+      fetchCustomerAdvances(selectedCustomer.id);
+    }
+  }, [detailTab, selectedCustomer]);
+
   const openWhatsAppForCustomer = (row) => {
     const digits = String(row.phone || "").replace(/\D/g, "");
     if (!digits) {
@@ -135,9 +164,24 @@ export default function CustomersPage() {
     setDetailTab("profile");
     setCustomerDetail(null);
     setCustomerDetailLoading(true);
+    setShowAssignMembershipModal(false);
+    setShowAddAdvanceModal(false);
+    setSelectedPlan(null);
+    setAdvanceForm({ amount: "", mode: "Online", remark: "" });
+    setMembershipForm({ validityDays: "", price: "", staffId: "", online: "", offline: "" });
+    setNotes("");
     try {
       const res = await api.get(`/owner/customers/${row.id}`);
       setCustomerDetail(res.data);
+      setUpdateForm({
+        name: res.data?.name || row.name || "",
+        phone: res.data?.phone || row.phone || "",
+        email: res.data?.email || "",
+        gender: res.data?.gender || "",
+        dateOfBirth: res.data?.dateOfBirth ? res.data.dateOfBirth.substring(0, 10) : "",
+        anniversary: res.data?.anniversary ? res.data.anniversary.substring(0, 10) : "",
+      });
+      setNotes(res.data?.notes || "");
     } catch (e) {
       console.error(e);
     } finally {
@@ -148,6 +192,122 @@ export default function CustomersPage() {
   const closeCustomerDetail = () => {
     setSelectedCustomer(null);
     setCustomerDetail(null);
+    setDetailTab("profile");
+    setShowAssignMembershipModal(false);
+    setShowAddAdvanceModal(false);
+    setSelectedPlan(null);
+  };
+
+  const fetchMembershipPlans = async () => {
+    try {
+      const res = await api.get("/owner/memberships/plans");
+      setMembershipPlans(res.data || []);
+    } catch (e) {
+      console.error("Failed to load membership plans", e);
+    }
+  };
+
+  const fetchStaffUsers = async () => {
+    try {
+      const res = await api.get("/owner/staff");
+      setStaffUsers(res.data || []);
+    } catch (e) {
+      console.error("Failed to load staff", e);
+    }
+  };
+
+  const fetchCustomerGiftCards = async (customerId) => {
+    try {
+      const res = await api.get(`/owner/customers/${customerId}/gift-cards`);
+      setCustomerGiftCards(res.data || []);
+    } catch (e) {
+      console.error("Failed to load gift cards", e);
+    }
+  };
+
+  const fetchCustomerAdvances = async (customerId) => {
+    try {
+      const res = await api.get(`/owner/customers/${customerId}/advance-payments`);
+      setCustomerAdvances(res.data || []);
+    } catch (e) {
+      console.error("Failed to load advance payments", e);
+    }
+  };
+
+  const handleAssignMembership = async () => {
+    if (!selectedPlan || !selectedCustomer) return;
+    try {
+      await api.post("/owner/memberships/assign", {
+        customerId: selectedCustomer.id,
+        membershipPlanId: selectedPlan.id,
+        validityDays: membershipForm.validityDays ? Number(membershipForm.validityDays) : undefined,
+        price: membershipForm.price ? Number(membershipForm.price) : undefined,
+        staffId: membershipForm.staffId || undefined,
+        online: membershipForm.online ? Number(membershipForm.online) : undefined,
+        offline: membershipForm.offline ? Number(membershipForm.offline) : undefined,
+      });
+      setShowAssignMembershipModal(false);
+      setSelectedPlan(null);
+      setMembershipForm({ validityDays: "", price: "", staffId: "", online: "", offline: "" });
+      const res = await api.get(`/owner/customers/${selectedCustomer.id}`);
+      setCustomerDetail(res.data);
+    } catch (e) {
+      alert("Failed to assign membership");
+      console.error(e);
+    }
+  };
+
+  const handleAddAdvance = async () => {
+    if (!advanceForm.amount || !selectedCustomer) return;
+    try {
+      await api.post("/owner/advance-payments", {
+        customerId: selectedCustomer.id,
+        amount: Number(advanceForm.amount),
+        mode: advanceForm.mode,
+        remark: advanceForm.remark,
+      });
+      setShowAddAdvanceModal(false);
+      setAdvanceForm({ amount: "", mode: "Online", remark: "" });
+      fetchCustomerAdvances(selectedCustomer.id);
+      const res = await api.get(`/owner/customers/${selectedCustomer.id}`);
+      setCustomerDetail(res.data);
+    } catch (e) {
+      alert("Failed to add advance");
+      console.error(e);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!selectedCustomer) return;
+    try {
+      await api.put(`/owner/customers/${selectedCustomer.id}`, {
+        name: updateForm.name,
+        phone: updateForm.phone,
+        email: updateForm.email,
+        gender: updateForm.gender,
+        dateOfBirth: updateForm.dateOfBirth || undefined,
+        anniversary: updateForm.anniversary || undefined,
+      });
+      const res = await api.get(`/owner/customers/${selectedCustomer.id}`);
+      setCustomerDetail(res.data);
+      setSelectedCustomer((prev) => prev ? { ...prev, name: updateForm.name, phone: updateForm.phone } : prev);
+      setDetailTab("profile");
+    } catch (e) {
+      alert("Failed to update profile");
+      console.error(e);
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    if (!selectedCustomer) return;
+    try {
+      await api.put(`/owner/customers/${selectedCustomer.id}`, { notes });
+      const res = await api.get(`/owner/customers/${selectedCustomer.id}`);
+      setCustomerDetail(res.data);
+    } catch (e) {
+      alert("Failed to save notes");
+      console.error(e);
+    }
   };
 
   const handleExport = async (format) => {
@@ -480,29 +640,42 @@ export default function CustomersPage() {
           .crm-row-menu button:hover { background:#f8fafc; transform:none; filter:none; }
           .crm-row-menu .danger { color:#dc2626; }
           .crm-count-badge { display:inline-flex; align-items:center; justify-content:center; min-width:22px; padding:2px 7px; border-radius:999px; background:#eff6ff; color:#2563eb; font-weight:700; font-size:0.72rem; }
-          /* Customer Detail Slide-out Panel */
+          /* Customer Detail Slide-out Panel – Two-column layout */
           .cust-detail-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.25); backdrop-filter:blur(2px); z-index:2000; }
-          .cust-detail-panel { position:fixed; top:0; right:0; bottom:0; width:min(95vw,480px); background:#fff; color:#0f172a; display:flex; flex-direction:column; z-index:2001; box-shadow:-8px 0 30px rgba(0,0,0,0.12); animation:slideInRight 0.25s ease-out; }
+          .cust-detail-panel { position:fixed; top:0; right:0; bottom:0; width:min(95vw,900px); background:#fff; color:#0f172a; display:flex; flex-direction:column; z-index:2001; box-shadow:-8px 0 30px rgba(0,0,0,0.12); animation:slideInRight 0.25s ease-out; }
           @keyframes slideInRight { from { transform:translateX(100%); } to { transform:translateX(0); } }
-          .cust-detail-header { padding:16px 20px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #e2e8f0; background:#f8fafc; }
+          .cust-detail-layout { display:flex; height:100%; overflow:hidden; }
+          .cust-detail-sidebar { width:35%; background:#1e293b; color:#fff; display:flex; flex-direction:column; overflow-y:auto; flex-shrink:0; }
+          .cust-detail-sidebar::-webkit-scrollbar { width:4px; }
+          .cust-detail-sidebar::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:4px; }
+          .cust-detail-sidebar-info { padding:20px 16px; border-bottom:1px solid rgba(255,255,255,0.1); }
+          .cust-detail-sidebar-info-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
           .cust-detail-avatar { width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,#3b82f6,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:1.2rem; font-weight:700; color:#fff; flex-shrink:0; }
-          .cust-detail-name { font-size:1rem; font-weight:700; color:#0f172a; }
-          .cust-detail-phone { font-size:0.8rem; color:#64748b; }
-          .cust-detail-close { background:none; border:none; color:#94a3b8; cursor:pointer; font-size:1.4rem; line-height:1; padding:4px; border-radius:6px; }
+          .cust-detail-name { font-size:1rem; font-weight:700; color:#fff; }
+          .cust-detail-phone { font-size:0.8rem; color:#94a3b8; }
+          .cust-detail-edit-btn { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:#94a3b8; border-radius:6px; padding:5px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; margin-left:auto; flex-shrink:0; }
+          .cust-detail-edit-btn:hover { background:rgba(255,255,255,0.15); color:#e2e8f0; }
+          .cust-detail-sidebar-fields { display:flex; flex-direction:column; gap:6px; }
+          .cust-detail-field { display:flex; flex-direction:column; gap:1px; }
+          .cust-detail-field-label { font-size:0.6rem; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; font-weight:600; }
+          .cust-detail-field-val { font-size:0.8rem; color:#cbd5e1; font-weight:500; }
+          .cust-detail-sidebar-nav { display:flex; flex-direction:column; gap:2px; padding:8px; }
+          .cust-detail-nav-btn { display:flex; align-items:center; gap:10px; padding:12px 16px; border:none; background:transparent; color:#94a3b8; font-size:0.82rem; font-weight:600; cursor:pointer; border-radius:8px; transition:all .15s; text-align:left; width:100%; }
+          .cust-detail-nav-btn:hover { background:rgba(255,255,255,0.05); color:#e2e8f0; }
+          .cust-detail-nav-btn.active { background:rgba(59,130,246,0.2); color:#60a5fa; }
+          .cust-detail-content { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+          .cust-detail-content-header { padding:16px 20px; border-bottom:1px solid #e2e8f0; font-size:1.1rem; font-weight:700; color:#0f172a; display:flex; justify-content:space-between; align-items:center; background:#fff; flex-shrink:0; }
+          .cust-detail-close { background:none; border:none; color:#94a3b8; cursor:pointer; padding:6px; border-radius:6px; display:flex; align-items:center; justify-content:center; transition:all .15s; }
           .cust-detail-close:hover { color:#dc2626; background:#fee2e2; }
-          .cust-detail-info { padding:14px 20px; display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; background:#f8fafc; border-bottom:1px solid #e2e8f0; }
-          .cust-detail-info-row { display:flex; flex-direction:column; gap:2px; }
-          .cust-detail-info-label { font-size:0.65rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; font-weight:600; }
-          .cust-detail-info-val { font-size:0.82rem; color:#0f172a; font-weight:600; }
-          .cust-detail-tabs { display:flex; border-bottom:2px solid #f1f5f9; background:#fff; overflow-x:auto; }
-          .cust-detail-tab { flex:1; min-width:80px; padding:12px 8px; background:none; border:none; color:#94a3b8; font-size:0.75rem; font-weight:600; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; white-space:nowrap; text-align:center; transition:all .15s; }
-          .cust-detail-tab:hover { color:#334155; }
-          .cust-detail-tab.active { color:#2563eb; border-bottom-color:#2563eb; }
-          .cust-detail-body { flex:1; overflow-y:auto; padding:16px 20px; background:#fff; }
-          .cust-detail-body::-webkit-scrollbar { width:4px; }
-          .cust-detail-body::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:4px; }
+          .cust-detail-content-body { flex:1; overflow-y:auto; padding:16px 20px; background:#fff; }
+          .cust-detail-content-body::-webkit-scrollbar { width:4px; }
+          .cust-detail-content-body::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:4px; }
           .cust-detail-section { margin-bottom:20px; }
           .cust-detail-section-title { font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; font-weight:700; }
+          .cust-profile-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:0.82rem; }
+          .cust-profile-row:last-child { border-bottom:none; }
+          .cust-profile-label { color:#64748b; font-weight:500; }
+          .cust-profile-val { color:#0f172a; font-weight:600; text-align:right; max-width:55%; word-break:break-all; }
           .cust-order-card { background:#f8fafc; border-radius:10px; padding:14px; margin-bottom:10px; border:1px solid #e2e8f0; transition:box-shadow .15s; }
           .cust-order-card:hover { box-shadow:0 2px 8px rgba(0,0,0,0.06); }
           .cust-order-card-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
@@ -528,10 +701,32 @@ export default function CustomersPage() {
           .cust-pkg-name { font-size:0.9rem; font-weight:700; color:#0f172a; }
           .cust-pkg-sessions { font-size:0.8rem; color:#d97706; font-weight:600; margin-top:4px; }
           .cust-pkg-meta { font-size:0.75rem; color:#64748b; margin-top:4px; }
-          .cust-profile-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:0.82rem; }
-          .cust-profile-row:last-child { border-bottom:none; }
-          .cust-profile-label { color:#64748b; font-weight:500; }
-          .cust-profile-val { color:#0f172a; font-weight:600; text-align:right; max-width:55%; word-break:break-all; }
+          .cust-gift-card { background:linear-gradient(135deg,#f0fdf4,#ecfdf5); border-radius:10px; padding:14px; margin-bottom:10px; border:1px solid #bbf7d0; }
+          .cust-gift-card.expired { background:#f8fafc; border-color:#e2e8f0; opacity:0.7; }
+          .cust-gift-balance { font-size:1.1rem; font-weight:700; color:#16a34a; margin-top:6px; }
+          .cust-advance-card { background:#f8fafc; border-radius:10px; padding:14px; margin-bottom:10px; border:1px solid #e2e8f0; }
+          .cust-due-card { background:#fef2f2; border-radius:10px; padding:14px; margin-bottom:10px; border:1px solid #fecaca; }
+          .cust-empty-state { color:#64748b; font-size:0.85rem; text-align:center; padding:40px 20px; }
+          .cust-assign-btn { background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; padding:10px 20px; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer; margin-top:12px; display:inline-flex; align-items:center; gap:6px; transition:all .15s; }
+          .cust-assign-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(37,99,235,0.3); }
+          .cust-add-btn { background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; padding:10px 20px; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all .15s; }
+          .cust-add-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(37,99,235,0.3); }
+          /* Membership modal plan cards */
+          .cust-plan-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; margin-bottom:16px; }
+          .cust-plan-card { padding:14px; border-radius:10px; cursor:pointer; border:2px solid transparent; transition:all .15s; text-align:center; }
+          .cust-plan-card.pink { background:linear-gradient(135deg,#fce7f3,#fbcfe8); color:#9d174d; }
+          .cust-plan-card.purple { background:linear-gradient(135deg,#f3e8ff,#e9d5ff); color:#7c3aed; }
+          .cust-plan-card.blue { background:linear-gradient(135deg,#dbeafe,#bfdbfe); color:#2563eb; }
+          .cust-plan-card.teal { background:linear-gradient(135deg,#ccfbf1,#99f6e4); color:#0d9488; }
+          .cust-plan-card.selected { border-color:#2563eb; box-shadow:0 0 0 2px rgba(59,130,246,0.3); }
+          .cust-plan-name { font-size:0.85rem; font-weight:700; }
+          .cust-plan-price { font-size:1rem; font-weight:800; margin-top:4px; }
+          .cust-plan-validity { font-size:0.7rem; opacity:0.8; margin-top:2px; }
+          /* Advance paymode toggle */
+          .cust-paymode-toggle { display:flex; gap:0; border-radius:8px; overflow:hidden; border:1px solid #e2e8f0; }
+          .cust-paymode-btn { flex:1; padding:8px 16px; border:none; background:#f8fafc; color:#64748b; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:all .15s; }
+          .cust-paymode-btn.active { background:#2563eb; color:#fff; }
+          .cust-paymode-btn:hover:not(.active) { background:#f1f5f9; }
           @media (max-width: 768px) {
             .crm-toolbar { flex-direction:column; align-items:stretch; }
             .crm-search { width:100%; }
@@ -806,200 +1001,590 @@ export default function CustomersPage() {
         )}
       </div>
 
-      {/* Customer Detail Slide-out Panel */}
+      {/* Customer Detail Slide-out Panel – Two-Column Layout */}
       {selectedCustomer && (
         <>
           <div className="cust-detail-overlay" onClick={closeCustomerDetail} />
           <div className="cust-detail-panel">
-            {/* Header */}
-            <div className="cust-detail-header">
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div className="cust-detail-avatar">{(selectedCustomer.name || "?")[0].toUpperCase()}</div>
-                <div>
-                  <div className="cust-detail-name">{selectedCustomer.name || "-"}</div>
-                  <div className="cust-detail-phone">{selectedCustomer.phone}</div>
+            <div className="cust-detail-layout">
+              {/* Left Sidebar */}
+              <div className="cust-detail-sidebar">
+                <div className="cust-detail-sidebar-info">
+                  <div className="cust-detail-sidebar-info-header">
+                    <div className="cust-detail-avatar">{(selectedCustomer.name || "?")[0].toUpperCase()}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="cust-detail-name">{selectedCustomer.name || "-"}</div>
+                      <div className="cust-detail-phone">{selectedCustomer.phone}</div>
+                    </div>
+                    <button className="cust-detail-edit-btn" onClick={() => setDetailTab("updateprofile")} title="Edit Profile">
+                      <Edit3 size={16} />
+                    </button>
+                  </div>
+                  <div className="cust-detail-sidebar-fields">
+                    {customerDetail && [
+                      { label: "Email", val: customerDetail.email || "Not given" },
+                      { label: "GSTIN", val: customerDetail.gst || "-" },
+                      { label: "Gender", val: customerDetail.gender ? customerDetail.gender.charAt(0).toUpperCase() + customerDetail.gender.slice(1) : "-" },
+                      { label: "Birth Date", val: customerDetail.dateOfBirth ? formatCompactDate(customerDetail.dateOfBirth) : "Not given" },
+                      { label: "Anniversary", val: customerDetail.anniversary ? formatCompactDate(customerDetail.anniversary) : "Not given" },
+                      { label: "Last Visited", val: customerDetail.lastVisitAt ? formatCompactDate(customerDetail.lastVisitAt) : "Not visited" },
+                      { label: "Lifetime Visits", val: Number(customerDetail.totalOrders || 0) },
+                      { label: "Loyalty Points", val: Number(customerDetail.loyaltyPoints || customerDetail.loyalty || 0) },
+                      { label: "Referral Code", val: customerDetail.referralCode || "-" },
+                    ].map(({ label, val }) => (
+                      <div key={label} className="cust-detail-field">
+                        <span className="cust-detail-field-label">{label}</span>
+                        <span className="cust-detail-field-val">{val}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <nav className="cust-detail-sidebar-nav">
+                  {[
+                    { key: "profile", icon: User, label: "Profile Info" },
+                    { key: "orders", icon: FileText, label: "Orders" },
+                    { key: "membership", icon: CreditCard, label: "Membership" },
+                    { key: "giftcard", icon: Gift, label: "Gift Card" },
+                    { key: "advance", icon: Wallet, label: "Advance" },
+                    { key: "duebalance", icon: AlertCircle, label: "Due Balances" },
+                    { key: "packages", icon: Package, label: "Packages" },
+                    { key: "family", icon: Users, label: "Family Members" },
+                    { key: "updateprofile", icon: UserCog, label: "Update Profile" },
+                    { key: "segments", icon: Tag, label: "Segments" },
+                    { key: "followup", icon: Phone, label: "Follow Up" },
+                    { key: "notes", icon: StickyNote, label: "Notes" },
+                  ].map(({ key, icon: Icon, label }) => (
+                    <button key={key} className={`cust-detail-nav-btn${detailTab === key ? " active" : ""}`} onClick={() => setDetailTab(key)}>
+                      <Icon size={18} />
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+
+              {/* Right Content Panel */}
+              <div className="cust-detail-content">
+                <div className="cust-detail-content-header">
+                  <span>
+                    {[
+                      { key: "profile", label: "Profile Info" },
+                      { key: "orders", label: "Orders" },
+                      { key: "membership", label: "Membership" },
+                      { key: "giftcard", label: "Gift Card" },
+                      { key: "advance", label: "Advance" },
+                      { key: "duebalance", label: "Due Balances" },
+                      { key: "packages", label: "Packages" },
+                      { key: "family", label: "Family Members" },
+                      { key: "updateprofile", label: "Update Profile" },
+                      { key: "segments", label: "Segments" },
+                      { key: "followup", label: "Follow Up" },
+                      { key: "notes", label: "Notes" },
+                    ].find(t => t.key === detailTab)?.label || "Details"}
+                  </span>
+                  <button className="cust-detail-close" onClick={closeCustomerDetail}>
+                    <X size={20} />
+                  </button>
+                </div>
+                <div className="cust-detail-content-body">
+                  {customerDetailLoading ? (
+                    <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Loading...</div>
+                  ) : !customerDetail ? (
+                    <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Could not load data</div>
+                  ) : (
+                    <>
+                      {/* Profile Info Tab */}
+                      {detailTab === "profile" && (
+                        <div className="cust-detail-section">
+                          {[
+                            { label: "Name", val: customerDetail.name || "-" },
+                            { label: "Phone", val: customerDetail.phone || "-" },
+                            { label: "Email", val: customerDetail.email || "Not given yet!" },
+                            { label: "GSTIN", val: customerDetail.gst || "-" },
+                            { label: "Gender", val: customerDetail.gender ? customerDetail.gender.charAt(0).toUpperCase() + customerDetail.gender.slice(1) : "-" },
+                            { label: "Birth Date", val: customerDetail.dateOfBirth ? formatCompactDate(customerDetail.dateOfBirth) : "Not given yet!" },
+                            { label: "Anniversary", val: customerDetail.anniversary ? formatCompactDate(customerDetail.anniversary) : "Not given yet!" },
+                            { label: "Last Visited", val: customerDetail.lastVisitAt ? formatCompactDate(customerDetail.lastVisitAt) : "Not visited yet!" },
+                            { label: "Lifetime Visit Count", val: Number(customerDetail.totalOrders || 0) },
+                            { label: "Loyalty Points", val: Number(customerDetail.loyaltyPoints || 0) },
+                            { label: "Referral Code", val: customerDetail.referralCode || "-" },
+                          ].map(({ label, val }) => (
+                            <div key={label} className="cust-profile-row">
+                              <span className="cust-profile-label">{label}</span>
+                              <span className="cust-profile-val">{val}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Orders Tab */}
+                      {detailTab === "orders" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Order History ({(customerDetail.invoices || []).length})</div>
+                          {(customerDetail.invoices || []).length === 0 ? (
+                            <div className="cust-empty-state">No orders yet</div>
+                          ) : (
+                            (customerDetail.invoices || []).map(inv => (
+                              <div key={inv.id} className="cust-order-card">
+                                <div className="cust-order-card-head">
+                                  <div>
+                                    <div className="cust-order-invoice">Invoice #{inv.invoiceNumber}</div>
+                                    <div className="cust-order-date">{new Date(inv.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</div>
+                                  </div>
+                                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
+                                    <div className="cust-order-amount">{formatMoney(inv.total)}</div>
+                                    <span className={`cust-order-status ${inv.status}`}>{inv.status}</span>
+                                  </div>
+                                </div>
+                                {(inv.items || []).length > 0 && (
+                                  <div className="cust-order-items">
+                                    {inv.items.map((item, i) => (
+                                      <div key={i} className="cust-order-item">
+                                        <div>
+                                          <div>{item.serviceName || item.productName || "Item"}</div>
+                                          {item.staffName && <div className="cust-order-item-staff">Staff: {item.staffName}</div>}
+                                        </div>
+                                        <div>{formatMoney(item.lineTotal)}</div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                {inv.discountAmount > 0 && (
+                                  <div style={{ marginTop: "6px", fontSize: "0.72rem", color: "#94a3b8" }}>
+                                    Discount: {formatMoney(inv.discountAmount)}
+                                  </div>
+                                )}
+                                {inv.paymode && (
+                                  <div style={{ marginTop: "4px", fontSize: "0.72rem", color: "#94a3b8" }}>
+                                    Paymode: {inv.paymode}
+                                  </div>
+                                )}
+                                {Number(inv.balanceAmount || 0) > 0 && (
+                                  <div style={{ marginTop: "8px", padding: "4px 8px", background: "#7f1d1d", borderRadius: "6px", fontSize: "0.72rem", color: "#fca5a5" }}>
+                                    Balance Due: {formatMoney(inv.balanceAmount)}
+                                  </div>
+                                )}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+
+                      {/* Membership Tab */}
+                      {detailTab === "membership" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Active Memberships</div>
+                          {(customerDetail.memberships || []).length === 0 ? (
+                            <div className="cust-empty-state">No active memberships</div>
+                          ) : (
+                            (customerDetail.memberships || []).map(m => {
+                              const isActive = m.status === "ACTIVE" && new Date(m.endsAt) > new Date();
+                              return (
+                                <div key={m.id} className="cust-membership-card">
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                    <div className="cust-mem-name">{m.membershipPlan?.name || "Membership"}</div>
+                                    <span className={`cust-mem-status ${isActive ? "ACTIVE" : "EXPIRED"}`}>{isActive ? "ACTIVE" : m.status}</span>
+                                  </div>
+                                  <div className="cust-mem-meta">
+                                    Valid: {new Date(m.startsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })} → {new Date(m.endsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })}
+                                  </div>
+                                  {m.remainingWalletValue != null && (
+                                    <div style={{ marginTop: "6px", fontSize: "0.78rem", color: "#10b981", fontWeight: 600 }}>
+                                      Wallet Balance: {formatMoney(m.remainingWalletValue)}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
+                          <button className="cust-assign-btn" onClick={() => { fetchMembershipPlans(); fetchStaffUsers(); setShowAssignMembershipModal(true); }}>
+                            <CreditCard size={16} /> Assign Membership
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Gift Card Tab */}
+                      {detailTab === "giftcard" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Gift Cards</div>
+                          {customerGiftCards.length === 0 ? (
+                            <div className="cust-empty-state">No gift cards found</div>
+                          ) : (
+                            customerGiftCards.map((gc) => (
+                              <div key={gc.id} className={`cust-gift-card${gc.status !== "ACTIVE" ? " expired" : ""}`}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                  <div>
+                                    <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#0f172a" }}>{gc.code || "Gift Card"}</div>
+                                    <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: "2px" }}>
+                                      {gc.expiresAt ? `Expires: ${formatCompactDate(gc.expiresAt)}` : "No expiry"}
+                                    </div>
+                                  </div>
+                                  <span className={`cust-mem-status ${gc.status === "ACTIVE" ? "ACTIVE" : "EXPIRED"}`}>{gc.status || "UNKNOWN"}</span>
+                                </div>
+                                <div className="cust-gift-balance">Balance: {formatMoney(gc.balance || 0)}</div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+
+                      {/* Advance Tab */}
+                      {detailTab === "advance" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Advance Balance</div>
+                          <div className="cust-advance-card">
+                            <div style={{ fontSize: "0.78rem", color: "#64748b" }}>Current Advance</div>
+                            <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#16a34a", marginTop: "4px" }}>
+                              {formatMoney(customerDetail.advanceAmount || 0)}
+                            </div>
+                          </div>
+                          {customerAdvances.length > 0 && (
+                            <>
+                              <div className="cust-detail-section-title" style={{ marginTop: "16px" }}>History</div>
+                              {customerAdvances.map((adv) => (
+                                <div key={adv.id} className="cust-advance-card">
+                                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                    <div style={{ fontSize: "0.82rem", fontWeight: 700 }}>{formatMoney(adv.amount)}</div>
+                                    <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>{formatCompactDate(adv.createdAt)}</div>
+                                  </div>
+                                  {adv.mode && <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "4px" }}>Mode: {adv.mode}</div>}
+                                  {adv.remark && <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "2px" }}>{adv.remark}</div>}
+                                </div>
+                              ))}
+                            </>
+                          )}
+                          <button className="cust-add-btn" style={{ marginTop: "12px" }} onClick={() => setShowAddAdvanceModal(true)}>
+                            <Plus size={16} /> Add Advance
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Due Balances Tab */}
+                      {detailTab === "duebalance" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Due Balances</div>
+                          {(() => {
+                            const unpaidInvoices = (customerDetail.invoices || []).filter(inv => Number(inv.balanceAmount || 0) > 0);
+                            if (unpaidInvoices.length === 0) {
+                              return <div className="cust-empty-state">No outstanding balances</div>;
+                            }
+                            return unpaidInvoices.map(inv => (
+                              <div key={inv.id} className="cust-due-card">
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                  <div>
+                                    <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#dc2626" }}>Invoice #{inv.invoiceNumber}</div>
+                                    <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>{formatCompactDate(inv.createdAt)}</div>
+                                  </div>
+                                  <div style={{ fontSize: "1rem", fontWeight: 800, color: "#dc2626" }}>{formatMoney(inv.balanceAmount)}</div>
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                          {customerAdvances.filter(a => a.type === "due" || a.balance > 0).length > 0 && (
+                            <>
+                              <div className="cust-detail-section-title" style={{ marginTop: "16px" }}>Advance Balance</div>
+                              <div className="cust-advance-card">
+                                <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#16a34a" }}>
+                                  {formatMoney(customerDetail.advanceAmount || 0)}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Packages Tab */}
+                      {detailTab === "packages" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Packages ({(customerDetail.packages || []).length})</div>
+                          {(customerDetail.packages || []).length === 0 ? (
+                            <div className="cust-empty-state">No packages</div>
+                          ) : (
+                            (customerDetail.packages || []).map(p => {
+                              const isActive = String(p.status) === "ACTIVE" && new Date(p.endsAt) > new Date();
+                              return (
+                                <div key={p.id} className="cust-pkg-card">
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                    <div className="cust-pkg-name">{p.package?.name || "Package"}</div>
+                                    <span className={`cust-mem-status ${isActive ? "ACTIVE" : "EXPIRED"}`}>{isActive ? "ACTIVE" : p.status}</span>
+                                  </div>
+                                  <div className="cust-pkg-sessions">Sessions Remaining: {p.remainingSessions ?? "-"}</div>
+                                  <div className="cust-pkg-meta">
+                                    Valid: {new Date(p.startsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })} → {new Date(p.endsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })}
+                                  </div>
+                                  {(p.package?.services || []).length > 0 && (
+                                    <div style={{ marginTop: "10px" }}>
+                                      <div style={{ fontSize: "0.7rem", color: "#64748b", marginBottom: "6px", fontWeight: 600, textTransform: "uppercase" }}>Services</div>
+                                      {p.package.services.map((svc, i) => (
+                                        <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "#94a3b8", padding: "3px 0", borderBottom: "1px solid #e2e8f0" }}>
+                                          <span>{svc.service?.name || "-"}</span>
+                                          <span>{svc.sessions || 1} session{svc.sessions > 1 ? "s" : ""}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+
+                      {/* Family Members Tab */}
+                      {detailTab === "family" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Family Members</div>
+                          <div className="cust-empty-state">
+                            <Users size={40} color="#cbd5e1" style={{ marginBottom: "12px" }} />
+                            <div>No family members linked yet</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Update Profile Tab */}
+                      {detailTab === "updateprofile" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Update Profile</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                            <div className="form-group">
+                              <label>Name</label>
+                              <input type="text" value={updateForm.name} onChange={(e) => setUpdateForm(prev => ({ ...prev, name: e.target.value }))} />
+                            </div>
+                            <div className="form-group">
+                              <label>Phone</label>
+                              <input type="text" value={updateForm.phone} onChange={(e) => setUpdateForm(prev => ({ ...prev, phone: e.target.value }))} />
+                            </div>
+                            <div className="form-group">
+                              <label>Email</label>
+                              <input type="email" value={updateForm.email} onChange={(e) => setUpdateForm(prev => ({ ...prev, email: e.target.value }))} />
+                            </div>
+                            <div className="form-group">
+                              <label>Gender</label>
+                              <select value={updateForm.gender} onChange={(e) => setUpdateForm(prev => ({ ...prev, gender: e.target.value }))}>
+                                <option value="">Select</option>
+                                <option value="female">Female</option>
+                                <option value="male">Male</option>
+                              </select>
+                            </div>
+                            <div className="form-group">
+                              <label>Date of Birth</label>
+                              <input type="date" value={updateForm.dateOfBirth} onChange={(e) => setUpdateForm(prev => ({ ...prev, dateOfBirth: e.target.value }))} />
+                            </div>
+                            <div className="form-group">
+                              <label>Anniversary</label>
+                              <input type="date" value={updateForm.anniversary} onChange={(e) => setUpdateForm(prev => ({ ...prev, anniversary: e.target.value }))} />
+                            </div>
+                            <button className="cust-assign-btn" onClick={handleUpdateProfile} style={{ marginTop: "8px" }}>
+                              <CheckCircle size={16} /> Save Changes
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Segments Tab */}
+                      {detailTab === "segments" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Segments</div>
+                          {(customerDetail.segments || []).length === 0 ? (
+                            <div className="cust-empty-state">
+                              <Tag size={40} color="#cbd5e1" style={{ marginBottom: "12px" }} />
+                              <div>No segments assigned</div>
+                            </div>
+                          ) : (
+                            (customerDetail.segments || []).map((seg, i) => (
+                              <div key={i} className="cust-membership-card">
+                                <div className="cust-mem-name">{seg.name || seg}</div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+
+                      {/* Follow Up Tab */}
+                      {detailTab === "followup" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Follow Up History</div>
+                          {(customerDetail.followUps || []).length === 0 ? (
+                            <div className="cust-empty-state">
+                              <Phone size={40} color="#cbd5e1" style={{ marginBottom: "12px" }} />
+                              <div>No follow-ups scheduled</div>
+                            </div>
+                          ) : (
+                            (customerDetail.followUps || []).map((fu, i) => (
+                              <div key={i} className="cust-membership-card">
+                                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                  <div style={{ fontSize: "0.82rem", fontWeight: 600 }}>{fu.message || fu.note || "Follow Up"}</div>
+                                  <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>{formatCompactDate(fu.createdAt || fu.date)}</div>
+                                </div>
+                                {fu.status && <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "4px" }}>Status: {fu.status}</div>}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+
+                      {/* Notes Tab */}
+                      {detailTab === "notes" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Notes</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                            <textarea
+                              value={notes}
+                              onChange={(e) => setNotes(e.target.value)}
+                              placeholder="Add notes about this customer..."
+                              rows={6}
+                              style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "0.82rem", resize: "vertical", fontFamily: "inherit", width: "100%", boxSizing: "border-box" }}
+                            />
+                            <button className="cust-assign-btn" onClick={handleSaveNotes}>
+                              <CheckCircle size={16} /> Save Notes
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
-              <button className="cust-detail-close" onClick={closeCustomerDetail}>✕</button>
-            </div>
-
-            {/* Quick Info Bar */}
-            <div className="cust-detail-info">
-              {[
-                { label: "Gender", val: selectedCustomer.gender ? selectedCustomer.gender.charAt(0).toUpperCase() + selectedCustomer.gender.slice(1).toLowerCase() : "-" },
-                { label: "Birth Date", val: selectedCustomer.dateOfBirth ? new Date(selectedCustomer.dateOfBirth).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Not given yet!" },
-                { label: "Anniversary", val: selectedCustomer.anniversary ? new Date(selectedCustomer.anniversary).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Not given yet!" },
-                { label: "Last Visited", val: selectedCustomer.lastVisitAt ? new Date(selectedCustomer.lastVisitAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Not visited yet!" },
-                { label: "Total Orders", val: Number(selectedCustomer.totalOrders || 0) },
-                { label: "Loyalty Points", val: Number(selectedCustomer.loyaltyPoints || selectedCustomer.loyalty || 0) },
-              ].map(({ label, val }) => (
-                <div key={label} className="cust-detail-info-row">
-                  <span className="cust-detail-info-label">{label}</span>
-                  <span className="cust-detail-info-val">{val}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Tabs */}
-            <div className="cust-detail-tabs">
-              {[
-                { key: "profile", icon: "👤", label: "Profile Info" },
-                { key: "orders", icon: "📋", label: "Orders" },
-                { key: "membership", icon: "🎟", label: "Membership" },
-                { key: "packages", icon: "📦", label: "Packages" },
-              ].map(t => (
-                <button key={t.key} className={`cust-detail-tab${detailTab === t.key ? " active" : ""}`} onClick={() => setDetailTab(t.key)}>
-                  {t.icon} {t.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Body */}
-            <div className="cust-detail-body">
-              {customerDetailLoading ? (
-                <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Loading...</div>
-              ) : !customerDetail ? (
-                <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Could not load data</div>
-              ) : (
-                <>
-                  {detailTab === "profile" && (
-                    <div className="cust-detail-section">
-                      {[
-                        { label: "Name", val: customerDetail.name || "-" },
-                        { label: "Phone", val: customerDetail.phone || "-" },
-                        { label: "Email", val: customerDetail.email || "Not given yet!" },
-                        { label: "GSTIN", val: customerDetail.gst || "-" },
-                        { label: "Gender", val: customerDetail.gender ? customerDetail.gender.charAt(0).toUpperCase() + customerDetail.gender.slice(1) : "-" },
-                        { label: "Birth Date", val: customerDetail.dateOfBirth ? new Date(customerDetail.dateOfBirth).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Not given yet!" },
-                        { label: "Anniversary", val: customerDetail.anniversary ? new Date(customerDetail.anniversary).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Not given yet!" },
-                        { label: "Last Visited", val: customerDetail.lastVisitAt ? new Date(customerDetail.lastVisitAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Not visited yet!" },
-                        { label: "Total Spend", val: Number(customerDetail.totalSpend || 0) ? formatMoney(customerDetail.totalSpend) : "-" },
-                        { label: "Average Spend", val: Number(customerDetail.averageSpend || 0) ? formatMoney(customerDetail.averageSpend) : "-" },
-                        { label: "Loyalty Points", val: Number(customerDetail.loyaltyPoints || 0) },
-                        { label: "Source", val: customerDetail.source || "-" },
-                        { label: "Notes", val: customerDetail.notes || "-" },
-                        { label: "Preferences", val: customerDetail.preferences || "-" },
-                        { label: "Allergies", val: customerDetail.allergies || "-" },
-                      ].map(({ label, val }) => (
-                        <div key={label} className="cust-profile-row">
-                          <span className="cust-profile-label">{label}</span>
-                          <span className="cust-profile-val">{val}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {detailTab === "orders" && (
-                    <div className="cust-detail-section">
-                      <div className="cust-detail-section-title">Order History ({(customerDetail.invoices || []).length})</div>
-                      {(customerDetail.invoices || []).length === 0 ? (
-                        <div style={{ color: "#64748b", fontSize: "0.85rem", textAlign: "center", padding: "20px 0" }}>No orders yet</div>
-                      ) : (
-                        (customerDetail.invoices || []).map(inv => (
-                          <div key={inv.id} className="cust-order-card">
-                            <div className="cust-order-card-head">
-                              <div>
-                                <div className="cust-order-invoice">Invoice #{inv.invoiceNumber}</div>
-                                <div className="cust-order-date">{new Date(inv.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</div>
-                              </div>
-                              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
-                                <div className="cust-order-amount">{formatMoney(inv.total)}</div>
-                                <span className={`cust-order-status ${inv.status}`}>{inv.status}</span>
-                              </div>
-                            </div>
-                            {(inv.items || []).length > 0 && (
-                              <div className="cust-order-items">
-                                {inv.items.map((item, i) => (
-                                  <div key={i} className="cust-order-item">
-                                    <div>
-                                      <div>{item.serviceName || item.productName || "Item"}</div>
-                                      {item.staffName && <div className="cust-order-item-staff">Staff: {item.staffName}</div>}
-                                    </div>
-                                    <div>{formatMoney(item.lineTotal)}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {Number(inv.balanceAmount || 0) > 0 && (
-                              <div style={{ marginTop: "8px", padding: "4px 8px", background: "#7f1d1d", borderRadius: "6px", fontSize: "0.72rem", color: "#fca5a5" }}>
-                                Balance Due: {formatMoney(inv.balanceAmount)}
-                              </div>
-                            )}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-
-                  {detailTab === "membership" && (
-                    <div className="cust-detail-section">
-                      <div className="cust-detail-section-title">Memberships ({(customerDetail.memberships || []).length})</div>
-                      {(customerDetail.memberships || []).length === 0 ? (
-                        <div style={{ color: "#64748b", fontSize: "0.85rem", textAlign: "center", padding: "20px 0" }}>No memberships</div>
-                      ) : (
-                        (customerDetail.memberships || []).map(m => {
-                          const isActive = m.status === "ACTIVE" && new Date(m.endsAt) > new Date();
-                          return (
-                            <div key={m.id} className="cust-membership-card">
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                <div className="cust-mem-name">{m.membershipPlan?.name || "Membership"}</div>
-                                <span className={`cust-mem-status ${isActive ? "ACTIVE" : "EXPIRED"}`}>{isActive ? "ACTIVE" : m.status}</span>
-                              </div>
-                              <div className="cust-mem-meta">
-                                Valid: {new Date(m.startsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })} → {new Date(m.endsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })}
-                              </div>
-                              {m.remainingWalletValue != null && (
-                                <div style={{ marginTop: "6px", fontSize: "0.78rem", color: "#10b981", fontWeight: 600 }}>
-                                  Wallet Balance: {formatMoney(m.remainingWalletValue)}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  )}
-
-                  {detailTab === "packages" && (
-                    <div className="cust-detail-section">
-                      <div className="cust-detail-section-title">Packages ({(customerDetail.packages || []).length})</div>
-                      {(customerDetail.packages || []).length === 0 ? (
-                        <div style={{ color: "#64748b", fontSize: "0.85rem", textAlign: "center", padding: "20px 0" }}>No packages</div>
-                      ) : (
-                        (customerDetail.packages || []).map(p => {
-                          const isActive = String(p.status) === "ACTIVE" && new Date(p.endsAt) > new Date();
-                          return (
-                            <div key={p.id} className="cust-pkg-card">
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                <div className="cust-pkg-name">{p.package?.name || "Package"}</div>
-                                <span className={`cust-mem-status ${isActive ? "ACTIVE" : "EXPIRED"}`}>{isActive ? "ACTIVE" : p.status}</span>
-                              </div>
-                              <div className="cust-pkg-sessions">Sessions Remaining: {p.remainingSessions ?? "-"}</div>
-                              <div className="cust-pkg-meta">
-                                Valid: {new Date(p.startsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })} → {new Date(p.endsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })}
-                              </div>
-                              {(p.package?.services || []).length > 0 && (
-                                <div style={{ marginTop: "10px" }}>
-                                  <div style={{ fontSize: "0.7rem", color: "#64748b", marginBottom: "6px", fontWeight: 600, textTransform: "uppercase" }}>Services</div>
-                                  {p.package.services.map((svc, i) => (
-                                    <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "#94a3b8", padding: "3px 0", borderBottom: "1px solid #2d3748" }}>
-                                      <span>{svc.service?.name || "-"}</span>
-                                      <span>{svc.sessions || 1} session{svc.sessions > 1 ? "s" : ""}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
             </div>
           </div>
         </>
+      )}
+
+      {/* Assign Membership Modal */}
+      {showAssignMembershipModal && (
+        <div className="modal-overlay" onClick={() => setShowAssignMembershipModal(false)}>
+          <div className="modal-content" style={{ width: "min(90vw, 600px)" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Assign Membership</h3>
+              <button className="modal-close" onClick={() => setShowAssignMembershipModal(false)}><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              {membershipPlans.length === 0 ? (
+                <div className="cust-empty-state">No membership plans available</div>
+              ) : (
+                <div className="cust-plan-cards">
+                  {membershipPlans.map((plan, idx) => {
+                    const colors = ["pink", "purple", "blue", "teal"];
+                    const colorClass = colors[idx % colors.length];
+                    return (
+                      <div
+                        key={plan.id}
+                        className={`cust-plan-card ${colorClass}${selectedPlan?.id === plan.id ? " selected" : ""}`}
+                        onClick={() => {
+                          setSelectedPlan(plan);
+                          setMembershipForm(prev => ({
+                            ...prev,
+                            validityDays: plan.validityDays || "",
+                            price: plan.price || "",
+                          }));
+                        }}
+                      >
+                        <div className="cust-plan-name">{plan.name}</div>
+                        <div className="cust-plan-price">{formatMoney(plan.price)}</div>
+                        <div className="cust-plan-validity">{plan.validityDays} days</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div className="form-group">
+                  <label>Validity (Days)</label>
+                  <input type="number" value={membershipForm.validityDays} onChange={(e) => setMembershipForm(prev => ({ ...prev, validityDays: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>Price</label>
+                  <input type="number" value={membershipForm.price} onChange={(e) => setMembershipForm(prev => ({ ...prev, price: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>Staff</label>
+                  <select value={membershipForm.staffId} onChange={(e) => setMembershipForm(prev => ({ ...prev, staffId: e.target.value }))}>
+                    <option value="">Select Staff</option>
+                    {staffUsers.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Balance</label>
+                  <input type="number" value={selectedPlan ? (Number(selectedPlan.price || 0) - Number(membershipForm.online || 0) - Number(membershipForm.offline || 0)) : 0} disabled />
+                </div>
+                <div className="form-group">
+                  <label>Advance</label>
+                  <input type="number" value={selectedPlan ? selectedPlan.price : 0} disabled />
+                </div>
+                <div className="form-group">
+                  <label>Online</label>
+                  <input type="number" value={membershipForm.online} onChange={(e) => setMembershipForm(prev => ({ ...prev, online: e.target.value }))} placeholder="0" />
+                </div>
+                <div className="form-group">
+                  <label>Offline</label>
+                  <input type="number" value={membershipForm.offline} onChange={(e) => setMembershipForm(prev => ({ ...prev, offline: e.target.value }))} placeholder="0" />
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="crm-btn" onClick={() => setShowAssignMembershipModal(false)}>Cancel</button>
+              <button className="crm-btn" onClick={handleAssignMembership} disabled={!selectedPlan}>Add Membership</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Advance Modal */}
+      {showAddAdvanceModal && (
+        <div className="modal-overlay" onClick={() => setShowAddAdvanceModal(false)}>
+          <div className="modal-content" style={{ width: "min(90vw, 440px)" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3>Add Advance</h3>
+                <div style={{ fontSize: "0.78rem", color: "#64748b", marginTop: "2px" }}>Add advance to {selectedCustomer.name}</div>
+              </div>
+              <button className="modal-close" onClick={() => setShowAddAdvanceModal(false)}><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Total Amount</label>
+                <input
+                  type="number"
+                  value={advanceForm.amount}
+                  onChange={(e) => setAdvanceForm(prev => ({ ...prev, amount: e.target.value }))}
+                  placeholder="Enter amount"
+                />
+              </div>
+              <div className="form-group">
+                <label>Paymode</label>
+                <div className="cust-paymode-toggle">
+                  <button
+                    className={`cust-paymode-btn${advanceForm.mode === "Online" ? " active" : ""}`}
+                    onClick={() => setAdvanceForm(prev => ({ ...prev, mode: "Online" }))}
+                  >
+                    <Wallet size={14} /> Online
+                  </button>
+                  <button
+                    className={`cust-paymode-btn${advanceForm.mode === "Offline" ? " active" : ""}`}
+                    onClick={() => setAdvanceForm(prev => ({ ...prev, mode: "Offline" }))}
+                  >
+                    <Wallet size={14} /> Offline
+                  </button>
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Remark</label>
+                <textarea
+                  value={advanceForm.remark}
+                  onChange={(e) => setAdvanceForm(prev => ({ ...prev, remark: e.target.value }))}
+                  placeholder="Add a remark..."
+                  rows={3}
+                  style={{ padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "0.82rem", resize: "vertical", fontFamily: "inherit" }}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="crm-btn" onClick={() => setShowAddAdvanceModal(false)}>Close</button>
+              <button className="crm-btn" onClick={handleAddAdvance} disabled={!advanceForm.amount}>Add</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
