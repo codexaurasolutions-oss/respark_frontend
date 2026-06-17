@@ -1,0 +1,37 @@
+<svg width="760" height="580" viewBox="0 0 760 580" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dbg" x1="48" y1="44" x2="712" y2="532" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF8EE"/>
+      <stop offset="1" stop-color="#F1F7F6"/>
+    </linearGradient>
+    <linearGradient id="dteal" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#2B9C90"/>
+      <stop offset="1" stop-color="#145653"/>
+    </linearGradient>
+    <linearGradient id="damber" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#F5C66B"/>
+      <stop offset="1" stop-color="#D98212"/>
+    </linearGradient>
+  </defs>
+  <rect x="24" y="24" width="712" height="532" rx="38" fill="url(#dbg)"/>
+  <ellipse cx="142" cy="474" rx="92" ry="50" fill="#B7DED8" fill-opacity="0.54"/>
+  <ellipse cx="624" cy="108" rx="88" ry="48" fill="#FFD69E" fill-opacity="0.5"/>
+  <rect x="118" y="94" width="212" height="392" rx="34" fill="#FFFDFB" stroke="#F4E0BD"/>
+  <rect x="146" y="138" width="156" height="18" rx="9" fill="#E6ECEA"/>
+  <rect x="146" y="180" width="156" height="72" rx="22" fill="#FFF7EA"/>
+  <rect x="146" y="274" width="156" height="72" rx="22" fill="#F5FAF8"/>
+  <rect x="146" y="368" width="156" height="72" rx="22" fill="#FFF7EA"/>
+  <rect x="390" y="124" width="244" height="292" rx="34" fill="url(#dteal)"/>
+  <rect x="426" y="160" width="172" height="16" rx="8" fill="#FFF8EE" fill-opacity="0.6"/>
+  <rect x="426" y="196" width="138" height="16" rx="8" fill="#FFF8EE" fill-opacity="0.42"/>
+  <rect x="426" y="244" width="172" height="94" rx="28" fill="#FFF8EE"/>
+  <circle cx="474" cy="292" r="28" fill="url(#damber)"/>
+  <path d="M458 292L470 304L490 282" stroke="#FFF8EE" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="516" y="272" width="56" height="12" rx="6" fill="#DFE8E7"/>
+  <rect x="516" y="300" width="42" height="12" rx="6" fill="#DFE8E7"/>
+  <rect x="426" y="370" width="94" height="18" rx="9" fill="#FFF8EE" fill-opacity="0.54"/>
+  <rect x="546" y="362" width="62" height="62" rx="20" fill="url(#damber)"/>
+  <circle cx="516" cy="84" r="40" fill="#FFFDFB" stroke="#F1D8AE"/>
+  <path d="M500 84H532" stroke="#2B9C90" stroke-width="10" stroke-linecap="round"/>
+  <path d="M516 68V100" stroke="#2B9C90" stroke-width="10" stroke-linecap="round"/>
+</svg>
