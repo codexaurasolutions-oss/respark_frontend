@@ -35,9 +35,10 @@ export default function ExpensesPage() {
   const { auth } = useAuth();
   const { formatMoney, currencyMeta, settings } = useSalonSettings();
   const canApproveExpenses = useMemo(() => {
+    if (auth?.membership?.salonRole === "SALON_OWNER") return true;
     const expensePermissions = auth?.membership?.permissions?.expenses;
     return Array.isArray(expensePermissions) && expensePermissions.includes("approve");
-  }, [auth?.membership?.permissions?.expenses]);
+  }, [auth?.membership?.permissions?.expenses, auth?.membership?.salonRole]);
   const autoApproveExpenses = Boolean(settings?.advancedSettings?.expenseSettings?.autoApprove);
 
   // Data states
