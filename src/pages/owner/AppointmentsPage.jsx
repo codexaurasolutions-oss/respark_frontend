@@ -342,6 +342,9 @@ export default function AppointmentsPage() {
         endAt: sortedEnds[sortedEnds.length - 1],
         primaryStaffUserId: payloadItems[0]?.staffUserIds?.[0] || form.items[0]?.staffUserIds?.[0] || ""
       };
+      if (typeof window !== "undefined" && window.console) {
+        console.log("[appt save payload]", { startAt: payload.startAt, endAt: payload.endAt, items: payload.items, formEndAt: form.endAt, formStartAt: form.startAt });
+      }
       if (editMode) {
         await api.patch(`/owner/appointments/${editingAppointmentId}`, payload);
         setStatus({ error: "", success: "Appointment updated successfully." });
@@ -508,13 +511,18 @@ export default function AppointmentsPage() {
       if (startIndex === undefined) return;
       const endLabel = formatTimeForSelect(row.endAt);
       const endIndex = TIME_SLOT_INDEX.get(endLabel);
+      const startDate = new Date(row.startAt);
+      const endDate = new Date(row.endAt);
+      const diffMin = Math.max(0, (endDate.getTime() - startDate.getTime()) / 60000);
+      const timeMathSlots = Math.max(1, Math.ceil(diffMin / APPOINTMENT_SLOT_MINUTES));
       let durationSlots;
       if (endIndex !== undefined && endIndex > startIndex) {
-        durationSlots = endIndex - startIndex;
+        durationSlots = Math.max(endIndex - startIndex, timeMathSlots);
       } else {
-        const start = new Date(row.startAt);
-        const end = new Date(row.endAt);
-        durationSlots = Math.max(1, Math.ceil(Math.max(0, end.getTime() - start.getTime()) / (APPOINTMENT_SLOT_MINUTES * 60000)));
+        durationSlots = timeMathSlots;
+      }
+      if (typeof window !== "undefined" && window.console && rows.length > 0) {
+        console.log("[appt duration]", { id: row.id, startAt: row.startAt, endAt: row.endAt, startLabel, endLabel, startIndex, endIndex, diffMin, timeMathSlots, durationSlots });
       }
       getStaffIdsForAppointment(row).forEach((staffId) => {
         if (!byStaff.has(staffId)) byStaff.set(staffId, new Map());
