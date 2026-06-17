@@ -598,86 +598,94 @@ const handleDirectorySelect = (rowId) => {
                   
                   <form onSubmit={submit}>
                     {/* Top Checkboxes */}
-                    <div style={{ display: 'flex', gap: 24, marginBottom: 24, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 28, marginBottom: 28, flexWrap: 'wrap' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={form.enableAppointments} onChange={e => setForm({...form, enableAppointments: e.target.checked})} style={{ width: 16, height: 16 }} />
+                        <input type="checkbox" checked={form.enableAppointments} onChange={e => setForm({...form, enableAppointments: e.target.checked})} style={{ width: 18, height: 18, accentColor: '#2563eb' }} />
                         Active
                       </label>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={form.enableAppointments} onChange={e => setForm({...form, enableAppointments: e.target.checked})} style={{ width: 16, height: 16 }} />
+                        <input type="checkbox" checked={form.enableAppointments} onChange={e => setForm({...form, enableAppointments: e.target.checked})} style={{ width: 18, height: 18, accentColor: '#2563eb' }} />
                         Enable Appointments
                       </label>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={form.showAllStaffAppointments} onChange={e => setForm({...form, showAllStaffAppointments: e.target.checked})} style={{ width: 16, height: 16 }} />
+                        <input type="checkbox" checked={form.showAllStaffAppointments} onChange={e => setForm({...form, showAllStaffAppointments: e.target.checked})} style={{ width: 18, height: 18, accentColor: '#2563eb' }} />
                         Show all staff appointments in dashboard
                       </label>
                     </div>
 
                     {/* Personal Information */}
-                    <div style={{ marginBottom: 32 }}>
-                      <h4 style={{ fontSize: 15, color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 16 }}>Personal Information</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 16 }}>
+                    <div style={{ marginBottom: 28 }}>
+                      <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Personal Information</h4>
+
+                      {/* Row 1: Name, Last Name, Phone, Email */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
                         <div className="hub-form-group">
-                          <label>First Name</label>
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>First Name</label>
                           <input type="text" className="hub-input" value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} placeholder="Enter Name" />
                         </div>
                         <div className="hub-form-group">
-                          <label>Last Name</label>
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Last Name</label>
                           <input type="text" className="hub-input" value={form.lastName} onChange={e => setForm({...form, lastName: e.target.value})} placeholder="Enter Lastname" />
                         </div>
                         <div className="hub-form-group">
-                          <label>Mobile Number</label>
-                          <IndianPhoneInput value={form.phone} onChange={(phone) => setForm({...form, phone})} className="hub-input" inputStyle={{ padding: "12px 14px" }} />
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Mobile Number</label>
+                          <div style={{ width: '100%' }}>
+                            <IndianPhoneInput value={form.phone} onChange={(phone) => setForm({...form, phone})} />
+                          </div>
                         </div>
                         <div className="hub-form-group">
-                          <label>Email</label>
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Email</label>
                           <input type="email" className="hub-input" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="Enter Email" disabled />
                         </div>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr', gap: 16, alignItems: 'end' }}>
+
+                      {/* Row 2: DOB, Gender, Role */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr', gap: 16, marginBottom: 16 }}>
                         <div className="hub-form-group">
-                          <label>Date of Birth</label>
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Date of Birth</label>
                           <input type="date" className="hub-input" value={form.dateOfBirth} onChange={e => setForm({...form, dateOfBirth: e.target.value})} />
                         </div>
                         <div className="hub-form-group">
-                          <label>Gender</label>
-                          <div style={{ display: 'flex', gap: 20, paddingTop: 8 }}>
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Gender</label>
+                          <div style={{ display: 'flex', gap: 24, paddingTop: 6 }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
-                              <input type="radio" name="editGender" value="MALE" checked={form.gender === "MALE"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 16, height: 16 }} />
+                              <input type="radio" name="editGender" value="MALE" checked={form.gender === "MALE"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 16, height: 16, accentColor: '#2563eb' }} />
                               Male
                             </label>
                             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
-                              <input type="radio" name="editGender" value="FEMALE" checked={form.gender === "FEMALE"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 16, height: 16 }} />
+                              <input type="radio" name="editGender" value="FEMALE" checked={form.gender === "FEMALE"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 16, height: 16, accentColor: '#2563eb' }} />
                               Female
                             </label>
                             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
-                              <input type="radio" name="editGender" value="OTHER" checked={form.gender === "OTHER"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 16, height: 16 }} />
+                              <input type="radio" name="editGender" value="OTHER" checked={form.gender === "OTHER"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 16, height: 16, accentColor: '#2563eb' }} />
                               Other
                             </label>
                           </div>
                         </div>
                         <div className="hub-form-group">
-                          <label>Role</label>
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Role</label>
                           <select className="hub-input" value={form.salonRole} onChange={(event) => applyRolePreset(event.target.value)}>
                             {ROLE_OPTIONS.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
                           </select>
                         </div>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
+
+                      {/* Row 3: Username, Position */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                         <div className="hub-form-group">
-                          <label>Username</label>
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Username</label>
                           <input type="text" className="hub-input" value={form.useMobileAsUsername ? form.phone : form.username} onChange={e => setForm({...form, username: e.target.value, useMobileAsUsername: false})} placeholder="Enter Username" disabled={form.useMobileAsUsername} />
                         </div>
                         <div className="hub-form-group">
-                          <label>Position</label>
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Position</label>
                           <input type="text" className="hub-input" value={form.position} onChange={e => setForm({...form, position: e.target.value, designation: e.target.value})} placeholder="Enter Position" />
                         </div>
                       </div>
                     </div>
 
                     {/* Services Section */}
-                    <div style={{ marginBottom: 32 }}>
-                      <h4 style={{ fontSize: 15, color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 16 }}>Assigned Services</h4>
+                    <div style={{ marginBottom: 28 }}>
+                      <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Assigned Services</h4>
                       <div className="staff-chip-grid">
                         {filteredServices.map((service) => (
                           <label key={service.id} className={`staff-service-chip ${form.serviceIds.includes(service.id) ? "selected" : ""}`}>
@@ -694,8 +702,8 @@ const handleDirectorySelect = (rowId) => {
                     </div>
 
                     {/* Work Experience */}
-                    <div style={{ marginBottom: 32 }}>
-                      <h4 style={{ fontSize: 15, color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 16 }}>Work Experience</h4>
+                    <div style={{ marginBottom: 28 }}>
+                      <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Work Experience</h4>
                       {form.workExperience.map((exp, idx) => (
                         <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 12, marginBottom: 12, alignItems: 'end' }}>
                           <div className="hub-form-group">
@@ -723,8 +731,8 @@ const handleDirectorySelect = (rowId) => {
                     </div>
 
                     {/* Documents */}
-                    <div style={{ marginBottom: 32 }}>
-                      <h4 style={{ fontSize: 15, color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 16 }}>Documents</h4>
+                    <div style={{ marginBottom: 28 }}>
+                      <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Documents</h4>
                       {form.documents.map((doc, idx) => (
                         <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12, marginBottom: 12, alignItems: 'end' }}>
                           <div className="hub-form-group">
@@ -828,96 +836,106 @@ const handleDirectorySelect = (rowId) => {
             <div className="hub-modal-header">Create New Staff</div>
             
             <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <div className="hub-modal-body" style={{ overflowY: 'auto', flex: 1 }}>
+              <div className="hub-modal-body" style={{ overflowY: 'auto', flex: 1, padding: '20px 24px' }}>
                 {/* Top Checkboxes */}
-                <div style={{ display: 'flex', gap: 24, marginBottom: 24, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 28, marginBottom: 28, flexWrap: 'wrap' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={form.enableAppointments} onChange={e => setForm({...form, enableAppointments: e.target.checked})} style={{ width: 16, height: 16 }} />
+                    <input type="checkbox" checked={form.enableAppointments} onChange={e => setForm({...form, enableAppointments: e.target.checked})} style={{ width: 18, height: 18, accentColor: '#2563eb' }} />
                     Active
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={form.enableAppointments} onChange={e => setForm({...form, enableAppointments: e.target.checked})} style={{ width: 16, height: 16 }} />
+                    <input type="checkbox" checked={form.enableAppointments} onChange={e => setForm({...form, enableAppointments: e.target.checked})} style={{ width: 18, height: 18, accentColor: '#2563eb' }} />
                     Enable Appointments
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={form.showAllStaffAppointments} onChange={e => setForm({...form, showAllStaffAppointments: e.target.checked})} style={{ width: 16, height: 16 }} />
+                    <input type="checkbox" checked={form.showAllStaffAppointments} onChange={e => setForm({...form, showAllStaffAppointments: e.target.checked})} style={{ width: 18, height: 18, accentColor: '#2563eb' }} />
                     Show all staff appointments in dashboard
                   </label>
                 </div>
 
                 {/* Personal Information */}
-                <div style={{ marginBottom: 24 }}>
-                  <h4 style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '1px solid #e2e8f0', paddingBottom: 8 }}>Personal Information</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 16 }}>
+                <div style={{ marginBottom: 28 }}>
+                  <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Personal Information</h4>
+
+                  {/* Row 1: Name, Last Name, Phone, Email */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
                     <div className="hub-form-group">
-                      <label style={{ fontSize: 13, fontWeight: 500, color: '#475569' }}>First Name</label>
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>First Name</label>
                       <input type="text" className="hub-input" value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} placeholder="Enter Name" />
                     </div>
                     <div className="hub-form-group">
-                      <label style={{ fontSize: 13, fontWeight: 500, color: '#475569' }}>Last Name</label>
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Last Name</label>
                       <input type="text" className="hub-input" value={form.lastName} onChange={e => setForm({...form, lastName: e.target.value})} placeholder="Enter Lastname" />
                     </div>
                     <div className="hub-form-group">
-                      <label style={{ fontSize: 13, fontWeight: 500, color: '#475569' }}>Mobile Number</label>
-                      <IndianPhoneInput value={form.phone} onChange={(phone) => setForm({...form, phone})} className="hub-input" inputStyle={{ padding: "10px 14px" }} />
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Mobile Number</label>
+                      <div style={{ width: '100%' }}>
+                        <IndianPhoneInput value={form.phone} onChange={(phone) => setForm({...form, phone})} />
+                      </div>
                     </div>
                     <div className="hub-form-group">
-                      <label style={{ fontSize: 13, fontWeight: 500, color: '#475569' }}>Email</label>
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Email</label>
                       <input type="email" className="hub-input" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="Enter Email" />
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr', gap: 16, alignItems: 'end' }}>
+
+                  {/* Row 2: DOB, Gender, Role */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr', gap: 16, marginBottom: 16 }}>
                     <div className="hub-form-group">
-                      <label style={{ fontSize: 13, fontWeight: 500, color: '#475569' }}>Date of Birth</label>
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Date of Birth</label>
                       <input type="date" className="hub-input" value={form.dateOfBirth} onChange={e => setForm({...form, dateOfBirth: e.target.value})} />
                     </div>
                     <div className="hub-form-group">
-                      <label style={{ fontSize: 13, fontWeight: 500, color: '#475569' }}>Gender</label>
-                      <div style={{ display: 'flex', gap: 20, paddingTop: 8 }}>
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Gender</label>
+                      <div style={{ display: 'flex', gap: 24, paddingTop: 6 }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
-                          <input type="radio" name="gender" value="MALE" checked={form.gender === "MALE"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 16, height: 16 }} />
+                          <input type="radio" name="gender" value="MALE" checked={form.gender === "MALE"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 16, height: 16, accentColor: '#2563eb' }} />
                           Male
                         </label>
                         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
-                          <input type="radio" name="gender" value="FEMALE" checked={form.gender === "FEMALE"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 16, height: 16 }} />
+                          <input type="radio" name="gender" value="FEMALE" checked={form.gender === "FEMALE"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 16, height: 16, accentColor: '#2563eb' }} />
                           Female
                         </label>
                         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
-                          <input type="radio" name="gender" value="OTHER" checked={form.gender === "OTHER"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 16, height: 16 }} />
+                          <input type="radio" name="gender" value="OTHER" checked={form.gender === "OTHER"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 16, height: 16, accentColor: '#2563eb' }} />
                           Other
                         </label>
                       </div>
                     </div>
                     <div className="hub-form-group">
-                      <label style={{ fontSize: 13, fontWeight: 500, color: '#475569' }}>Role</label>
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Role</label>
                       <select className="hub-input" value={form.salonRole} onChange={e => applyRolePreset(e.target.value)}>
                         {ROLE_OPTIONS.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
                       </select>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr 1fr', gap: 16, alignItems: 'end', marginTop: 16 }}>
+
+                  {/* Row 3: Username, Password, Position */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, alignItems: 'end' }}>
                     <div className="hub-form-group">
-                      <label style={{ fontSize: 13, fontWeight: 500, color: '#475569' }}>Username</label>
-                      <input type="text" className="hub-input" value={form.useMobileAsUsername ? form.phone : form.username} onChange={e => setForm({...form, username: e.target.value, useMobileAsUsername: false})} placeholder="Enter Username" disabled={form.useMobileAsUsername} />
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Username</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input type="text" className="hub-input" style={{ flex: 1 }} value={form.useMobileAsUsername ? form.phone : form.username} onChange={e => setForm({...form, username: e.target.value, useMobileAsUsername: false})} placeholder="Enter Username" disabled={form.useMobileAsUsername} />
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#64748b', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                          <input type="checkbox" checked={form.useMobileAsUsername} onChange={e => setForm({...form, useMobileAsUsername: e.target.checked})} style={{ width: 14, height: 14, accentColor: '#2563eb' }} />
+                          Use Mobile
+                        </label>
+                      </div>
                     </div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#475569', cursor: 'pointer', whiteSpace: 'nowrap', paddingBottom: 4 }}>
-                      <input type="checkbox" checked={form.useMobileAsUsername} onChange={e => setForm({...form, useMobileAsUsername: e.target.checked})} style={{ width: 14, height: 14 }} />
-                      Use Mobile As Username
-                    </label>
                     <div className="hub-form-group">
-                      <label style={{ fontSize: 13, fontWeight: 500, color: '#475569' }}>Password</label>
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Password</label>
                       <input type="password" required className="hub-input" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Enter Password" />
                     </div>
                     <div className="hub-form-group">
-                      <label style={{ fontSize: 13, fontWeight: 500, color: '#475569' }}>Position</label>
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Position</label>
                       <input type="text" className="hub-input" value={form.position} onChange={e => setForm({...form, position: e.target.value, designation: e.target.value})} placeholder="Enter Position" />
                     </div>
                   </div>
                 </div>
 
                 {/* Work Experience */}
-                <div style={{ marginBottom: 24 }}>
-                  <h4 style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '1px solid #e2e8f0', paddingBottom: 8 }}>Work Experience</h4>
+                <div style={{ marginBottom: 28 }}>
+                  <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Work Experience</h4>
                   {form.workExperience.map((exp, idx) => (
                     <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 12, marginBottom: 12, alignItems: 'end' }}>
                       <div className="hub-form-group">
@@ -947,8 +965,8 @@ const handleDirectorySelect = (rowId) => {
                 </div>
 
                 {/* Documents */}
-                <div style={{ marginBottom: 24 }}>
-                  <h4 style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '1px solid #e2e8f0', paddingBottom: 8 }}>Documents</h4>
+                <div style={{ marginBottom: 28 }}>
+                  <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Documents</h4>
                   {form.documents.map((doc, idx) => (
                     <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12, marginBottom: 12, alignItems: 'end' }}>
                       <div className="hub-form-group">
