@@ -2428,7 +2428,7 @@ export default function SettingsPage() {
         <div className="settings-panel-card" style={{ marginTop: 16 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
             <div>
-              <h3 style={{ margin: 0, marginBottom: 14, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{salon?.name || "Salon"} - Gift Card</h3>
+              <h3 style={{ margin: 0, marginBottom: 14, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{auth?.membership?.salon?.name || "Salon"} - Gift Card</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
                 {cardTemplates.map((template, idx) => (
                   <button
