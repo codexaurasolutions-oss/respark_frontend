@@ -94,6 +94,16 @@ export default function CustomersPage() {
   const [customerAdvances, setCustomerAdvances] = useState([]);
   const [updateForm, setUpdateForm] = useState({ name: "", phone: "", email: "", gender: "", dateOfBirth: "", anniversary: "" });
   const [notes, setNotes] = useState("");
+  const [showGiftCardModal, setShowGiftCardModal] = useState(false);
+  const [giftCardForm, setGiftCardForm] = useState({ code: "", title: "", amount: "", validityDays: 30 });
+  const [showPackageModal, setShowPackageModal] = useState(false);
+  const [packagePlans, setPackagePlans] = useState([]);
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [packageForm, setPackageForm] = useState({ validityDays: "", price: "", staffId: "" });
+  const [showFamilyModal, setShowFamilyModal] = useState(false);
+  const [familyForm, setFamilyForm] = useState({ name: "", phone: "", relation: "" });
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  const [followUpForm, setFollowUpForm] = useState({ date: "", time: "", message: "", type: "call" });
   const actionMenuRef = useRef(null);
   const [formData, setFormData] = useState({
     phone: "",
@@ -145,6 +155,10 @@ export default function CustomersPage() {
     }
     if (detailTab === "duebalance") {
       fetchCustomerAdvances(selectedCustomer.id);
+    }
+    if (detailTab === "packages" && packagePlans.length === 0) {
+      fetchPackagePlans();
+      fetchStaffUsers();
     }
   }, [detailTab, selectedCustomer]);
 
@@ -306,6 +320,94 @@ export default function CustomersPage() {
       setCustomerDetail(res.data);
     } catch (e) {
       alert("Failed to save notes");
+      console.error(e);
+    }
+  };
+
+  const fetchPackagePlans = async () => {
+    try {
+      const res = await api.get("/owner/packages");
+      setPackagePlans(res.data || []);
+    } catch (e) {
+      console.error("Failed to load package plans", e);
+    }
+  };
+
+  const handleIssueGiftCard = async () => {
+    if (!giftCardForm.code || !giftCardForm.amount || !selectedCustomer) return;
+    try {
+      await api.post("/owner/gift-cards", {
+        customerId: selectedCustomer.id,
+        code: giftCardForm.code,
+        title: giftCardForm.title || "Gift Card",
+        originalAmount: Number(giftCardForm.amount),
+        validityDays: Number(giftCardForm.validityDays) || 30,
+      });
+      setShowGiftCardModal(false);
+      setGiftCardForm({ code: "", title: "", amount: "", validityDays: 30 });
+      fetchCustomerGiftCards(selectedCustomer.id);
+    } catch (e) {
+      alert("Failed to issue gift card");
+      console.error(e);
+    }
+  };
+
+  const handleAssignPackage = async () => {
+    if (!selectedPackage || !selectedCustomer) return;
+    try {
+      await api.post("/owner/packages/assign", {
+        customerId: selectedCustomer.id,
+        packageId: selectedPackage.id,
+        validityDays: packageForm.validityDays ? Number(packageForm.validityDays) : undefined,
+        price: packageForm.price ? Number(packageForm.price) : undefined,
+        staffId: packageForm.staffId || undefined,
+      });
+      setShowPackageModal(false);
+      setSelectedPackage(null);
+      setPackageForm({ validityDays: "", price: "", staffId: "" });
+      const res = await api.get(`/owner/customers/${selectedCustomer.id}`);
+      setCustomerDetail(res.data);
+    } catch (e) {
+      alert("Failed to assign package");
+      console.error(e);
+    }
+  };
+
+  const handleAddFamilyMember = async () => {
+    if (!familyForm.name || !familyForm.phone || !selectedCustomer) return;
+    try {
+      await api.post("/owner/customers", {
+        phone: familyForm.phone,
+        name: familyForm.name,
+        gender: "female",
+        notes: `familyMemberOf:${selectedCustomer.id} relation:${familyForm.relation || "other"}`,
+      });
+      setShowFamilyModal(false);
+      setFamilyForm({ name: "", phone: "", relation: "" });
+      const res = await api.get(`/owner/customers/${selectedCustomer.id}`);
+      setCustomerDetail(res.data);
+    } catch (e) {
+      alert("Failed to add family member");
+      console.error(e);
+    }
+  };
+
+  const handleAddFollowUp = async () => {
+    if (!followUpForm.date || !followUpForm.message || !selectedCustomer) return;
+    try {
+      await api.post("/owner/follow-ups", {
+        customerId: selectedCustomer.id,
+        date: followUpForm.date,
+        time: followUpForm.time || undefined,
+        message: followUpForm.message,
+        type: followUpForm.type,
+      });
+      setShowFollowUpModal(false);
+      setFollowUpForm({ date: "", time: "", message: "", type: "call" });
+      const res = await api.get(`/owner/customers/${selectedCustomer.id}`);
+      setCustomerDetail(res.data);
+    } catch (e) {
+      alert("Failed to add follow-up");
       console.error(e);
     }
   };
@@ -605,7 +707,7 @@ export default function CustomersPage() {
           .crm-pagination { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-top:1px solid #e2e8f0; color:#64748b; font-size:0.78rem; gap:10px; }
           .crm-pagination button { background:none; border:none; color:#64748b; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:3px; min-height:unset; box-shadow:none; }
           .crm-pagination button:hover { color:#0f172a; transform:none; filter:none; }
-          .modal-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.4); backdrop-filter:blur(4px); z-index:1000; display:flex; align-items:center; justify-content:center; }
+          .modal-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.4); backdrop-filter:blur(4px); z-index:3000; display:flex; align-items:center; justify-content:center; }
           .modal-content { background:#fff; border-radius:12px; width:min(90vw,520px); max-height:90vh; overflow-y:auto; box-shadow: none; }
           .modal-header { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid #f1f5f9; }
           .modal-header h3 { margin:0; font-size:1rem; color:#0f172a; }
@@ -1224,6 +1326,9 @@ export default function CustomersPage() {
                               </div>
                             ))
                           )}
+                          <button className="cust-assign-btn" onClick={() => setShowGiftCardModal(true)}>
+                            <Gift size={16} /> Issue Gift Card
+                          </button>
                         </div>
                       )}
 
@@ -1326,6 +1431,9 @@ export default function CustomersPage() {
                               );
                             })
                           )}
+                          <button className="cust-assign-btn" onClick={() => { fetchPackagePlans(); fetchStaffUsers(); setShowPackageModal(true); }}>
+                            <Package size={16} /> Assign Package
+                          </button>
                         </div>
                       )}
 
@@ -1333,10 +1441,27 @@ export default function CustomersPage() {
                       {detailTab === "family" && (
                         <div className="cust-detail-section">
                           <div className="cust-detail-section-title">Family Members</div>
-                          <div className="cust-empty-state">
-                            <Users size={40} color="#cbd5e1" style={{ marginBottom: "12px" }} />
-                            <div>No family members linked yet</div>
-                          </div>
+                          {(customerDetail.familyMembers || []).length === 0 ? (
+                            <div className="cust-empty-state">
+                              <Users size={40} color="#cbd5e1" style={{ marginBottom: "12px" }} />
+                              <div>No family members linked yet</div>
+                            </div>
+                          ) : (
+                            (customerDetail.familyMembers || []).map((fm) => (
+                              <div key={fm.id} className="cust-membership-card">
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <div>
+                                    <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#0f172a" }}>{fm.name}</div>
+                                    <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>{fm.phone}</div>
+                                  </div>
+                                  <span className="cust-mem-status ACTIVE">Linked</span>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                          <button className="cust-assign-btn" onClick={() => setShowFamilyModal(true)}>
+                            <Users size={16} /> Add Family Member
+                          </button>
                         </div>
                       )}
 
@@ -1419,6 +1544,9 @@ export default function CustomersPage() {
                               </div>
                             ))
                           )}
+                          <button className="cust-assign-btn" onClick={() => setShowFollowUpModal(true)}>
+                            <Phone size={16} /> Add Follow Up
+                          </button>
                         </div>
                       )}
 
@@ -1582,6 +1710,201 @@ export default function CustomersPage() {
             <div className="modal-footer">
               <button className="crm-btn" onClick={() => setShowAddAdvanceModal(false)}>Close</button>
               <button className="crm-btn" onClick={handleAddAdvance} disabled={!advanceForm.amount}>Add</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Issue Gift Card Modal */}
+      {showGiftCardModal && (
+        <div className="modal-overlay" onClick={() => setShowGiftCardModal(false)}>
+          <div className="modal-content" style={{ width: "min(90vw, 480px)" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3>Issue Gift Card</h3>
+                <div style={{ fontSize: "0.78rem", color: "#64748b", marginTop: "2px" }}>Issue gift card to {selectedCustomer?.name}</div>
+              </div>
+              <button className="modal-close" onClick={() => setShowGiftCardModal(false)}><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div className="form-group">
+                  <label>Card Code *</label>
+                  <input type="text" value={giftCardForm.code} onChange={(e) => setGiftCardForm(prev => ({ ...prev, code: e.target.value }))} placeholder="e.g. GC-001" />
+                </div>
+                <div className="form-group">
+                  <label>Title</label>
+                  <input type="text" value={giftCardForm.title} onChange={(e) => setGiftCardForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Gift Card" />
+                </div>
+                <div className="form-group">
+                  <label>Amount *</label>
+                  <input type="number" value={giftCardForm.amount} onChange={(e) => setGiftCardForm(prev => ({ ...prev, amount: e.target.value }))} placeholder="1000" />
+                </div>
+                <div className="form-group">
+                  <label>Validity (Days)</label>
+                  <input type="number" value={giftCardForm.validityDays} onChange={(e) => setGiftCardForm(prev => ({ ...prev, validityDays: e.target.value }))} />
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="crm-btn" onClick={() => setShowGiftCardModal(false)}>Cancel</button>
+              <button className="crm-btn" onClick={handleIssueGiftCard} disabled={!giftCardForm.code || !giftCardForm.amount}>Issue Card</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Package Modal */}
+      {showPackageModal && (
+        <div className="modal-overlay" onClick={() => setShowPackageModal(false)}>
+          <div className="modal-content" style={{ width: "min(90vw, 600px)" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Assign Package</h3>
+              <button className="modal-close" onClick={() => setShowPackageModal(false)}><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              {packagePlans.length === 0 ? (
+                <div className="cust-empty-state">No package plans available</div>
+              ) : (
+                <div className="cust-plan-cards">
+                  {packagePlans.map((pkg, idx) => {
+                    const colors = ["pink", "purple", "blue", "teal"];
+                    const colorClass = colors[idx % colors.length];
+                    return (
+                      <div
+                        key={pkg.id}
+                        className={`cust-plan-card ${colorClass}${selectedPackage?.id === pkg.id ? " selected" : ""}`}
+                        onClick={() => {
+                          setSelectedPackage(pkg);
+                          setPackageForm(prev => ({
+                            ...prev,
+                            validityDays: pkg.validityDays || "",
+                            price: pkg.price || "",
+                          }));
+                        }}
+                      >
+                        <div className="cust-plan-name">{pkg.name}</div>
+                        <div className="cust-plan-price">{formatMoney(pkg.price)}</div>
+                        <div className="cust-plan-validity">{pkg.validityDays} days</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginTop: "16px" }}>
+                <div className="form-group">
+                  <label>Validity (Days)</label>
+                  <input type="number" value={packageForm.validityDays} onChange={(e) => setPackageForm(prev => ({ ...prev, validityDays: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>Price</label>
+                  <input type="number" value={packageForm.price} onChange={(e) => setPackageForm(prev => ({ ...prev, price: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>Staff</label>
+                  <select value={packageForm.staffId} onChange={(e) => setPackageForm(prev => ({ ...prev, staffId: e.target.value }))}>
+                    <option value="">Select Staff</option>
+                    {staffUsers.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="crm-btn" onClick={() => setShowPackageModal(false)}>Cancel</button>
+              <button className="crm-btn" onClick={handleAssignPackage} disabled={!selectedPackage}>Assign Package</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Family Member Modal */}
+      {showFamilyModal && (
+        <div className="modal-overlay" onClick={() => setShowFamilyModal(false)}>
+          <div className="modal-content" style={{ width: "min(90vw, 440px)" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3>Add Family Member</h3>
+                <div style={{ fontSize: "0.78rem", color: "#64748b", marginTop: "2px" }}>Link to {selectedCustomer?.name}</div>
+              </div>
+              <button className="modal-close" onClick={() => setShowFamilyModal(false)}><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Name *</label>
+                <input type="text" value={familyForm.name} onChange={(e) => setFamilyForm(prev => ({ ...prev, name: e.target.value }))} placeholder="Family member name" />
+              </div>
+              <div className="form-group">
+                <label>Phone *</label>
+                <input type="tel" value={familyForm.phone} onChange={(e) => setFamilyForm(prev => ({ ...prev, phone: e.target.value }))} placeholder="Phone number" />
+              </div>
+              <div className="form-group">
+                <label>Relation</label>
+                <select value={familyForm.relation} onChange={(e) => setFamilyForm(prev => ({ ...prev, relation: e.target.value }))}>
+                  <option value="">Select Relation</option>
+                  <option value="spouse">Spouse</option>
+                  <option value="parent">Parent</option>
+                  <option value="child">Child</option>
+                  <option value="sibling">Sibling</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="crm-btn" onClick={() => setShowFamilyModal(false)}>Cancel</button>
+              <button className="crm-btn" onClick={handleAddFamilyMember} disabled={!familyForm.name || !familyForm.phone}>Add Member</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Follow Up Modal */}
+      {showFollowUpModal && (
+        <div className="modal-overlay" onClick={() => setShowFollowUpModal(false)}>
+          <div className="modal-content" style={{ width: "min(90vw, 440px)" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3>Add Follow Up</h3>
+                <div style={{ fontSize: "0.78rem", color: "#64748b", marginTop: "2px" }}>Schedule for {selectedCustomer?.name}</div>
+              </div>
+              <button className="modal-close" onClick={() => setShowFollowUpModal(false)}><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div className="form-group">
+                  <label>Date *</label>
+                  <input type="date" value={followUpForm.date} onChange={(e) => setFollowUpForm(prev => ({ ...prev, date: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>Time</label>
+                  <input type="time" value={followUpForm.time} onChange={(e) => setFollowUpForm(prev => ({ ...prev, time: e.target.value }))} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Type</label>
+                <select value={followUpForm.type} onChange={(e) => setFollowUpForm(prev => ({ ...prev, type: e.target.value }))}>
+                  <option value="call">Call</option>
+                  <option value="sms">SMS</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="email">Email</option>
+                  <option value="visit">Visit</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Message *</label>
+                <textarea
+                  value={followUpForm.message}
+                  onChange={(e) => setFollowUpForm(prev => ({ ...prev, message: e.target.value }))}
+                  placeholder="Follow up message..."
+                  rows={3}
+                  style={{ padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "0.82rem", resize: "vertical", fontFamily: "inherit" }}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="crm-btn" onClick={() => setShowFollowUpModal(false)}>Cancel</button>
+              <button className="crm-btn" onClick={handleAddFollowUp} disabled={!followUpForm.date || !followUpForm.message}>Schedule</button>
             </div>
           </div>
         </div>
