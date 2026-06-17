@@ -1018,43 +1018,31 @@ export default function PosPage() {
               <div className="pos-payment-grid">
                 <div className="pos-payment-input">
                   <label style={{ cursor: 'pointer' }} onClick={() => {
-                    const next = form.payments.filter((payment) => payment.mode !== "ONLINE");
-                    next.push({ mode: "ONLINE", amount: totals.total, note: "" });
-                    setForm((current) => ({ ...current, payments: next }));
+                    setForm((current) => ({ ...current, payments: [{ mode: "ONLINE", amount: totals.total, note: "" }] }));
                   }}><svg width="16" height="16" style={{ color: "#10b981" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> Online</label>
                   <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "ONLINE")?.amount || ""} onChange={(e) => {
                     const amount = e.target.value;
-                    const next = form.payments.filter((payment) => payment.mode !== "ONLINE");
-                    next.push({ mode: "ONLINE", amount, note: "" });
-                    setForm((current) => ({ ...current, payments: next }));
+                    setForm((current) => ({ ...current, payments: [{ mode: "ONLINE", amount, note: "" }] }));
                   }} />
                 </div>
                 <div className="pos-payment-input">
                   <label style={{ cursor: 'pointer' }} onClick={() => {
-                    const next = form.payments.filter((payment) => payment.mode !== "CASH");
-                    next.unshift({ mode: "CASH", amount: totals.total, note: "" });
-                    setForm(c => ({ ...c, payments: next }));
+                    setForm((current) => ({ ...current, payments: [{ mode: "CASH", amount: totals.total, note: "" }] }));
                   }}><svg width="16" height="16" style={{ color: "#64748b" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg> Cash</label>
                   <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "CASH")?.amount || ""} onChange={(e) => {
                     const amount = e.target.value;
-                    const next = form.payments.filter((payment) => payment.mode !== "CASH");
-                    next.unshift({ mode: "CASH", amount, note: "" });
-                    setForm(c => ({ ...c, payments: next }));
+                    setForm((current) => ({ ...current, payments: [{ mode: "CASH", amount, note: "" }] }));
                   }} />
                 </div>
                 <div className="pos-payment-input">
                   <label style={{ cursor: 'pointer' }} onClick={() => {
                     const paidSoFar = form.payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
                     const balance = Math.max(0, totals.total - paidSoFar);
-                    const next = form.payments.filter((payment) => payment.mode !== "BALANCE");
-                    next.push({ mode: "BALANCE", amount: balance, note: "" });
-                    setForm(c => ({ ...c, payments: next }));
+                    setForm((current) => ({ ...current, payments: [{ mode: "BALANCE", amount: balance, note: "" }] }));
                   }}><svg width="16" height="16" style={{ color: "#f59e0b" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg> Balance</label>
                   <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "BALANCE")?.amount || ""} onChange={(e) => {
                     const amount = e.target.value;
-                    const next = form.payments.filter((payment) => payment.mode !== "BALANCE");
-                    next.push({ mode: "BALANCE", amount, note: "" });
-                    setForm(c => ({ ...c, payments: next }));
+                    setForm((current) => ({ ...current, payments: [{ mode: "BALANCE", amount, note: "" }] }));
                   }} />
                 </div>
               </div>
