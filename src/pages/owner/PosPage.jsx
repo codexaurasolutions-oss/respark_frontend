@@ -877,8 +877,6 @@ export default function PosPage() {
                     <th>Disc (Flat)</th>
                     <th>Tax</th>
                     <th>Total</th>
-                    <th>Split</th>
-                    <th>{form.items.some(i => i.itemType === "PRODUCT") ? "Batch" : null}</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -949,16 +947,6 @@ export default function PosPage() {
                         </td>
                         <td>{tax.toFixed(0)}</td>
                         <td>{total.toFixed(0)}</td>
-                        <td><input className="pos-cart-input" style={{ width: 50 }} placeholder="0" /></td>
-                        <td>{item.itemType === "PRODUCT" ? (
-                          <input
-                            className="pos-cart-input"
-                            style={{ width: 70 }}
-                            placeholder="Batch"
-                            value={item.batchNumber || ""}
-                            onChange={(e) => updateItem(index, { batchNumber: e.target.value })}
-                          />
-                        ) : null}</td>
                         <td style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                           {item.itemType === "SERVICE" && (
                             <button type="button" title="Add Consumable Items For Service" onClick={() => openConsumableModal(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, fontSize: 16, color: '#2563eb', borderRadius: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📦</button>
@@ -973,7 +961,7 @@ export default function PosPage() {
                   })}
                   {form.items.filter(item => item.serviceId || item.productId || item.membershipPlanId || item.packageId).length === 0 && (
                     <tr>
-                      <td colSpan="12" style={{ textAlign: "center", padding: 32, color: "#94a3b8" }}>
+                      <td colSpan="10" style={{ textAlign: "center", padding: 32, color: "#94a3b8" }}>
                         No items added yet. Click a service or product on the left to add.
                       </td>
                     </tr>
