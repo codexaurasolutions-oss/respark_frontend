@@ -114,7 +114,13 @@ const defaultAdvancedSettings = {
     feedbackDelayHours: 24,
     ratingPrompt: "How was your salon experience?",
     lowRatingAlertEmail: "",
-    thankYouMessage: ""
+    thankYouMessage: "",
+    types: [
+      { id: "service-quality", name: "Service Quality", active: true },
+      { id: "social-etiquette", name: "Social Etiquette", active: true },
+      { id: "personal-hygiene", name: "Personal Hygiene", active: true },
+      { id: "remark", name: "Remark", active: true }
+    ]
   },
   accessControl: {
     approvalRequiredForRoleEdits: true,
@@ -1933,6 +1939,35 @@ export default function SettingsPage() {
 
   const renderFeedbackSection = () => {
     const feedback = form.advancedSettings.feedbackSetting;
+    const feedbackTypes = feedback.types || [
+      { id: "service-quality", name: "Service Quality", active: true },
+      { id: "social-etiquette", name: "Social Etiquette", active: true },
+      { id: "personal-hygiene", name: "Personal Hygiene", active: true },
+      { id: "remark", name: "Remark", active: true }
+    ];
+    const [newTypeName, setNewTypeName] = useState("");
+    const [editingType, setEditingType] = useState(null);
+
+    const updateFeedbackTypes = (newTypes) => {
+      updateAdvancedObject("feedbackSetting", { types: newTypes });
+    };
+
+    const handleCreateType = () => {
+      if (!newTypeName.trim()) return;
+      const newType = { id: `type-${Date.now()}`, name: newTypeName.trim(), active: true };
+      updateFeedbackTypes([...feedbackTypes, newType]);
+      setNewTypeName("");
+    };
+
+    const handleUpdateType = (id, updates) => {
+      updateFeedbackTypes(feedbackTypes.map(t => t.id === id ? { ...t, ...updates } : t));
+    };
+
+    const handleDeleteType = (id) => {
+      updateFeedbackTypes(feedbackTypes.filter(t => t.id !== id));
+      if (editingType?.id === id) setEditingType(null);
+    };
+
     return (
       <>
         <SectionHeader title="Feedback Setting" description="Control how and when guest feedback is requested, escalated, and acknowledged." badges={[feedback.enabled ? "Feedback On" : "Feedback Off"]} action={<Link className="secondary-button" to="/admin/feedback">Open Feedback Module</Link>} />
@@ -1950,6 +1985,75 @@ export default function SettingsPage() {
             <label className="settings-input-group"><span className="muted">Low rating alert email</span><input value={feedback.lowRatingAlertEmail} onChange={(event) => updateAdvancedObject("feedbackSetting", { lowRatingAlertEmail: event.target.value })} /></label>
             <label className="settings-input-group"><span className="muted">Rating prompt</span><textarea rows="3" value={feedback.ratingPrompt} onChange={(event) => updateAdvancedObject("feedbackSetting", { ratingPrompt: event.target.value })} /></label>
             <label className="settings-input-group"><span className="muted">Thank you message</span><textarea rows="3" value={feedback.thankYouMessage} onChange={(event) => updateAdvancedObject("feedbackSetting", { thankYouMessage: event.target.value })} /></label>
+          </div>
+        </div>
+
+        <div className="settings-panel-card" style={{ marginTop: 20 }}>
+          <h3 style={{ margin: 0, marginBottom: 14, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>Feedback Type Details</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+            <div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 16 }}>
+                {feedbackTypes.map((type) => (
+                  <button
+                    key={type.id}
+                    type="button"
+                    onClick={() => setEditingType(type)}
+                    style={{
+                      padding: "10px 14px",
+                      border: editingType?.id === type.id ? "2px solid #3b82f6" : "1px solid #e2e8f0",
+                      borderRadius: 8,
+                      background: editingType?.id === type.id ? "#eff6ff" : "#fff",
+                      textAlign: "left",
+                      fontSize: 14,
+                      color: "#0f172a",
+                      cursor: "pointer",
+                      fontWeight: editingType?.id === type.id ? 600 : 500
+                    }}
+                  >
+                    {type.name} {!type.active && <span style={{ color: "#ef4444", fontSize: 12, marginLeft: 8 }}>(Inactive)</span>}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  value={newTypeName}
+                  onChange={(e) => setNewTypeName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleCreateType()}
+                  placeholder="New feedback type name"
+                  style={{ flex: 1, padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 13 }}
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateType}
+                  style={{ padding: "8px 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}
+                >
+                  Create New
+                </button>
+              </div>
+            </div>
+            <div>
+              {editingType ? (
+                <div>
+                  <label className="settings-input-group">
+                    <span className="muted">Feedback Name</span>
+                    <input value={editingType.name} onChange={(e) => handleUpdateType(editingType.id, { name: e.target.value })} />
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, cursor: "pointer" }}>
+                    <input type="checkbox" checked={editingType.active} onChange={(e) => handleUpdateType(editingType.id, { active: e.target.checked })} style={{ width: 18, height: 18 }} />
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>Active</span>
+                  </label>
+                  <div style={{ display: "flex", gap: 10, marginTop: 20, justifyContent: "flex-end" }}>
+                    <button type="button" onClick={() => handleDeleteType(editingType.id)} style={{ padding: "8px 16px", background: "#fff", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Delete</button>
+                    <button type="button" onClick={() => setEditingType(null)} style={{ padding: "8px 16px", background: "#fff", border: "1px solid #cbd5e1", color: "#475569", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Cancel</button>
+                    <button type="button" onClick={() => setEditingType(null)} style={{ padding: "8px 20px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Update</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: "40px 20px", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
+                  Select a feedback type to edit, or create a new one
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </>

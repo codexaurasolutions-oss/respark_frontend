@@ -88,7 +88,9 @@ export default function PosPage() {
     notes: "",
     items: [emptyServiceItem],
     packageRedemptions: [],
-    payments: [emptyPayment]
+    payments: [emptyPayment],
+    sendFeedbackMessage: true,
+    sendInvoiceMessage: true
   });
 
   const applyContext = useCallback((contextResponse, closingResponse, catRes, customerId, branchId) => {
@@ -1060,8 +1062,12 @@ export default function PosPage() {
               <div className="pos-message-config">
                 <h5>Message Configurations:</h5>
                 <div className="pos-message-options">
-                  <label><input type="checkbox" defaultChecked style={{ width: "16px", height: "16px", margin: 0, cursor: "pointer" }} /> Feedback Message</label>
-                  <label><input type="checkbox" defaultChecked style={{ width: "16px", height: "16px", margin: 0, cursor: "pointer" }} /> Invoice Message</label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13 }}>
+                    <input type="checkbox" checked={form.sendFeedbackMessage !== false} onChange={(e) => setForm(c => ({ ...c, sendFeedbackMessage: e.target.checked }))} style={{ width: 16, height: 16, margin: 0, cursor: "pointer" }} /> Feedback Message
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13 }}>
+                    <input type="checkbox" checked={form.sendInvoiceMessage !== false} onChange={(e) => setForm(c => ({ ...c, sendInvoiceMessage: e.target.checked }))} style={{ width: 16, height: 16, margin: 0, cursor: "pointer" }} /> Invoice Message
+                  </label>
                 </div>
               </div>
             </div>
