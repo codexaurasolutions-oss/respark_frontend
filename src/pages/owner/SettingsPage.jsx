@@ -2152,6 +2152,15 @@ export default function SettingsPage() {
   const renderGiftCardSection = () => {
     const section = form.advancedSettings.giftCardSettings;
     const previewRows = (summary.giftCards || []).slice(0, 6);
+    const [editingCard, setEditingCard] = useState(null);
+    const [newCardName, setNewCardName] = useState("");
+    const [cardForm, setCardForm] = useState({ name: "", description: "", active: true, amount: "", validityDays: 30, renewalReminderDays: 7 });
+    const gcTemplateDefaults = [
+      { name: "Birthday Voucher", description: "Special birthday gift card for loyal customers", amount: 1000, validityDays: 90, renewalReminderDays: 7 },
+      { name: "Festive Special", description: "Limited edition festive season gift card", amount: 2500, validityDays: 180, renewalReminderDays: 14 },
+      { name: "Premium Package", description: "High-value gift card for premium services", amount: 5000, validityDays: 365, renewalReminderDays: 30 }
+    ];
+    const cardTemplates = (form.advancedSettings.giftCardSettings.templates || gcTemplateDefaults);
     return (
       <>
         <SectionHeader
@@ -2168,33 +2177,101 @@ export default function SettingsPage() {
             <label className="settings-input-group"><span className="muted">Maximum amount</span><input type="number" value={section.maximumAmount} onChange={(event) => updateAdvancedObject("giftCardSettings", { maximumAmount: Number(event.target.value) })} /></label>
           </div>
         </div>
+
         <div className="settings-panel-card" style={{ marginTop: 16 }}>
-          <div className="item-head" style={{ marginBottom: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
             <div>
-              <h3 style={{ margin: 0 }}>Quick Issue Gift Card</h3>
-              <p className="muted" style={{ margin: "4px 0 0 0" }}>Yahin se direct live gift card create kar sakte ho. Min/max/validity rules isi settings se apply hongi.</p>
+              <h3 style={{ margin: 0, marginBottom: 14, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{salon?.name || "Salon"} - Gift Card</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
+                {cardTemplates.map((template, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => { setCardForm({ name: template.name, description: template.description || "", active: true, amount: template.amount, validityDays: template.validityDays, renewalReminderDays: template.renewalReminderDays }); setEditingCard({ ...template, _idx: idx }); }}
+                    style={{
+                      padding: "10px 14px",
+                      border: editingCard?._idx === idx ? "2px solid #3b82f6" : "1px solid #e2e8f0",
+                      borderRadius: 8,
+                      background: editingCard?._idx === idx ? "#eff6ff" : "#fff",
+                      textAlign: "left",
+                      fontSize: 14,
+                      color: "#0f172a",
+                      cursor: "pointer",
+                      fontWeight: editingCard?._idx === idx ? 600 : 500
+                    }}
+                  >
+                    {template.name}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const name = window.prompt("Enter new gift card name:");
+                  if (name && name.trim()) {
+                    const newTemplate = { name: name.trim(), description: "", amount: 1000, validityDays: 30, renewalReminderDays: 7 };
+                    const next = [...cardTemplates, newTemplate];
+                    updateAdvancedObject("giftCardSettings", { templates: next });
+                    setCardForm({ name: newTemplate.name, description: "", active: true, amount: 1000, validityDays: 30, renewalReminderDays: 7 });
+                    setEditingCard({ ...newTemplate, _idx: next.length - 1 });
+                  }
+                }}
+                style={{ width: "100%", padding: "10px 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 14 }}
+              >
+                Create New Gift Card
+              </button>
+            </div>
+            <div>
+              <h3 style={{ margin: 0, marginBottom: 14, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{editingCard ? "Edit Gift Card" : "Create New Gift Card"}</h3>
+              <div className="settings-form-grid">
+                <label className="settings-input-group"><span className="muted">Name</span><input value={cardForm.name} onChange={(e) => setCardForm({ ...cardForm, name: e.target.value })} placeholder="Enter Gift Card Name" /></label>
+                <label className="settings-input-group"><span className="muted">Description</span><input value={cardForm.description} onChange={(e) => setCardForm({ ...cardForm, description: e.target.value })} placeholder="Enter Gift Card Description" /></label>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", gridColumn: "span 2" }}>
+                  <input type="checkbox" checked={cardForm.active} onChange={(e) => setCardForm({ ...cardForm, active: e.target.checked })} style={{ width: 18, height: 18 }} />
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>Active</span>
+                </label>
+                <label className="settings-input-group"><span className="muted">Amount</span><input type="number" value={cardForm.amount} onChange={(e) => setCardForm({ ...cardForm, amount: e.target.value })} placeholder="Enter Amount" /></label>
+                <label className="settings-input-group"><span className="muted">Validity (In days)</span><input type="number" value={cardForm.validityDays} onChange={(e) => setCardForm({ ...cardForm, validityDays: Number(e.target.value) })} placeholder="Enter Days" /></label>
+                <label className="settings-input-group"><span className="muted">Renewal Reminder</span><input type="number" value={cardForm.renewalReminderDays} onChange={(e) => setCardForm({ ...cardForm, renewalReminderDays: Number(e.target.value) })} placeholder="In Days" /></label>
+              </div>
+              <div style={{ display: "flex", gap: 10, marginTop: 18, justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (editingCard?._idx !== undefined) {
+                      const next = cardTemplates.map((t, i) => i === editingCard._idx ? { ...cardForm, amount: Number(cardForm.amount), validityDays: Number(cardForm.validityDays), renewalReminderDays: Number(cardForm.renewalReminderDays) } : t);
+                      updateAdvancedObject("giftCardSettings", { templates: next });
+                    }
+                    setEditingCard(null);
+                    setCardForm({ name: "", description: "", active: true, amount: "", validityDays: 30, renewalReminderDays: 7 });
+                  }}
+                  style={{ padding: "10px 24px", background: "#fff", border: "1px solid #cbd5e1", color: "#475569", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 14 }}
+                >
+                  {editingCard ? "Cancel" : "Clear"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (editingCard?._idx !== undefined) {
+                      const next = cardTemplates.map((t, i) => i === editingCard._idx ? { name: cardForm.name, description: cardForm.description, amount: Number(cardForm.amount), validityDays: Number(cardForm.validityDays), renewalReminderDays: Number(cardForm.renewalReminderDays) } : t);
+                      updateAdvancedObject("giftCardSettings", { templates: next });
+                    } else {
+                      const newTemplate = { name: cardForm.name, description: cardForm.description, amount: Number(cardForm.amount), validityDays: Number(cardForm.validityDays), renewalReminderDays: Number(cardForm.renewalReminderDays) };
+                      updateAdvancedObject("giftCardSettings", { templates: [...cardTemplates, newTemplate] });
+                    }
+                    setEditingCard(null);
+                    setCardForm({ name: "", description: "", active: true, amount: "", validityDays: 30, renewalReminderDays: 7 });
+                  }}
+                  style={{ padding: "10px 28px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 }}
+                >
+                  Save
+                </button>
+              </div>
             </div>
           </div>
-          <form className="settings-form-grid" onSubmit={issueGiftCardFromSettings}>
-            <label className="settings-input-group">
-              <span className="muted">Code</span>
-              <input value={giftCardDraft.code} onChange={(event) => setGiftCardDraft((current) => ({ ...current, code: event.target.value }))} placeholder="e.g. GC1001" />
-            </label>
-            <label className="settings-input-group">
-              <span className="muted">Title</span>
-              <input value={giftCardDraft.title} onChange={(event) => setGiftCardDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Birthday Voucher" />
-            </label>
-            <label className="settings-input-group">
-              <span className="muted">Amount</span>
-              <input type="number" value={giftCardDraft.originalAmount} onChange={(event) => setGiftCardDraft((current) => ({ ...current, originalAmount: event.target.value }))} placeholder="1000" />
-            </label>
-            <div className="settings-input-group" style={{ alignSelf: "end" }}>
-              <button type="submit" disabled={issuingGiftCard}>{issuingGiftCard ? "Issuing..." : "Issue Gift Card"}</button>
-            </div>
-          </form>
         </div>
         <div className="muted" style={{ margin: "12px 0", fontSize: 12 }}>
-          Upar wala block rules save karta hai, aur Quick Issue block se direct live gift card create bhi ho sakta hai. Full management aur deeper reporting ab bhi `/admin/gift-cards` module me available rahegi.
+          Yeh gift card templates POS module mai use honge jab customer gift card redeem karega. Full management aur reporting `/admin/gift-cards` module me available hai.
         </div>
         <div className="settings-panel-card">
           <div className="item-head" style={{ marginBottom: 12 }}>
