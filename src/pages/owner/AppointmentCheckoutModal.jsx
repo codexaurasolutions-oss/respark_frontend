@@ -370,7 +370,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
     if (nextValue === null) return;
     const parsed = Math.max(0, toAmount(nextValue, 0));
     setInvoiceDiscount(parsed);
-    setStatus({ error: "", success: `Discount set to Rs ${parsed.toFixed(0)}.` });
+    setStatus({ error: "", success: `Discount set to ${formatMoney(parsed)}.` });
   };
 
   const handleComplete = async (action) => {
@@ -715,7 +715,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
                 <button onClick={applyInvoiceDiscount} style={{ padding: "6px 10px", borderRadius: "20px", border: "1px solid #3b82f6", background: "white", color: "#3b82f6", fontWeight: 600, fontSize: "0.7rem", whiteSpace: "nowrap" }}>Apply Discount</button>
               </div>
               <div style={{ fontSize: "0.75rem", color: "#475569", fontWeight: 600 }}>
-                Invoice Discount: <span style={{ color: "#0f172a" }}>Rs {toAmount(invoiceDiscount, 0).toFixed(0)}</span>
+                Invoice Discount: <span style={{ color: "#0f172a" }}>{formatMoney(toAmount(invoiceDiscount, 0))}</span>
               </div>
 
               {(() => {

@@ -386,6 +386,12 @@ export default function SettingsPage() {
   const [issuingGiftCard, setIssuingGiftCard] = useState(false);
   const [selectedTaxId, setSelectedTaxId] = useState(null);
   const [draftTax, setDraftTax] = useState(null);
+  const [selectedShiftId, setSelectedShiftId] = useState(null);
+  const [editingCard, setEditingCard] = useState(null);
+  const [newCardName, setNewCardName] = useState("");
+  const [cardForm, setCardForm] = useState({ name: "", description: "", active: true, amount: "", validityDays: 30, renewalReminderDays: 7 });
+  const [newTypeName, setNewTypeName] = useState("");
+  const [editingType, setEditingType] = useState(null);
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
   const rosterInitializedRef = useRef(false);
   const salonId = auth?.salonId || auth?.membership?.salonId || auth?.membership?.salon?.id || "global";
@@ -473,6 +479,8 @@ export default function SettingsPage() {
             }
           });
           setPaymentModes({ ...defaultPaymentModes, ...(row.paymentModes || {}) });
+          const mergedAdvanced = mergeAdvancedSettings(row.advancedSettings || {});
+          setSelectedShiftId(mergedAdvanced.shiftManagement?.shifts?.[0]?.id || null);
         }
 
         const nextSummary = {
@@ -1348,7 +1356,6 @@ export default function SettingsPage() {
   const renderShiftSection = () => {
     const shifts = form.advancedSettings.shiftManagement.shifts;
     const rosterModuleEnabled = form.advancedSettings.allowRosterMgtSettings !== false;
-    const [selectedShiftId, setSelectedShiftId] = useState(shifts[0]?.id || null);
     const updateShift = (id, patch) => {
       updateAdvancedObject("shiftManagement", {
         shifts: shifts.map((shift) => shift.id === id ? { ...shift, ...patch } : shift)
@@ -2191,9 +2198,6 @@ export default function SettingsPage() {
       { id: "personal-hygiene", name: "Personal Hygiene", active: true },
       { id: "remark", name: "Remark", active: true }
     ];
-    const [newTypeName, setNewTypeName] = useState("");
-    const [editingType, setEditingType] = useState(null);
-
     const updateFeedbackTypes = (newTypes) => {
       updateAdvancedObject("feedbackSetting", { types: newTypes });
     };
@@ -2398,9 +2402,6 @@ export default function SettingsPage() {
   const renderGiftCardSection = () => {
     const section = form.advancedSettings.giftCardSettings;
     const previewRows = (summary.giftCards || []).slice(0, 6);
-    const [editingCard, setEditingCard] = useState(null);
-    const [newCardName, setNewCardName] = useState("");
-    const [cardForm, setCardForm] = useState({ name: "", description: "", active: true, amount: "", validityDays: 30, renewalReminderDays: 7 });
     const gcTemplateDefaults = [
       { name: "Birthday Voucher", description: "Special birthday gift card for loyal customers", amount: 1000, validityDays: 90, renewalReminderDays: 7 },
       { name: "Festive Special", description: "Limited edition festive season gift card", amount: 2500, validityDays: 180, renewalReminderDays: 14 },

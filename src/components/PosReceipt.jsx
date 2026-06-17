@@ -27,8 +27,6 @@ const Tag = ({ color = "default", children, style = {} }) => {
   );
 };
 
-const fmt = (n) => Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
 const statusColor = (s) => ({ PAID: "success", UNPAID: "error", PARTIAL: "warning", CANCELLED: "default" }[s?.toUpperCase()] ?? "default");
 
 const S = {
