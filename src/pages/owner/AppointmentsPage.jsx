@@ -413,9 +413,10 @@ export default function AppointmentsPage() {
     const nextItem = { ...nextItems[index], [field]: value };
     if (field === "serviceId") {
       nextItem.staffUserIds = [];
-      if (value && !nextItem.endAt) {
+      if (value) {
+        // Always recalculate endAt from service duration when service changes
         nextItem.endAt = nextItem.startAt ? addMinutesToLocalInput(nextItem.startAt, getServiceDurationMin(value)) : "";
-      } else if (!value) {
+      } else {
         nextItem.endAt = "";
       }
     }
@@ -513,16 +514,33 @@ export default function AppointmentsPage() {
       const startDate = new Date(row.startAt);
       const endDate = new Date(row.endAt);
 
-      // Calculate duration in minutes from startAt → endAt
+      // Calculate duration in minutes from appointment-level startAt → endAt
       let diffMin = (endDate.getTime() - startDate.getTime()) / 60000;
 
-      // If endAt is missing/invalid/same as startAt, fall back to sum of item durations
-      if (!row.endAt || diffMin <= 0) {
-        diffMin = (row.items || []).reduce((sum, item) => {
+      // If appointment-level endAt is wrong/missing, try item-level endAt
+      if (diffMin <= APPOINTMENT_SLOT_MINUTES) {
+        // Try getting max endAt from items
+        const itemMaxEnd = (row.items || []).reduce((maxMs, item) => {
+          if (!item.endAt) return maxMs;
+          return Math.max(maxMs, new Date(item.endAt).getTime());
+        }, 0);
+        if (itemMaxEnd > startDate.getTime()) {
+          const itemDiff = (itemMaxEnd - startDate.getTime()) / 60000;
+          if (itemDiff > diffMin) diffMin = itemDiff;
+        }
+      }
+
+      // If still too small, fall back to sum of service durations from catalog
+      if (diffMin <= APPOINTMENT_SLOT_MINUTES) {
+        const svcDiff = (row.items || []).reduce((sum, item) => {
           const svc = services.find(s => s.id === item.serviceId);
           return sum + Number(svc?.durationMin || DEFAULT_APPOINTMENT_DURATION_MINUTES);
-        }, 0) || DEFAULT_APPOINTMENT_DURATION_MINUTES;
+        }, 0);
+        if (svcDiff > diffMin) diffMin = svcDiff;
       }
+
+      // Ensure minimum 1 slot
+      if (diffMin <= 0) diffMin = DEFAULT_APPOINTMENT_DURATION_MINUTES;
 
       // Number of 15-min slots this appointment should span
       const durationSlots = Math.max(1, Math.ceil(diffMin / APPOINTMENT_SLOT_MINUTES));
