@@ -53,7 +53,7 @@ export default function ExpensesPage() {
   // Filters & selection
   const [filters, setFilters] = useState({
     branchId: "",
-    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10),
+    startDate: new Date(new Date().getFullYear(), new Date().getMonth() - 3, 1).toISOString().slice(0, 10),
     endDate: new Date().toISOString().slice(0, 10),
     status: "",
   });
@@ -304,8 +304,8 @@ export default function ExpensesPage() {
       setStatus({
         error: "",
         success: autoApproveExpenses
-          ? "Expense recorded and auto-approved successfully!"
-          : "Expense submitted successfully and is waiting for approval."
+          ? "Expense recorded and auto-approved! It's now visible in the list below."
+          : "Expense submitted! It's in PENDING status — click the 'Pending' tab above to see it, or wait for approval."
       });
       setForm(emptyForm);
       setShowAddModal(false);
