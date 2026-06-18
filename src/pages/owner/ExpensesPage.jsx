@@ -940,7 +940,7 @@ export default function ExpensesPage() {
                                   onClick={() => handleEditExpense(row)}
                                   title="Edit"
                                 >
-                                  <Pencil size={14} />
+                                  <Edit size={14} />
                                 </button>
                                 <button 
                                   className="blue-btn" 
