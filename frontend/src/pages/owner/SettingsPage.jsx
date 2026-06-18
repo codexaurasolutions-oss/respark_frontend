@@ -2018,8 +2018,8 @@ export default function SettingsPage() {
               </label>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569" }}>
-              <span>Loyalty Expiration:</span>
-              <input type="number" value={loyalty.expiryDays} onChange={(e) => u({ expiryDays: Number(e.target.value) })} style={{ width: 70, padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 13, textAlign: "center" }} />
+              <span style={{ fontWeight: 600 }}>Loyalty Expiration:</span>
+              <input type="number" value={loyalty.expiryDays} onChange={(e) => u({ expiryDays: Number(e.target.value) })} style={{ width: 100, padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13, textAlign: "center", outline: "none" }} />
               <span>Days</span>
             </div>
           </div>
@@ -2044,61 +2044,51 @@ export default function SettingsPage() {
 
         <div className="settings-panel-card" style={{ marginBottom: 24 }}>
           {loyalty.earnIndividually ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-              <div key="service">
-                <div style={{ fontWeight: 600, fontSize: 13, color: "#334155", marginBottom: 12 }}>Configuration for Service Loyalty Earning</div>
-                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 4 }}>{formatMoney(1).replace(/[\d.,]/g, '').trim()}</label>
-                    <input type="number" placeholder="Enter Amount*" value={loyalty.serviceEarning?.amount || ""} onChange={(e) => uService({ amount: Number(e.target.value) })} style={{ width: "100%", padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 13, boxSizing: "border-box" }} />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+              {[
+                { key: "service", title: "Service Loyalty Earning", data: loyalty.serviceEarning, updater: uService },
+                { key: "product", title: "Product Loyalty Earning", data: loyalty.productEarning, updater: uProduct },
+                { key: "package", title: "Package Loyalty Earning", data: loyalty.packageEarning, updater: uPackage }
+              ].map((item) => (
+                <div key={item.key}>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: "#334155", marginBottom: 12 }}>Configuration for {item.title}</div>
+                  <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: 11, color: "#475569", display: "block", marginBottom: 4, fontWeight: 600 }}>Amount</label>
+                      <div style={{ display: "flex", border: "1px solid #cbd5e1", borderRadius: 6, overflow: "hidden", background: "#fff" }}>
+                        <span style={{ padding: "8px 10px", background: "#f1f5f9", color: "#475569", fontWeight: 600, fontSize: 13, borderRight: "1px solid #cbd5e1", display: "flex", alignItems: "center" }}>$</span>
+                        <input type="number" placeholder="Enter Amount" value={item.data?.amount || ""} onChange={(e) => item.updater({ amount: Number(e.target.value) })} style={{ flex: 1, border: "none", padding: "8px 10px", fontSize: 13, outline: "none", background: "transparent" }} />
+                      </div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: 11, color: "#475569", display: "block", marginBottom: 4, fontWeight: 600 }}>Points</label>
+                      <div style={{ display: "flex", border: "1px solid #cbd5e1", borderRadius: 6, overflow: "hidden", background: "#fff" }}>
+                        <input type="number" placeholder="Enter Points" value={item.data?.points || ""} onChange={(e) => item.updater({ points: Number(e.target.value) })} style={{ flex: 1, border: "none", padding: "8px 10px", fontSize: 13, outline: "none", background: "transparent" }} />
+                        <span style={{ padding: "8px 10px", background: "#f1f5f9", color: "#475569", fontWeight: 600, fontSize: 13, borderLeft: "1px solid #cbd5e1", display: "flex", alignItems: "center" }}>pts</span>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 4 }}>Points</label>
-                    <input type="number" placeholder="Enter Points*" value={loyalty.serviceEarning?.points || ""} onChange={(e) => uService({ points: Number(e.target.value) })} style={{ width: "100%", padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 13, boxSizing: "border-box" }} />
-                  </div>
+                  <div style={{ fontSize: 12, color: "#475569" }}>Earn {item.data?.points || 0} Points on Every {formatMoney(item.data?.amount || 0)} Spent</div>
                 </div>
-                <div style={{ fontSize: 12, color: "#475569" }}>Earn {loyalty.serviceEarning?.points || 0} Points on Every {formatMoney(loyalty.serviceEarning?.amount || 0)} Spent</div>
-              </div>
-              <div key="product">
-                <div style={{ fontWeight: 600, fontSize: 13, color: "#334155", marginBottom: 12 }}>Configuration for Product Loyalty Earning</div>
-                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 4 }}>{formatMoney(1).replace(/[\d.,]/g, '').trim()}</label>
-                    <input type="number" placeholder="Enter Amount*" value={loyalty.productEarning?.amount || ""} onChange={(e) => uProduct({ amount: Number(e.target.value) })} style={{ width: "100%", padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 13, boxSizing: "border-box" }} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 4 }}>Points</label>
-                    <input type="number" placeholder="Enter Points*" value={loyalty.productEarning?.points || ""} onChange={(e) => uProduct({ points: Number(e.target.value) })} style={{ width: "100%", padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 13, boxSizing: "border-box" }} />
-                  </div>
-                </div>
-                <div style={{ fontSize: 12, color: "#475569" }}>Earn {loyalty.productEarning?.points || 0} Points on Every {formatMoney(loyalty.productEarning?.amount || 0)} Spent</div>
-              </div>
-              <div key="package">
-                <div style={{ fontWeight: 600, fontSize: 13, color: "#334155", marginBottom: 12 }}>Configuration for Package Loyalty Earning</div>
-                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 4 }}>{formatMoney(1).replace(/[\d.,]/g, '').trim()}</label>
-                    <input type="number" placeholder="Enter Amount*" value={loyalty.packageEarning?.amount || ""} onChange={(e) => uPackage({ amount: Number(e.target.value) })} style={{ width: "100%", padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 13, boxSizing: "border-box" }} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 4 }}>Points</label>
-                    <input type="number" placeholder="Enter Points*" value={loyalty.packageEarning?.points || ""} onChange={(e) => uPackage({ points: Number(e.target.value) })} style={{ width: "100%", padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 13, boxSizing: "border-box" }} />
-                  </div>
-                </div>
-                <div style={{ fontSize: 12, color: "#475569" }}>Earn {loyalty.packageEarning?.points || 0} Points on Every {formatMoney(loyalty.packageEarning?.amount || 0)} Spent</div>
-              </div>
+              ))}
             </div>
           ) : (
             <div>
               <div style={{ fontWeight: 600, fontSize: 13, color: "#334155", marginBottom: 12 }}>Configuration for Loyalty Earning</div>
-              <div style={{ display: "flex", gap: 16, marginBottom: 8 }}>
-                <div style={{ width: 200 }}>
-                  <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 4 }}>{formatMoney(1).replace(/[\d.,]/g, '').trim()}</label>
-                  <input type="number" placeholder="Enter Amount*" value={loyalty.serviceEarning?.amount || ""} onChange={(e) => { uService({ amount: Number(e.target.value) }); uProduct({ amount: Number(e.target.value) }); uPackage({ amount: Number(e.target.value) }); }} style={{ width: "100%", padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 13, boxSizing: "border-box" }} />
+              <div style={{ display: "flex", gap: 16, marginBottom: 8, flexWrap: "wrap" }}>
+                <div style={{ width: 240 }}>
+                  <label style={{ fontSize: 11, color: "#475569", display: "block", marginBottom: 4, fontWeight: 600 }}>Amount</label>
+                  <div style={{ display: "flex", border: "1px solid #cbd5e1", borderRadius: 6, overflow: "hidden", background: "#fff" }}>
+                    <span style={{ padding: "8px 10px", background: "#f1f5f9", color: "#475569", fontWeight: 600, fontSize: 13, borderRight: "1px solid #cbd5e1", display: "flex", alignItems: "center" }}>$</span>
+                    <input type="number" placeholder="Enter Amount" value={loyalty.serviceEarning?.amount || ""} onChange={(e) => { uService({ amount: Number(e.target.value) }); uProduct({ amount: Number(e.target.value) }); uPackage({ amount: Number(e.target.value) }); }} style={{ flex: 1, border: "none", padding: "8px 10px", fontSize: 13, outline: "none", background: "transparent" }} />
+                  </div>
                 </div>
-                <div style={{ width: 200 }}>
-                  <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 4 }}>Points</label>
-                  <input type="number" placeholder="Enter Points*" value={loyalty.serviceEarning?.points || ""} onChange={(e) => { uService({ points: Number(e.target.value) }); uProduct({ points: Number(e.target.value) }); uPackage({ points: Number(e.target.value) }); }} style={{ width: "100%", padding: "8px 10px", border: "1px solid #e2e8f0", borderRadius: 6, fontSize: 13, boxSizing: "border-box" }} />
+                <div style={{ width: 240 }}>
+                  <label style={{ fontSize: 11, color: "#475569", display: "block", marginBottom: 4, fontWeight: 600 }}>Points</label>
+                  <div style={{ display: "flex", border: "1px solid #cbd5e1", borderRadius: 6, overflow: "hidden", background: "#fff" }}>
+                    <input type="number" placeholder="Enter Points" value={loyalty.serviceEarning?.points || ""} onChange={(e) => { uService({ points: Number(e.target.value) }); uProduct({ points: Number(e.target.value) }); uPackage({ points: Number(e.target.value) }); }} style={{ flex: 1, border: "none", padding: "8px 10px", fontSize: 13, outline: "none", background: "transparent" }} />
+                    <span style={{ padding: "8px 10px", background: "#f1f5f9", color: "#475569", fontWeight: 600, fontSize: 13, borderLeft: "1px solid #cbd5e1", display: "flex", alignItems: "center" }}>pts</span>
+                  </div>
                 </div>
               </div>
               <div style={{ fontSize: 12, color: "#475569" }}>{summaryText}</div>
