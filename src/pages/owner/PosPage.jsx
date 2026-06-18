@@ -349,16 +349,19 @@ export default function PosPage() {
   
   const handleAddGcToCart = () => {
     const gc = gcModalGc;
+    const isCustom = gc?.id === "CUSTOM";
+    const gcCode = isCustom ? `GC-${Date.now().toString(36).toUpperCase()}` : (gc?.code || `GC-${Date.now().toString(36).toUpperCase()}`);
     setForm(c => ({
       ...c,
       items: [...c.items.filter(i => i.serviceId || i.productId || i.membershipPlanId || i.packageId || i.itemType === "GIFT_CARD"), {
         itemType: "GIFT_CARD",
         serviceName: gc?.name || "Custom Gift Card",
+        gcCode,
         staffUserSalonId: gcDraft.staffId || "",
         qty: 1,
         unitPrice: Number(gcDraft.price || 0),
         taxPct: 0,
-        validityDays: Number(gcDraft.validityDays || 30),
+        validityDays: Number(gcDraft.validityDays || 365),
         purchaseDate: gcDraft.purchaseDate,
         isCustom: true
       }]
@@ -460,7 +463,7 @@ export default function PosPage() {
   const validateBeforeSubmit = useCallback((mode) => {
     if (!form.customerId) return "Please select a guest.";
     if (!form.branchId) return "Please select a branch.";
-    const activeItems = form.items.filter((item) => item.serviceId || item.productId || item.membershipPlanId || item.packageId);
+    const activeItems = form.items.filter((item) => item.serviceId || item.productId || item.membershipPlanId || item.packageId || item.itemType === "GIFT_CARD");
     if (!activeItems.length) return "Please add at least one item to the invoice.";
     for (const item of activeItems) {
       if (item.itemType === "SERVICE") {
@@ -470,6 +473,7 @@ export default function PosPage() {
       if (item.itemType === "PRODUCT" && !item.productId) return "Please select a valid product.";
       if (item.itemType === "MEMBERSHIP" && !item.membershipPlanId) return "Please select a membership plan.";
       if (item.itemType === "PACKAGE" && !item.packageId) return "Please select a package.";
+      if (item.itemType === "GIFT_CARD" && Number(item.unitPrice || 0) <= 0) return "Gift card amount must be greater than zero.";
       if (Number(item.qty || 0) <= 0) return "Quantity must be greater than zero.";
     }
     if (mode === "complete") {
@@ -481,7 +485,7 @@ export default function PosPage() {
   }, [form, totals.total]);
 
   const buildInvoicePayload = useCallback((mode) => {
-    const activeItems = form.items.filter((item) => item.serviceId || item.productId || item.membershipPlanId || item.packageId);
+    const activeItems = form.items.filter((item) => item.serviceId || item.productId || item.membershipPlanId || item.packageId || item.itemType === "GIFT_CARD");
     
     let finalPayments = [];
     if (mode === "complete") {
@@ -884,6 +888,30 @@ export default function PosPage() {
                 </thead>
                 <tbody>
                   {form.items.map((item, index) => {
+                    if (item.itemType === "GIFT_CARD") {
+                      const price = toAmount(item.unitPrice);
+                      const qty = Number(item.qty) || 1;
+                      const subTotal = price * qty;
+                      return (
+                        <tr key={index}>
+                          <td style={{ color: "#334155" }}>{item.serviceName || "Gift Card"}</td>
+                          <td>
+                            <select className="pos-cart-select" value={item.staffUserSalonId || ""} onChange={(e) => updateItem(index, { staffUserSalonId: e.target.value })}>
+                              <option value="">Assign staff</option>
+                              {getEligibleStaffUsers(item).map((u) => <option key={u.id} value={u.id}>{u.user?.name}</option>)}
+                            </select>
+                          </td>
+                          <td><input className="pos-cart-input" type="number" min="1" value={item.qty} onChange={(e) => updateItem(index, { qty: Number(e.target.value || 1) })} /></td>
+                          <td>{price.toFixed(0)}</td>
+                          <td>{subTotal.toFixed(0)}</td>
+                          <td>-</td>
+                          <td>-</td>
+                          <td>-</td>
+                          <td>{subTotal.toFixed(0)}</td>
+                          <td><button className="pos-remove-btn" onClick={() => updateItem(index, { serviceId: "", productId: "", membershipPlanId: "", packageId: "" })}>&#x2715;</button></td>
+                        </tr>
+                      );
+                    }
                     if (!item.serviceId && !item.productId && !item.membershipPlanId && !item.packageId) return null;
                     const baseObj = item.itemType === "PRODUCT"
                       ? productLookup[item.productId]
@@ -961,7 +989,7 @@ export default function PosPage() {
                       </tr>
                     );
                   })}
-                  {form.items.filter(item => item.serviceId || item.productId || item.membershipPlanId || item.packageId).length === 0 && (
+                  {form.items.filter(item => item.serviceId || item.productId || item.membershipPlanId || item.packageId || item.itemType === "GIFT_CARD").length === 0 && (
                     <tr>
                       <td colSpan="10" style={{ textAlign: "center", padding: 32, color: "#94a3b8" }}>
                         No items added yet. Click a service or product on the left to add.
@@ -1011,6 +1039,34 @@ export default function PosPage() {
                   </div>
                 );
               })()}
+              {(() => {
+                const availableGiftCards = (context.giftCards || []).filter(gc => gc.balanceAmount > 0 || gc.originalAmount > 0);
+                if (availableGiftCards.length === 0) return null;
+                return (
+                  <div style={{ marginBottom: '12px', padding: '10px 14px', background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#92400e' }}>Gift Card Balance</span>
+                      <span style={{ fontSize: '15px', fontWeight: 700, color: '#92400e' }}>{availableGiftCards.length} card(s)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap' }}>Card Code:</label>
+                      <select
+                        value={form.giftVoucherCode || ""}
+                        onChange={(e) => setForm(c => ({ ...c, giftVoucherCode: e.target.value }))}
+                        style={{ flex: 1, padding: '6px 10px', border: '1px solid #fcd34d', borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+                      >
+                        <option value="">Select Gift Card</option>
+                        {availableGiftCards.map(gc => (
+                          <option key={gc.id} value={gc.code}>{gc.code} — {formatMoney(Number(gc.balanceAmount || gc.originalAmount || 0))}</option>
+                        ))}
+                      </select>
+                      {form.giftVoucherCode && (
+                        <button type="button" onClick={() => setForm(c => ({ ...c, giftVoucherCode: "" }))} style={{ padding: '6px 10px', fontSize: '11px', background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: '6px', cursor: 'pointer', color: '#92400e', fontWeight: 600 }}>Clear</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <h5 style={{ margin: 0 }}>Payment Details:</h5>
                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>(Click Cash/Online to auto-fill full amount)</span>
@@ -1018,43 +1074,31 @@ export default function PosPage() {
               <div className="pos-payment-grid">
                 <div className="pos-payment-input">
                   <label style={{ cursor: 'pointer' }} onClick={() => {
-                    const next = form.payments.filter((payment) => payment.mode !== "ONLINE");
-                    next.push({ mode: "ONLINE", amount: totals.total, note: "" });
-                    setForm((current) => ({ ...current, payments: next }));
+                    setForm((current) => ({ ...current, payments: [{ mode: "ONLINE", amount: totals.total, note: "" }] }));
                   }}><svg width="16" height="16" style={{ color: "#10b981" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> Online</label>
                   <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "ONLINE")?.amount || ""} onChange={(e) => {
                     const amount = e.target.value;
-                    const next = form.payments.filter((payment) => payment.mode !== "ONLINE");
-                    next.push({ mode: "ONLINE", amount, note: "" });
-                    setForm((current) => ({ ...current, payments: next }));
+                    setForm((current) => ({ ...current, payments: [{ mode: "ONLINE", amount, note: "" }] }));
                   }} />
                 </div>
                 <div className="pos-payment-input">
                   <label style={{ cursor: 'pointer' }} onClick={() => {
-                    const next = form.payments.filter((payment) => payment.mode !== "CASH");
-                    next.unshift({ mode: "CASH", amount: totals.total, note: "" });
-                    setForm(c => ({ ...c, payments: next }));
+                    setForm((current) => ({ ...current, payments: [{ mode: "CASH", amount: totals.total, note: "" }] }));
                   }}><svg width="16" height="16" style={{ color: "#64748b" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg> Cash</label>
                   <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "CASH")?.amount || ""} onChange={(e) => {
                     const amount = e.target.value;
-                    const next = form.payments.filter((payment) => payment.mode !== "CASH");
-                    next.unshift({ mode: "CASH", amount, note: "" });
-                    setForm(c => ({ ...c, payments: next }));
+                    setForm((current) => ({ ...current, payments: [{ mode: "CASH", amount, note: "" }] }));
                   }} />
                 </div>
                 <div className="pos-payment-input">
                   <label style={{ cursor: 'pointer' }} onClick={() => {
                     const paidSoFar = form.payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
                     const balance = Math.max(0, totals.total - paidSoFar);
-                    const next = form.payments.filter((payment) => payment.mode !== "BALANCE");
-                    next.push({ mode: "BALANCE", amount: balance, note: "" });
-                    setForm(c => ({ ...c, payments: next }));
+                    setForm((current) => ({ ...current, payments: [{ mode: "BALANCE", amount: balance, note: "" }] }));
                   }}><svg width="16" height="16" style={{ color: "#f59e0b" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg> Balance</label>
                   <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "BALANCE")?.amount || ""} onChange={(e) => {
                     const amount = e.target.value;
-                    const next = form.payments.filter((payment) => payment.mode !== "BALANCE");
-                    next.push({ mode: "BALANCE", amount, note: "" });
-                    setForm(c => ({ ...c, payments: next }));
+                    setForm((current) => ({ ...current, payments: [{ mode: "BALANCE", amount, note: "" }] }));
                   }} />
                 </div>
               </div>
@@ -1186,12 +1230,14 @@ export default function PosPage() {
                   const isSelected = gcModalGc?.id === gc.id;
                   return (
                     <div key={gc.id} onClick={() => {
+                      const gcBalance = Number(gc.balanceAmount || gc.originalAmount || 0);
+                      const gcValidity = gc.expiresAt ? Math.max(1, Math.ceil((new Date(gc.expiresAt) - new Date()) / (1000 * 60 * 60 * 24))) : 365;
                       setGcModalGc({ id: gc.id, name: gc.code || "Gift Card" });
-                      setGcDraft({ staffId: "", price: String(gc.amount||0), validityDays: String(gc.validityDays||30), purchaseDate: new Date().toISOString().slice(0,10) });
+                      setGcDraft({ staffId: "", price: String(gcBalance), validityDays: String(gcValidity), purchaseDate: new Date().toISOString().slice(0,10) });
                     }} style={{ background: isSelected?"#fdf4ff":"#fdf4ff", border: isSelected?"2px solid #e879f9":"1px solid #fdf4ff", borderRadius:12, padding:16, cursor:"pointer", transition:"all 0.2s" }}>
                       <div style={{ fontSize:"0.95rem", fontWeight:700, color:"#3b82f6", marginBottom:8, textTransform:"uppercase" }}>{gc.code || "GIFT CARD"}</div>
-                      <div style={{ fontSize:"0.85rem", color:"#475569", marginBottom:4 }}>Fee: {formatMoney(Number(gc.amount||0))}</div>
-                      <div style={{ fontSize:"0.85rem", color:"#475569", marginBottom:12 }}>Validity: {gc.validityDays || 30} Days</div>
+                      <div style={{ fontSize:"0.85rem", color:"#475569", marginBottom:4 }}>Balance: {formatMoney(Number(gc.balanceAmount || gc.originalAmount || 0))}</div>
+                      <div style={{ fontSize:"0.85rem", color:"#475569", marginBottom:12 }}>Validity: {gc.expiresAt ? Math.max(1, Math.ceil((new Date(gc.expiresAt) - new Date()) / (1000 * 60 * 60 * 24))) : 365} Days</div>
                     </div>
                   );
                 })}
