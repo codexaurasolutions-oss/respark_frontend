@@ -9,7 +9,7 @@ import { formatApiError } from "../../utils/apiError";
 import { 
   Receipt, Wallet, Search, Filter, FolderKanban, PlusCircle, 
   Calendar, CheckCircle2, Clock, AlertCircle, XCircle, LayoutDashboard,
-  Building, ArrowUpRight, ArrowDownRight, Edit, Check, X, ChevronRight, Plus
+  Building, ArrowUpRight, ArrowDownRight, Edit, Check, X, ChevronRight, Plus, Trash2
 } from "lucide-react";
 
 const emptyForm = {

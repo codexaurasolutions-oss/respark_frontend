@@ -36,11 +36,108 @@ const toApiPhone = (value) => {
   return `+91${digits}`;
 };
 
+const inputStyle = {
+  width: "100%",
+  padding: "12px 14px",
+  border: "1px solid #cbd5e1",
+  borderRadius: 8,
+  fontSize: "0.95rem",
+  boxSizing: "border-box",
+  background: "white",
+  outline: "none"
+};
+
+const labelStyle = {
+  fontSize: "0.85rem",
+  fontWeight: 600,
+  color: "#475569",
+  marginBottom: 6
+};
+
+const formGroupStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 6
+};
+
+function Toggle({ checked, onChange, activeLabel = "Active", inactiveLabel = "Inactive" }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <span style={{ fontSize: "0.85rem", fontWeight: 500, color: checked ? "#3b82f6" : "#64748b" }}>
+        {checked ? activeLabel : inactiveLabel}
+      </span>
+      <button
+        type="button"
+        onClick={onChange}
+        style={{
+          width: 52,
+          height: 28,
+          borderRadius: 14,
+          border: "none",
+          background: checked ? "#3b82f6" : "#cbd5e1",
+          position: "relative",
+          cursor: "pointer",
+          transition: "background 0.25s ease",
+          boxShadow: "inset 0 1px 3px rgba(0,0,0,0.12)"
+        }}
+        aria-checked={checked}
+        role="switch"
+      >
+        <span style={{
+          display: "block",
+          width: 22,
+          height: 22,
+          borderRadius: "50%",
+          background: "white",
+          position: "absolute",
+          top: 3,
+          left: checked ? 27 : 3,
+          transition: "left 0.25s ease",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
+        }} />
+      </button>
+    </div>
+  );
+}
+
+function PhoneInput({ label, required, value, onChange, placeholder }) {
+  const digits = value.replace(/\D/g, "");
+  const isInvalid = value && digits.length !== 10;
+  return (
+    <div style={formGroupStyle}>
+      <label style={labelStyle}>{label} {required && <span style={{ color: "#ef4444" }}>*</span>}</label>
+      <div style={{ display: "flex", border: `1px solid ${isInvalid ? "#ef4444" : "#cbd5e1"}`, borderRadius: 8, overflow: "hidden", background: "white" }}>
+        <span style={{ padding: "12px 10px", background: "#f1f5f9", color: "#475569", fontWeight: 600, fontSize: "0.95rem", borderRight: "1px solid #cbd5e1", display: "flex", alignItems: "center" }}>
+          +91
+        </span>
+        <input
+          type="tel"
+          maxLength={10}
+          value={value}
+          onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 10))}
+          placeholder={placeholder || "XXXXXXXXXX"}
+          style={{ flex: 1, border: "none", padding: "12px 14px", fontSize: "0.95rem", outline: "none", background: "transparent" }}
+        />
+      </div>
+      {isInvalid && <span style={{ fontSize: "0.75rem", color: "#ef4444" }}>Enter exactly 10 digits</span>}
+    </div>
+  );
+}
+
+function TextInput({ label, required, value, onChange, placeholder, type = "text" }) {
+  return (
+    <div style={formGroupStyle}>
+      <label style={labelStyle}>{label} {required && <span style={{ color: "#ef4444" }}>*</span>}</label>
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} />
+    </div>
+  );
+}
+
 export default function VendorManagement({ branches = [], formatMoney }) {
   const [vendors, setVendors] = useState([]);
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [form, setForm] = useState(emptyVendor);
-  const [mode, setMode] = useState("list"); // list | create | edit | items
+  const [mode, setMode] = useState("list");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState({ error: "", success: "" });
   const [loading, setLoading] = useState(false);
@@ -213,102 +310,6 @@ export default function VendorManagement({ branches = [], formatMoney }) {
       console.error(e);
     }
   };
-
-  const inputStyle = {
-    width: "100%",
-    padding: "12px 14px",
-    border: "1px solid #cbd5e1",
-    borderRadius: 8,
-    fontSize: "0.95rem",
-    boxSizing: "border-box",
-    background: "white",
-    outline: "none"
-  };
-
-  const labelStyle = {
-    fontSize: "0.85rem",
-    fontWeight: 600,
-    color: "#475569",
-    marginBottom: 6
-  };
-
-  const formGroupStyle = {
-    display: "flex",
-    flexDirection: "column",
-    gap: 6
-  };
-
-  const Toggle = ({ checked, onChange, activeLabel = "Active", inactiveLabel = "Inactive" }) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ fontSize: "0.85rem", fontWeight: 500, color: checked ? "#3b82f6" : "#64748b" }}>
-        {checked ? activeLabel : inactiveLabel}
-      </span>
-      <button
-        type="button"
-        onClick={onChange}
-        style={{
-          width: 52,
-          height: 28,
-          borderRadius: 14,
-          border: "none",
-          background: checked ? "#3b82f6" : "#cbd5e1",
-          position: "relative",
-          cursor: "pointer",
-          transition: "background 0.25s ease",
-          boxShadow: "inset 0 1px 3px rgba(0,0,0,0.12)"
-        }}
-        aria-checked={checked}
-        role="switch"
-      >
-        <span style={{
-          display: "block",
-          width: 22,
-          height: 22,
-          borderRadius: "50%",
-          background: "white",
-          position: "absolute",
-          top: 3,
-          left: checked ? 27 : 3,
-          transition: "left 0.25s ease",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
-        }} />
-      </button>
-    </div>
-  );
-
-  const PhoneInput = ({ label, required, value, onChange, placeholder }) => {
-    const digits = value.replace(/\D/g, "");
-    const isInvalid = value && digits.length !== 10;
-    return (
-      <div style={formGroupStyle}>
-        <label style={labelStyle}>{label} {required && <span style={{ color: "#ef4444" }}>*</span>}</label>
-        <div style={{ display: "flex", border: `1px solid ${isInvalid ? "#ef4444" : "#cbd5e1"}`, borderRadius: 8, overflow: "hidden", background: "white" }}>
-          <span style={{ padding: "12px 10px", background: "#f1f5f9", color: "#475569", fontWeight: 600, fontSize: "0.95rem", borderRight: "1px solid #cbd5e1", display: "flex", alignItems: "center" }}>
-            +91
-          </span>
-          <input
-            type="tel"
-            maxLength={10}
-            value={value}
-            onChange={(e) => {
-              const raw = e.target.value.replace(/\D/g, "").slice(0, 10);
-              onChange(raw);
-            }}
-            placeholder={placeholder || "XXXXXXXXXX"}
-            style={{ flex: 1, border: "none", padding: "12px 14px", fontSize: "0.95rem", outline: "none", background: "transparent" }}
-          />
-        </div>
-        {isInvalid && <span style={{ fontSize: "0.75rem", color: "#ef4444" }}>Enter exactly 10 digits</span>}
-      </div>
-    );
-  };
-
-  const TextInput = ({ label, required, value, onChange, placeholder, type = "text" }) => (
-    <div style={formGroupStyle}>
-      <label style={labelStyle}>{label} {required && <span style={{ color: "#ef4444" }}>*</span>}</label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} />
-    </div>
-  );
 
   return (
     <div style={{ display: "flex", height: "calc(100vh - 140px)", background: "#f1f5f9", borderRadius: 12, overflow: "hidden", border: "1px solid #e2e8f0" }}>
