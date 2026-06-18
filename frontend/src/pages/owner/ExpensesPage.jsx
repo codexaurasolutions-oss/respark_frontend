@@ -132,9 +132,8 @@ export default function ExpensesPage() {
 
   // Filtered lists
   const baseFilteredExpenses = rows.filter(row => {
-    const rowDate = row.expenseDate ? String(row.expenseDate).slice(0, 10) : "";
-    const dateMatch = (!filters.startDate || rowDate >= filters.startDate) &&
-                      (!filters.endDate || rowDate <= filters.endDate);
+    const dateMatch = (!filters.startDate || row.expenseDate >= filters.startDate) &&
+                      (!filters.endDate || row.expenseDate <= filters.endDate);
     const branchMatch = !filters.branchId || row.branchId === filters.branchId;
     return dateMatch && branchMatch;
   });
@@ -293,20 +292,17 @@ export default function ExpensesPage() {
       const payload = {
         title: form.title,
         amount: Number(form.amount),
-        expenseDate: form.expenseDate,
+        expenseDate: new Date(form.expenseDate).toISOString(),
         paymentMode: form.paymentMode,
         notes: form.notes || null,
         categoryId: form.categoryId || null,
-        branchId: form.branchId || null,
-        status: autoApproveExpenses ? "APPROVED" : "PENDING"
+        branchId: form.branchId || null
       };
 
       await api.post("/owner/expenses", payload);
       setStatus({
         error: "",
-        success: autoApproveExpenses
-          ? "Expense recorded and auto-approved! It's now visible in the list below."
-          : "Expense submitted! It's in PENDING status — click the 'Pending' tab above to see it, or wait for approval."
+        success: "Expense added successfully!"
       });
       setForm(emptyForm);
       setShowAddModal(false);
@@ -897,27 +893,12 @@ export default function ExpensesPage() {
 
                     <div className="filter-item">
                       <span className="filter-label">To:</span>
-                      <input 
+                      <input
                         type="date"
                         className="filter-input"
                         value={filters.endDate}
                         onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
                       />
-                    </div>
-
-                    <div className="filter-item">
-                      <span className="filter-label">Status:</span>
-                      <select
-                        className="filter-select"
-                        value={filters.status}
-                        onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                      >
-                        <option value="">All Statuses</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="APPROVED">Approved</option>
-                        <option value="REJECTED">Rejected</option>
-                        <option value="PAID">Paid</option>
-                      </select>
                     </div>
                   </div>
 
@@ -931,37 +912,6 @@ export default function ExpensesPage() {
                   </div>
                 </div>
 
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
-                  {[
-                    { key: "", label: "All", count: expenseStatusCounts.total },
-                    { key: "PENDING", label: "Pending", count: expenseStatusCounts.pending },
-                    { key: "APPROVED", label: "Approved", count: expenseStatusCounts.approved },
-                    { key: "REJECTED", label: "Rejected", count: expenseStatusCounts.rejected },
-                    { key: "PAID", label: "Paid", count: expenseStatusCounts.paid },
-                  ].map((item) => {
-                    const active = filters.status === item.key;
-                    return (
-                      <button
-                        key={item.label}
-                        type="button"
-                        onClick={() => setFilters((current) => ({ ...current, status: item.key }))}
-                        style={{
-                          border: active ? "1px solid #2563eb" : "1px solid #dbe4f0",
-                          background: active ? "#eff6ff" : "#fff",
-                          color: active ? "#1d4ed8" : "#334155",
-                          borderRadius: 999,
-                          padding: "8px 14px",
-                          fontSize: 12,
-                          fontWeight: 700,
-                          cursor: "pointer",
-                        }}
-                      >
-                        {item.label} {item.count}
-                      </button>
-                    );
-                  })}
-                </div>
-
                 {/* Table Ledger */}
                 <div className="ledger-table-container">
                   <table className="ledger-table">
@@ -972,14 +922,11 @@ export default function ExpensesPage() {
                         <th>Title</th>
                         <th>Amount</th>
                         <th>Payment Mode</th>
-                        <th>Status</th>
-                        <th>Approval</th>
                         <th style={{ textAlign: "right" }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredExpenses.map((row) => {
-                        const statusMeta = getStatusColor(row.status);
                         return (
                           <tr key={row.id}>
                             <td style={{ fontWeight: 600 }}>{new Date(row.expenseDate).toLocaleDateString()}</td>
@@ -991,68 +938,32 @@ export default function ExpensesPage() {
                             <td>{row.title}</td>
                             <td style={{ fontWeight: 700, fontFamily: "monospace" }}>{formatMoney(row.amount || 0)}</td>
                             <td style={{ fontWeight: 600, fontSize: 12 }}>{row.paymentMode || "CASH"}</td>
-                            <td>
-                              <div style={{ display: "grid", gap: 6 }}>
-                                <span className="status-pill" style={{ background: statusMeta.bg, color: statusMeta.text }}>
-                                  {statusMeta.icon} {row.status}
-                                </span>
-                                {row.createdByMembership?.user?.name ? (
-                                  <span style={{ color: "#64748b", fontSize: 11 }}>
-                                    Created by {row.createdByMembership.user.name}
-                                  </span>
-                                ) : null}
-                              </div>
-                            </td>
-                            <td>
-                              {row.status === "PENDING" ? (
-                                <span style={{ color: "#f59e0b", fontSize: 12, fontWeight: 600 }}>Waiting for approval</span>
-                              ) : row.approvedByMembership?.user?.name ? (
-                                <div style={{ display: "grid", gap: 4 }}>
-                                  <span style={{ color: "#0f172a", fontSize: 12, fontWeight: 700 }}>
-                                    {row.status === "REJECTED" ? "Rejected by" : "Approved by"} {row.approvedByMembership.user.name}
-                                  </span>
-                                  {row.approvalNote ? (
-                                    <span style={{ color: "#64748b", fontSize: 11 }}>{row.approvalNote}</span>
-                                  ) : null}
-                                </div>
-                              ) : (
-                                <span style={{ color: "#94a3b8", fontSize: 12 }}>System / auto flow</span>
-                              )}
-                            </td>
                             <td style={{ textAlign: "right" }}>
-                              {row.status === "PENDING" && canApproveExpenses && (
-                                <div style={{ display: "inline-flex", gap: 6 }}>
-                                  <button 
-                                    className="blue-btn" 
-                                    style={{ padding: "4px 8px", borderRadius: 4, background: "#16a34a" }} 
-                                    onClick={() => handleApproveExpense(row.id)}
-                                    title="Approve"
-                                  >
-                                    <Check size={14} />
-                                  </button>
-                                  <button 
-                                    className="blue-btn" 
-                                    style={{ padding: "4px 8px", borderRadius: 4, background: "#dc2626" }} 
-                                    onClick={() => handleRejectExpense(row.id)}
-                                    title="Reject"
-                                  >
-                                    <X size={14} />
-                                  </button>
-                                </div>
-                              )}
-                              {row.status === "PENDING" && !canApproveExpenses && (
-                                <span style={{ color: "#f59e0b", fontSize: 12, fontStyle: "italic" }}>Awaiting approver</span>
-                              )}
-                              {row.status !== "PENDING" && (
-                                <span style={{ color: "#94a3b8", fontSize: 12, fontStyle: "italic" }}>No action needed</span>
-                              )}
+                              <div style={{ display: "inline-flex", gap: 6 }}>
+                                <button 
+                                  className="blue-btn" 
+                                  style={{ padding: "4px 8px", borderRadius: 4 }} 
+                                  onClick={() => handleEditExpense(row)}
+                                  title="Edit"
+                                >
+                                  <Pencil size={14} />
+                                </button>
+                                <button 
+                                  className="blue-btn" 
+                                  style={{ padding: "4px 8px", borderRadius: 4, background: "#dc2626" }} 
+                                  onClick={() => handleDeleteExpense(row.id)}
+                                  title="Delete"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
                       })}
                       {filteredExpenses.length === 0 && (
                         <tr>
-                          <td colSpan={8} style={{ padding: 40, textAlign: "center" }}>
+                          <td colSpan={6} style={{ padding: 40, textAlign: "center" }}>
                             <EmptyState 
                               title="No Expenses Recorded" 
                               message="Adjust filters or click 'Add Expenses' to record standard expenses." 
