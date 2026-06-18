@@ -53,6 +53,8 @@ export default function ExpensesPage() {
   // Filters & selection
   const [filters, setFilters] = useState({
     branchId: "",
+    paymentMode: "",
+    categoryId: "",
     startDate: new Date(new Date().getFullYear(), new Date().getMonth() - 3, 1).toISOString().slice(0, 10),
     endDate: new Date().toISOString().slice(0, 10),
     status: "",
@@ -63,6 +65,7 @@ export default function ExpensesPage() {
   const [modalError, setModalError] = useState("");
   const [form, setForm] = useState(emptyForm);
   const [submittingExpense, setSubmittingExpense] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState(null);
 
   // Types view states
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -72,7 +75,7 @@ export default function ExpensesPage() {
   // Accounts view states
   const [activeAccount, setActiveAccount] = useState("CASH");
   const [showAddBalanceModal, setShowAddBalanceModal] = useState(false);
-  const [balanceForm, setBalanceForm] = useState({ amount: "", note: "", accountMode: "CASH" });
+  const [balanceForm, setBalanceForm] = useState({ amount: "", note: "", accountMode: "CASH", paymentMode: "CASH" });
 
   // Determine active sub-mode
   const mode = location.pathname.includes("/types") || location.pathname.includes("/categories")
@@ -135,7 +138,9 @@ export default function ExpensesPage() {
     const dateMatch = (!filters.startDate || row.expenseDate >= filters.startDate) &&
                       (!filters.endDate || row.expenseDate <= filters.endDate);
     const branchMatch = !filters.branchId || row.branchId === filters.branchId;
-    return dateMatch && branchMatch;
+    const paymentModeMatch = !filters.paymentMode || row.paymentMode === filters.paymentMode;
+    const categoryMatch = !filters.categoryId || row.categoryId === filters.categoryId;
+    return dateMatch && branchMatch && paymentModeMatch && categoryMatch;
   });
 
   const filteredExpenses = baseFilteredExpenses.filter((row) => !filters.status || row.status === filters.status);
@@ -299,12 +304,15 @@ export default function ExpensesPage() {
         branchId: form.branchId || null
       };
 
-      await api.post("/owner/expenses", payload);
-      setStatus({
-        error: "",
-        success: "Expense added successfully!"
-      });
+      if (editingExpenseId) {
+        await api.patch(`/owner/expenses/${editingExpenseId}`, payload);
+        setStatus({ error: "", success: "Expense updated successfully!" });
+      } else {
+        await api.post("/owner/expenses", payload);
+        setStatus({ error: "", success: "Expense added successfully!" });
+      }
       setForm(emptyForm);
+      setEditingExpenseId(null);
       setShowAddModal(false);
       setTimeout(() => setStatus({ error: "", success: "" }), 3000);
       await loadData();
@@ -312,6 +320,35 @@ export default function ExpensesPage() {
       setModalError(formatApiError(err, "Could not save expense"));
     } finally {
       setSubmittingExpense(false);
+    }
+  };
+
+  // Edit Expense
+  const handleEditExpense = (expense) => {
+    setEditingExpenseId(expense.id);
+    setForm({
+      title: expense.title || "",
+      amount: String(expense.amount || ""),
+      expenseDate: expense.expenseDate ? expense.expenseDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      categoryId: expense.categoryId || "",
+      branchId: expense.branchId || "",
+      paymentMode: expense.paymentMode || "CASH",
+      notes: expense.notes || ""
+    });
+    setModalError("");
+    setShowAddModal(true);
+  };
+
+  // Delete Expense
+  const handleDeleteExpense = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this expense?")) return;
+    try {
+      await api.delete(`/owner/expenses/${id}`);
+      setStatus({ error: "", success: "Expense deleted successfully!" });
+      setTimeout(() => setStatus({ error: "", success: "" }), 3000);
+      await loadData();
+    } catch (err) {
+      setStatus({ error: formatApiError(err, "Could not delete expense"), success: "" });
     }
   };
 
@@ -347,6 +384,7 @@ export default function ExpensesPage() {
     try {
       await api.post("/owner/expenses/accounts/injections", {
         accountMode: balanceForm.accountMode,
+        paymentMode: balanceForm.paymentMode,
         amount: Number(balanceForm.amount),
         note: balanceForm.note || "Owner Balance injection"
       });
@@ -355,7 +393,7 @@ export default function ExpensesPage() {
         error: "",
         success: `Added ${formatMoney(balanceForm.amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} balance to ${balanceForm.accountMode} account!`
       });
-      setBalanceForm({ amount: "", note: "", accountMode: "CASH" });
+      setBalanceForm({ amount: "", note: "", accountMode: "CASH", paymentMode: "CASH" });
       setShowAddBalanceModal(false);
       setTimeout(() => setStatus({ error: "", success: "" }), 3000);
       await loadData();
@@ -876,6 +914,37 @@ export default function ExpensesPage() {
                     </div>
 
                     <div className="filter-item">
+                      <span className="filter-label">Paymode:</span>
+                      <select 
+                        className="filter-select"
+                        value={filters.paymentMode}
+                        onChange={(e) => setFilters({ ...filters, paymentMode: e.target.value })}
+                      >
+                        <option value="">All</option>
+                        <option value="CASH">CASH</option>
+                        <option value="CARD">CARD</option>
+                        <option value="UPI">UPI</option>
+                        <option value="BANK_TRANSFER">BANK TRANSFER</option>
+                        <option value="WALLET">WALLET</option>
+                        <option value="ONLINE">ONLINE</option>
+                      </select>
+                    </div>
+
+                    <div className="filter-item">
+                      <span className="filter-label">Expense Type:</span>
+                      <select 
+                        className="filter-select"
+                        value={filters.categoryId}
+                        onChange={(e) => setFilters({ ...filters, categoryId: e.target.value })}
+                      >
+                        <option value="">All</option>
+                        {categories.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="filter-item">
                       <span className="filter-label">From:</span>
                       <input 
                         type="date"
@@ -900,7 +969,7 @@ export default function ExpensesPage() {
                     <button className="blue-btn-secondary" onClick={loadData}>
                       <Search size={14} /> Show Expenses
                     </button>
-                    <button className="blue-btn" onClick={() => setShowAddModal(true)}>
+                    <button className="blue-btn" onClick={() => { setEditingExpenseId(null); setForm(emptyForm); setShowAddModal(true); }}>
                       <Plus size={16} /> Add Expenses
                     </button>
                   </div>
@@ -1239,10 +1308,10 @@ export default function ExpensesPage() {
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">Record New Expense</h2>
+              <h2 className="modal-title">{editingExpenseId ? "Edit Expense" : "Record New Expense"}</h2>
               <button 
                 style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}
-                onClick={() => { setShowAddModal(false); setModalError(""); }}
+                onClick={() => { setShowAddModal(false); setEditingExpenseId(null); setModalError(""); }}
               >
                 <X size={20} />
               </button>
@@ -1363,7 +1432,7 @@ export default function ExpensesPage() {
                 <button 
                   type="button" 
                   className="blue-btn-secondary" 
-                  onClick={() => { setShowAddModal(false); setModalError(""); }}
+                  onClick={() => { setShowAddModal(false); setEditingExpenseId(null); setModalError(""); }}
                 >
                   Cancel
                 </button>
@@ -1372,7 +1441,7 @@ export default function ExpensesPage() {
                   className="blue-btn"
                   disabled={submittingExpense}
                 >
-                  {submittingExpense ? "Recording..." : "Record Expense"}
+                  {submittingExpense ? "Recording..." : (editingExpenseId ? "Update Expense" : "Record Expense")}
                 </button>
               </div>
             </form>
@@ -1385,7 +1454,7 @@ export default function ExpensesPage() {
         <div className="modal-overlay" onClick={() => setShowAddBalanceModal(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">Inject Account Balance</h2>
+              <h2 className="modal-title">Add Balance</h2>
               <button 
                 style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}
                 onClick={() => { setShowAddBalanceModal(false); setModalError(""); }}
@@ -1401,42 +1470,74 @@ export default function ExpensesPage() {
                     <AlertCircle size={16} /> {modalError}
                   </div>
                 )}
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Account Ledger</label>
-                  <select 
-                    className="filter-select"
-                    style={{ width: "100%" }}
-                    value={balanceForm.accountMode}
-                    onChange={(e) => setBalanceForm({ ...balanceForm, accountMode: e.target.value })}
-                  >
-                    <option value="CASH">CASH Account</option>
-                    <option value="CARD">CARD Account</option>
-                    <option value="UPI">UPI Account</option>
-                    <option value="BANK_TRANSFER">BANK TRANSFER Account</option>
-                    <option value="WALLET">WALLET Account</option>
-                    <option value="ONLINE">ONLINE Account</option>
-                  </select>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">Date</label>
+                    <input 
+                      type="date"
+                      className="filter-input"
+                      style={{ width: "100%", boxSizing: "border-box" }}
+                      value={new Date().toISOString().slice(0, 10)}
+                      readOnly
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">Account</label>
+                    <select 
+                      className="filter-select"
+                      style={{ width: "100%" }}
+                      value={balanceForm.accountMode}
+                      onChange={(e) => setBalanceForm({ ...balanceForm, accountMode: e.target.value })}
+                    >
+                      <option value="">Select Account</option>
+                      {Object.entries(accountBalances).map(([mode, data]) => (
+                        <option key={mode} value={mode}>{mode} ({currencyMeta.symbol} {data.balance.toLocaleString()})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">Amount</label>
+                    <input 
+                      type="number" 
+                      className="filter-input"
+                      style={{ width: "100%", boxSizing: "border-box" }}
+                      placeholder="Enter Amount"
+                      value={balanceForm.amount}
+                      onChange={(e) => setBalanceForm({ ...balanceForm, amount: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">Paymode</label>
+                    <select 
+                      className="filter-select"
+                      style={{ width: "100%" }}
+                      value={balanceForm.paymentMode}
+                      onChange={(e) => setBalanceForm({ ...balanceForm, paymentMode: e.target.value })}
+                    >
+                      <option value="">Select Paymode</option>
+                      <option value="CASH">CASH</option>
+                      <option value="CARD">CARD</option>
+                      <option value="UPI">UPI</option>
+                      <option value="BANK_TRANSFER">BANK TRANSFER</option>
+                      <option value="WALLET">WALLET</option>
+                      <option value="ONLINE">ONLINE</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Injection Amount ({currencyMeta.symbol})</label>
+                  <label className="form-label">Remark</label>
                   <input 
-                    type="number" 
+                    type="text"
                     className="filter-input"
                     style={{ width: "100%", boxSizing: "border-box" }}
-                    placeholder="0.00"
-                    value={balanceForm.amount}
-                    onChange={(e) => setBalanceForm({ ...balanceForm, amount: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Reason / Reference Note</label>
-                  <textarea 
-                    className="filter-input"
-                    style={{ width: "100%", minHeight: 60, boxSizing: "border-box" }}
-                    placeholder="e.g. Owner capital deposit, opening cash"
+                    placeholder="Enter Remark"
                     value={balanceForm.note}
                     onChange={(e) => setBalanceForm({ ...balanceForm, note: e.target.value })}
                   />
@@ -1455,7 +1556,7 @@ export default function ExpensesPage() {
                   type="submit" 
                   className="blue-btn"
                 >
-                  Add Balance
+                  Add
                 </button>
               </div>
             </form>
