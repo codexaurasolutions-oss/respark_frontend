@@ -217,7 +217,7 @@ export default function CustomersPage() {
 
   const fetchMembershipPlans = async () => {
     try {
-      const res = await api.get("/owner/memberships/plans");
+      const res = await api.get("/owner/memberships");
       setMembershipPlans(res.data || []);
     } catch (e) {
       console.error("Failed to load membership plans", e);
@@ -254,16 +254,39 @@ export default function CustomersPage() {
   const handleAssignMembership = async () => {
     if (!selectedPlan || !selectedCustomer) return;
     try {
+      const price = membershipForm.price ? Number(membershipForm.price) : Number(selectedPlan.price || 0);
+
+      // Step 1: Create an invoice for the membership purchase
+      const invoiceRes = await api.post("/owner/invoices", {
+        customerId: selectedCustomer.id,
+        items: [{
+          itemType: "MEMBERSHIP",
+          serviceName: selectedPlan.name,
+          membershipPlanId: selectedPlan.id,
+          qty: 1,
+          unitPrice: price,
+          taxPct: 0,
+          lineTotal: price,
+          ...(membershipForm.staffId ? { staffUserId: membershipForm.staffId } : {})
+        }],
+        discount: 0,
+        payments: [{ amount: price, mode: "CASH" }],
+        notes: `Membership purchase: ${selectedPlan.name}`
+      });
+
+      const invoiceId = invoiceRes.data?.id || null;
+
+      // Step 2: Assign the membership to the customer (linked to the invoice)
       await api.post("/owner/memberships/assign", {
         customerId: selectedCustomer.id,
         membershipPlanId: selectedPlan.id,
         validityDays: membershipForm.validityDays ? Number(membershipForm.validityDays) : undefined,
-        price: membershipForm.price ? Number(membershipForm.price) : undefined,
+        price,
         staffId: membershipForm.staffId || undefined,
-        online: membershipForm.online ? Number(membershipForm.online) : undefined,
-        offline: membershipForm.offline ? Number(membershipForm.offline) : undefined,
         startsAt: membershipForm.purchaseDate || undefined,
+        soldInvoiceId: invoiceId,
       });
+
       setShowAssignMembershipModal(false);
       setSelectedPlan(null);
       setMembershipForm({ validityDays: "", price: "", staffId: "", online: "", offline: "", purchaseDate: new Date().toISOString().slice(0, 10) });
@@ -274,6 +297,7 @@ export default function CustomersPage() {
       console.error(e);
     }
   };
+
 
   const handleAddAdvance = async () => {
     if (!advanceForm.amount || !selectedCustomer) return;
