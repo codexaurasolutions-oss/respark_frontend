@@ -1626,7 +1626,7 @@ export default function CustomersPage() {
       {/* Assign Membership Modal */}
       {showAssignMembershipModal && (
         <div className="modal-overlay" onClick={() => setShowAssignMembershipModal(false)}>
-          <div className="modal-content" style={{ width: "min(95vw, 900px)", borderRadius: 16, padding: 0, overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={{ width: "min(95vw, 900px)", borderRadius: 16, padding: 0, display: "flex", flexDirection: "column", maxHeight: "90vh", overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ padding: "18px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}>
               <div style={{ fontWeight: 700, fontSize: "1.2rem", color: "#0f172a" }}>Assign Membership</div>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -1637,7 +1637,7 @@ export default function CustomersPage() {
                 <button onClick={() => setShowAssignMembershipModal(false)} style={{ background: "none", border: "none", fontSize: "1.4rem", cursor: "pointer", color: "#94a3b8" }}>&#x2715;</button>
               </div>
             </div>
-            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 24, flex: 1, maxHeight: "70vh", overflowY: "auto" }}>
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 24, flex: 1, overflowY: "auto" }}>
               {membershipPlans.length === 0 ? (
                 <div className="cust-empty-state">No membership plans available</div>
               ) : (
@@ -1814,7 +1814,7 @@ export default function CustomersPage() {
       {/* Assign Package Modal */}
       {showPackageModal && (
         <div className="modal-overlay" onClick={() => setShowPackageModal(false)}>
-          <div className="modal-content" style={{ width: "min(95vw, 900px)", borderRadius: 16, padding: 0, overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={{ width: "min(95vw, 900px)", borderRadius: 16, padding: 0, display: "flex", flexDirection: "column", maxHeight: "90vh", overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
             <div style={{ padding: "18px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}>
               <div style={{ fontWeight: 700, fontSize: "1.2rem", color: "#0f172a" }}>Assign Package</div>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -1825,7 +1825,7 @@ export default function CustomersPage() {
                 <button onClick={() => setShowPackageModal(false)} style={{ background: "none", border: "none", fontSize: "1.4rem", cursor: "pointer", color: "#94a3b8" }}>&#x2715;</button>
               </div>
             </div>
-            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 24, flex: 1, maxHeight: "70vh", overflowY: "auto" }}>
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 24, flex: 1, overflowY: "auto" }}>
               {packagePlans.length === 0 ? (
                 <div className="cust-empty-state">No package plans available</div>
               ) : (
