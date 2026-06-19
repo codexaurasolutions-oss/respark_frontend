@@ -445,6 +445,29 @@ export default function PosPage() {
     setShowMemModal(false);
   };
 
+  const handleAddGcToCart = () => {
+    const gc = gcModalGc;
+    setForm(c => ({
+      ...c,
+      items: [...c.items.filter(i => i.serviceId || i.productId || i.membershipPlanId || i.packageId), {
+        itemType: "GIFT_CARD",
+        giftCardId: gc?.id || "",
+        name: gc?.name || "Gift Card",
+        staffUserSalonId: gcDraft.staffId || "",
+        qty: 1,
+        unitPrice: Number(gcDraft.price || 0),
+        originalUnitPrice: Number(gcDraft.price || 0),
+        discountPct: 0,
+        discountAmt: 0,
+        taxPct: 0,
+        validityDays: Number(gcDraft.validityDays || 30),
+        purchaseDate: gcDraft.purchaseDate,
+        isCustom: true
+      }]
+    }));
+    setShowGcModal(false);
+  };
+
   const getCatalogBasePrice = useCallback((item) => {
     if (item.originalUnitPrice != null) return toAmount(item.originalUnitPrice);
     if (item.unitPrice != null) return toAmount(item.unitPrice);

@@ -1,12 +1,36 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useOutletContext } from "react-router-dom";
 import { api } from "../../api/client";
+import { formatCurrency, normalizeCurrencyCode } from "../../utils/currency";
 
 export default function HomePage() {
-  const { salon } = useOutletContext();
+  const { salon, genericSettings: layoutGenericSettings } = useOutletContext();
   const [services, setServices] = useState([]);
+  const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [genericSettings, setGenericSettings] = useState({});
+  const [visibility, setVisibility] = useState({});
   const categoryRollerRef = useRef(null);
+  const currencyCode = normalizeCurrencyCode(
+    genericSettings?.defaultCurrency ||
+    genericSettings?.currency ||
+    layoutGenericSettings?.defaultCurrency ||
+    layoutGenericSettings?.currency ||
+    salon?.defaultCurrency ||
+    salon?.currency ||
+    "INR"
+  );
+  const money = (value) => formatCurrency(value, currencyCode);
+  const listStyle = genericSettings.showProductGrid === false
+    ? { display: "grid", gridTemplateColumns: "1fr", gap: 24 }
+    : undefined;
+  const showThumbnails = genericSettings.showProductThumbnails !== false;
+  const includeProductsOnHome = genericSettings.showProductsOnHome !== false;
+  const featuredItems = [
+    ...services.slice(0, 4),
+    ...(visibility.products && includeProductsOnHome ? products.slice(0, 4) : [])
+  ].slice(0, 8);
 
   const scrollRoller = (dir) => {
     if (categoryRollerRef.current) {
@@ -16,16 +40,20 @@ export default function HomePage() {
   };
 
   // In a real app, config comes from the website editor payload
-  const config = salon?.websiteConfig || {
-    heroTitle: "Elevate Your Beauty Experience",
-    heroSubtitle: "Discover premium salon services and exclusive products curated just for you.",
-    heroImage: "https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1600&auto=format&fit=crop"
+  const config = {
+    heroTitle: salon?.websiteConfig?.heroTitle || "Elevate Your Beauty Experience",
+    heroSubtitle: salon?.websiteConfig?.heroSubtitle || "Discover premium salon services and exclusive products curated just for you.",
+    heroImage: salon?.websiteConfig?.heroImage || "https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1600&auto=format&fit=crop"
   };
 
   useEffect(() => {
     // Fetch some dynamic data for the storefront
     api.get(`/public/salon/${salon.slug}`).then(res => {
       setServices(res.data.services || []);
+      setProducts(res.data.products || []);
+      setGenericSettings(res.data.genericSettings || {});
+      setVisibility(res.data.visibility || {});
+      setBranches(res.data.branches || []);
       // Extract unique categories from services for the collections view
       const cats = [...new Set(res.data.services?.map(s => s.categoryId).filter(Boolean))];
       setCategories(cats);
@@ -53,12 +81,29 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Branch Selector */}
+      {genericSettings?.showAllBranchesInCatalogue && branches.length > 0 && (
+        <section className="sf-section" style={{ background: '#fff', padding: '40px 20px' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center' }}>
+            <h3 style={{ marginBottom: 20, fontSize: '1.1rem', color: 'var(--sf-text-light)' }}>Our Locations</h3>
+            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {branches.map((b) => (
+                <div key={b.id} style={{ padding: '12px 24px', border: '1px solid var(--sf-border)', borderRadius: 'var(--sf-radius-md)', background: '#fafafa' }}>
+                  <strong>{b.name}</strong>
+                  {b.address && <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--sf-text-light)' }}>{b.address}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Section 2: Featured Collections */}
       <section className="sf-section" style={{ background: '#fafafa' }}>
         <div className="sf-section-header">
           <span style={{ color: 'var(--sf-accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, fontSize: '0.8rem' }}>Discover</span>
-          <h2>Featured Collections</h2>
-          <p>Explore our carefully curated categories</p>
+          <h2>{genericSettings.serviceListHeading || "Featured Collections"}</h2>
+          <p>Explore our carefully curated salon categories</p>
         </div>
         
         <div className="sf-roller-wrapper">
@@ -86,7 +131,7 @@ export default function HomePage() {
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 40 }}>
-          <Link to={`/site/${salon.slug}/collections`} className="sf-btn sf-btn-secondary">View All Collections</Link>
+          <Link to={`/site/${salon.slug}/collections`} className="sf-btn sf-btn-secondary">View All Services</Link>
         </div>
       </section>
 
@@ -94,37 +139,39 @@ export default function HomePage() {
       <section className="sf-section">
         <div className="sf-section-header">
           <span style={{ color: 'var(--sf-accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, fontSize: '0.8rem' }}>Trending</span>
-          <h2>Popular Experiences</h2>
-          <p>Our most booked services and top-rated products</p>
+          <h2>{visibility.products && includeProductsOnHome ? (genericSettings.productListHeading || "Popular Experiences") : (genericSettings.serviceListHeading || "Popular Services")}</h2>
+          <p>{visibility.products && includeProductsOnHome ? "Our most booked services and top-rated products" : "Our most booked services"}</p>
         </div>
         
-        <div className="sf-grid">
-          {services.slice(0, 4).map((service, idx) => (
+        <div className="sf-grid" style={listStyle}>
+          {featuredItems.map((service, idx) => (
             <Link to={`/site/${salon.slug}/product/${service.id}`} key={service.id || idx} className="sf-product-card">
-              <div className="sf-product-media">
+              {showThumbnails ? <div className="sf-product-media">
                 <div className="sf-product-badge">Top Rated</div>
                 <img src={`https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=800&auto=format&fit=crop&sig=${idx}`} alt={service.name} />
-              </div>
+              </div> : null}
               <div className="sf-product-info">
                 <span className="sf-product-category">Signature Service</span>
                 <h3 className="sf-product-title">{service.name}</h3>
-                <p className="sf-product-price">{salon.currency} {service.price}</p>
-                <div style={{ marginTop: 'auto', paddingTop: '20px', paddingBottom: '24px' }}>
-                  <span className="sf-btn-outline">Purchase Now</span>
-                </div>
+                <p className="sf-product-price">{money(service.price)}</p>
+                {(genericSettings.showAddButtonOnProductCard || genericSettings.showGetQuoteButton) ? (
+                  <div style={{ marginTop: 'auto', paddingTop: '20px', paddingBottom: '24px' }}>
+                    <span className="sf-btn-outline">{genericSettings.showGetQuoteButton ? "Get Quote" : "Add"}</span>
+                  </div>
+                ) : null}
               </div>
             </Link>
           ))}
           {/* Fallback if no dynamic services exist */}
           {services.length === 0 && [1, 2, 3, 4].map(i => (
             <Link to={`/site/${salon.slug}/product/${i}`} key={i} className="sf-product-card">
-              <div className="sf-product-media">
+              {showThumbnails ? <div className="sf-product-media">
                 <img src={`https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=800&auto=format&fit=crop&sig=${i}`} alt="Sample Service" />
-              </div>
+              </div> : null}
               <div className="sf-product-info">
                 <span className="sf-product-category">Sample Category</span>
                 <h3 className="sf-product-title">Luxury Treatment {i}</h3>
-                <p className="sf-product-price">$99.00</p>
+                <p className="sf-product-price">{money(99)}</p>
                 <div style={{ marginTop: 'auto', paddingTop: '20px', paddingBottom: '24px' }}>
                   <span className="sf-btn-outline">Purchase Now</span>
                 </div>

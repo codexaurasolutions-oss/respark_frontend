@@ -4,6 +4,7 @@ import "./ServiceHubPage.css";
 import IndianPhoneInput from "../../components/IndianPhoneInput";
 import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
+import PasswordStrengthMeter from "../../components/PasswordStrengthMeter";
 import { formatApiError } from "../../utils/apiError";
 import {
   clonePermissions,
@@ -39,10 +40,71 @@ const makeEmptyForm = () => ({
   bankName: "",
   bankBranch: "",
   accountNumber: "",
-  ifscCode: ""
+  ifscCode: "",
+  firstName: "",
+  lastName: "",
+  dateOfBirth: "",
+  gender: "",
+  username: "",
+  useMobileAsUsername: false,
+  enableAppointments: true,
+  showAllStaffAppointments: false,
+  position: "",
+  workExperience: [],
+  documents: []
 });
 
 const moduleCatalog = MODULE_GROUPS.flatMap((group) => group.modules);
+const defaultAccessControl = {
+  branchScopedDefault: true,
+  allowStaffExport: true
+};
+const getDesignationOptions = (settingsResponse) =>
+  Array.isArray(settingsResponse.data?.advancedSettings?.designations)
+    ? settingsResponse.data.advancedSettings.designations
+      .filter((row) => row?.active !== false && row?.name)
+      .map((row) => row.name)
+    : [];
+const getAccessControlSettings = (settingsResponse) => ({
+  ...defaultAccessControl,
+  ...(settingsResponse.data?.advancedSettings?.accessControl || {})
+});
+
+const mapRowToForm = (row) => ({
+  name: row.user?.name || "",
+  email: row.user?.email || "",
+  password: "",
+  salonRole: row.salonRole,
+  roleTitle: row.roleTitle || "",
+  phone: row.phone || "",
+  avatarUrl: row.avatarUrl || "",
+  profileNote: row.profileNote || "",
+  branchId: row.branchId || "",
+  customRoleId: row.customRoleId || "",
+  showInCatalog: Boolean(row.showInCatalog),
+  serviceIds: Array.isArray(row.serviceAssignments) ? row.serviceAssignments.map((item) => item.serviceId) : [],
+  permissions: clonePermissions(row.permissions || {}),
+  joiningDate: row.joiningDate ? new Date(row.joiningDate).toISOString().split("T")[0] : "",
+  designation: row.designation || "",
+  uanNumber: row.uanNumber || "",
+  reportingToId: row.reportingToId || "",
+  workingHours: row.workingHours || "",
+  bankName: row.bankName || "",
+  bankBranch: row.bankBranch || "",
+  accountNumber: row.accountNumber || "",
+  ifscCode: row.ifscCode || "",
+  firstName: row.firstName || "",
+  lastName: row.lastName || "",
+  dateOfBirth: row.dateOfBirth ? new Date(row.dateOfBirth).toISOString().split("T")[0] : "",
+  gender: row.gender || "",
+  username: row.username || "",
+  useMobileAsUsername: false,
+  enableAppointments: row.enableAppointments !== false,
+  showAllStaffAppointments: Boolean(row.showAllStaffAppointments),
+  position: row.designation || "",
+  workExperience: Array.isArray(row.workExperience) ? row.workExperience : [],
+  documents: Array.isArray(row.documents) ? row.documents : []
+});
 
 export default function UsersPage() {
   const [rows, setRows] = useState([]);
@@ -50,7 +112,9 @@ export default function UsersPage() {
   const [services, setServices] = useState([]);
   const [customRoles, setCustomRoles] = useState([]);
   const [designationOptions, setDesignationOptions] = useState([]);
+  const [accessControl, setAccessControl] = useState(defaultAccessControl);
   const [filterBranch, setFilterBranch] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState("");
   const [editingId, setEditingId] = useState("");
@@ -61,7 +125,7 @@ export default function UsersPage() {
 
   const load = async (branchId = filterBranch) => {
     const [usersResponse, branchesResponse, servicesResponse, rolesResponse, settingsResponse] = await Promise.all([
-      api.get("/owner/users", { params: branchId ? { branchId } : {} }),
+      api.get("/owner/users", { params: { branchId: branchId || undefined, archived: showArchived } }),
       api.get("/owner/branches"),
       api.get("/owner/services"),
       api.get("/owner/custom-roles"),
@@ -71,18 +135,15 @@ export default function UsersPage() {
     setBranches(branchesResponse.data);
     setServices(servicesResponse.data);
     setCustomRoles(rolesResponse.data);
-    setDesignationOptions(
-      Array.isArray(settingsResponse.data?.advancedSettings?.designations)
-        ? settingsResponse.data.advancedSettings.designations.filter((row) => row?.active !== false && row?.name).map((row) => row.name)
-        : []
-    );
+    setDesignationOptions(getDesignationOptions(settingsResponse));
+    setAccessControl(getAccessControlSettings(settingsResponse));
     setStatus((current) => ({ ...current, loading: false }));
   };
 
   useEffect(() => {
     let active = true;
     Promise.all([
-      api.get("/owner/users"),
+      api.get("/owner/users", { params: { archived: showArchived } }),
       api.get("/owner/branches"),
       api.get("/owner/services"),
       api.get("/owner/custom-roles"),
@@ -93,11 +154,8 @@ export default function UsersPage() {
       setBranches(branchesResponse.data);
       setServices(servicesResponse.data);
       setCustomRoles(rolesResponse.data);
-      setDesignationOptions(
-        Array.isArray(settingsResponse.data?.advancedSettings?.designations)
-          ? settingsResponse.data.advancedSettings.designations.filter((row) => row?.active !== false && row?.name).map((row) => row.name)
-          : []
-      );
+      setDesignationOptions(getDesignationOptions(settingsResponse));
+      setAccessControl(getAccessControlSettings(settingsResponse));
       setStatus((current) => ({ ...current, loading: false }));
     }).catch((error) => {
       if (!active) return;
@@ -112,7 +170,7 @@ export default function UsersPage() {
     let active = true;
     setStatus((current) => ({ ...current, loading: true }));
     Promise.all([
-      api.get("/owner/users", { params: filterBranch ? { branchId: filterBranch } : {} }),
+      api.get("/owner/users", { params: { branchId: filterBranch || undefined, archived: showArchived } }),
       api.get("/owner/branches"),
       api.get("/owner/services"),
       api.get("/owner/custom-roles"),
@@ -123,11 +181,8 @@ export default function UsersPage() {
       setBranches(branchesResponse.data);
       setServices(servicesResponse.data);
       setCustomRoles(rolesResponse.data);
-      setDesignationOptions(
-        Array.isArray(settingsResponse.data?.advancedSettings?.designations)
-          ? settingsResponse.data.advancedSettings.designations.filter((row) => row?.active !== false && row?.name).map((row) => row.name)
-          : []
-      );
+      setDesignationOptions(getDesignationOptions(settingsResponse));
+      setAccessControl(getAccessControlSettings(settingsResponse));
       setStatus((current) => ({ ...current, loading: false }));
     }).catch((error) => {
       if (!active) return;
@@ -136,7 +191,7 @@ export default function UsersPage() {
     return () => {
       active = false;
     };
-  }, [filterBranch]);
+  }, [filterBranch, showArchived]);
 
   const filteredRows = useMemo(() => {
     if (!deferredQuery) return rows;
@@ -202,7 +257,12 @@ export default function UsersPage() {
   };
 
   const startCreate = () => {
-    resetForm();
+    const defaultBranchId = accessControl.branchScopedDefault ? (filterBranch || branches[0]?.id || "") : "";
+    setEditingId("");
+    setForm({
+      ...makeEmptyForm(),
+      branchId: defaultBranchId
+    });
     setStatus((current) => ({ ...current, error: "", success: "" }));
     setIsCreateModalOpen(true);
   };
@@ -210,32 +270,15 @@ export default function UsersPage() {
   const startEdit = (row) => {
     setEditingId(row.id);
     setSelectedId(row.id);
-    setForm({
-      name: row.user?.name || "",
-      email: row.user?.email || "",
-      password: "",
-      salonRole: row.salonRole,
-      roleTitle: row.roleTitle || "",
-      phone: row.phone || "",
-      avatarUrl: row.avatarUrl || "",
-      profileNote: row.profileNote || "",
-      branchId: row.branchId || "",
-      customRoleId: row.customRoleId || "",
-      showInCatalog: Boolean(row.showInCatalog),
-      serviceIds: Array.isArray(row.serviceAssignments) ? row.serviceAssignments.map((item) => item.serviceId) : [],
-      permissions: clonePermissions(row.permissions || {}),
-      joiningDate: row.joiningDate ? new Date(row.joiningDate).toISOString().split('T')[0] : "",
-      designation: row.designation || "",
-      uanNumber: row.uanNumber || "",
-      reportingToId: row.reportingToId || "",
-      workingHours: row.workingHours || "",
-      bankName: row.bankName || "",
-      bankBranch: row.bankBranch || "",
-      accountNumber: row.accountNumber || "",
-      ifscCode: row.ifscCode || ""
-    });
+    setForm(mapRowToForm(row));
     setStatus((current) => ({ ...current, error: "", success: "" }));
   };
+
+  useEffect(() => {
+    if (!selectedRow || isCreateModalOpen || editingId === selectedRow.id) return;
+    setEditingId(selectedRow.id);
+    setForm(mapRowToForm(selectedRow));
+  }, [editingId, isCreateModalOpen, selectedRow]);
 
   const togglePermission = (moduleKey, action) => {
     setForm((current) => {
@@ -288,6 +331,7 @@ export default function UsersPage() {
     event.preventDefault();
     setStatus((current) => ({ ...current, error: "", success: "" }));
     try {
+      const computedName = [form.firstName, form.lastName].filter(Boolean).join(" ") || form.name;
       const payload = {
         salonRole: form.salonRole,
         roleTitle: form.roleTitle || undefined,
@@ -300,34 +344,34 @@ export default function UsersPage() {
         serviceIds: form.serviceIds,
         permissions: form.permissions,
         joiningDate: form.joiningDate || undefined,
-        designation: form.designation || undefined,
+        designation: form.position || form.designation || undefined,
         uanNumber: form.uanNumber || undefined,
         reportingToId: form.reportingToId || undefined,
         workingHours: form.workingHours || undefined,
         bankName: form.bankName || undefined,
         bankBranch: form.bankBranch || undefined,
         accountNumber: form.accountNumber || undefined,
-        ifscCode: form.ifscCode || undefined
+        ifscCode: form.ifscCode || undefined,
+        firstName: form.firstName || undefined,
+        lastName: form.lastName || undefined,
+        dateOfBirth: form.dateOfBirth || undefined,
+        gender: form.gender || undefined,
+        username: form.useMobileAsUsername ? form.phone : (form.username || undefined),
+        enableAppointments: form.enableAppointments,
+        showAllStaffAppointments: form.showAllStaffAppointments,
+        workExperience: form.workExperience.length ? form.workExperience : undefined,
+        documents: form.documents.length ? form.documents : undefined
       };
       if (editingId) {
-        await api.patch(`/owner/users/${editingId}`, payload);
+        await api.patch(`/owner/users/${editingId}`, { ...payload, name: computedName });
         setStatus((current) => ({ ...current, success: "Staff profile and access updated." }));
       } else {
         await api.post("/owner/users/create-login", {
           ...payload,
           branchId: form.branchId || undefined,
-          name: form.name,
+          name: computedName,
           email: form.email,
-          password: form.password,
-          joiningDate: form.joiningDate || undefined,
-          designation: form.designation || undefined,
-          uanNumber: form.uanNumber || undefined,
-          reportingToId: form.reportingToId || undefined,
-          workingHours: form.workingHours || undefined,
-          bankName: form.bankName || undefined,
-          bankBranch: form.bankBranch || undefined,
-          accountNumber: form.accountNumber || undefined,
-          ifscCode: form.ifscCode || undefined
+          password: form.password
         });
         setStatus((current) => ({ ...current, success: "New staff login created." }));
         setIsCreateModalOpen(false);
@@ -352,14 +396,43 @@ export default function UsersPage() {
     await load(filterBranch);
   };
 
-  const handleDirectorySelect = (rowId) => {
+  const restoreUser = async (row) => {
+    await api.patch(`/owner/users/${row.id}/restore`);
+    await load(filterBranch);
+  };
+
+const handleDirectorySelect = (rowId) => {
     startTransition(() => {
       setSelectedId(rowId);
     });
   };
 
+  const handleExport = () => {
+    if (accessControl.allowStaffExport === false) return;
+    const header = ["Name", "Email", "Phone", "Role", "Custom Role", "Branch", "Designation", "Active"];
+    const rowsToExport = filteredRows.map((row) => [
+      row.user?.name || "",
+      row.user?.email || "",
+      row.phone || "",
+      row.roleTitle || resolveRoleLabel(row.salonRole),
+      row.customRole?.name || "",
+      row.branch?.name || "All branches",
+      row.designation || "",
+      row.user?.isActive ? "Yes" : "No"
+    ]);
+    const csv = [header, ...rowsToExport]
+      .map((line) => line.map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `staff-directory-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
   return (
-    <div className="page-shell" style={{ padding: 0, height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div className="page-shell" style={{ padding: 0, height: 'calc(100vh - 108px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {status.loading ? (
         <PageLoader title="Loading staff workspace" message="Pulling users, saved roles, branches, and services into one permission-controlled workspace." />
       ) : null}
@@ -371,36 +444,61 @@ export default function UsersPage() {
             <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a', fontWeight: 600 }}>Team Directory</h3>
           </div>
           
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-            <button 
-              className="btn-submit" 
-              style={{ width: '100%', marginBottom: 12, padding: '10px', fontSize: 14 }} 
-              onClick={startCreate}
-            >
-              + New Staff
-            </button>
-            <input
-              type="text"
-              className="hub-search-input"
-              style={{ width: '100%', boxSizing: 'border-box', marginBottom: 8 }}
-              value={query}
-              placeholder="Search staff..."
-              onChange={(event) => setQuery(event.target.value)}
-            />
-            <select 
-              className="hub-input" 
-              style={{ width: '100%', boxSizing: 'border-box' }}
-              value={filterBranch} 
-              onChange={(event) => setFilterBranch(event.target.value)}
-            >
-              <option value="">All branches</option>
-              {branches.map((branch) => (
-                <option key={branch.id} value={branch.id}>{branch.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="hub-list" style={{ flex: 1, overflowY: 'auto' }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', overflowY: 'auto', flex: 1, minHeight: 0 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <button 
+                className="btn-submit" 
+                style={{ flex: 1, padding: '6px 12px', fontSize: 13, minHeight: '34px', margin: 0 }} 
+                onClick={startCreate}
+              >
+                + New Staff
+              </button>
+              {accessControl.allowStaffExport !== false ? (
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  style={{ flex: 1, padding: '6px 12px', fontSize: 13, minHeight: '34px', background: 'white', margin: 0 }}
+                  onClick={handleExport}
+                >
+                  Export CSV
+                </button>
+              ) : null}
+            </div>
+            {accessControl.allowStaffExport === false && (
+              <div style={{ marginBottom: 8, padding: '6px 10px', borderRadius: 6, background: '#fff7ed', border: '1px solid #fdba74', color: '#9a3412', fontSize: 11 }}>
+                Staff export is disabled from Settings.
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <input
+                type="text"
+                className="hub-search-input"
+                style={{ flex: 1, boxSizing: 'border-box', minHeight: '34px', padding: '6px 10px', fontSize: 13, margin: 0, width: 'auto' }}
+                value={query}
+                placeholder="Search staff..."
+                onChange={(event) => setQuery(event.target.value)}
+              />
+              <select 
+                className="hub-input" 
+                style={{ flex: 1, boxSizing: 'border-box', minHeight: '34px', padding: '6px 10px', fontSize: 13, margin: 0, width: 'auto' }}
+                value={filterBranch} 
+                onChange={(event) => setFilterBranch(event.target.value)}
+              >
+                <option value="">All branches</option>
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>{branch.name}</option>
+                ))}
+              </select>
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#475569', cursor: 'pointer', flexDirection: 'row' }}>
+              <input 
+                type="checkbox" 
+                checked={showArchived} 
+                onChange={(e) => setShowArchived(e.target.checked)} 
+                style={{ width: 14, height: 14, minHeight: 'auto', cursor: 'pointer', margin: 0, width: 'auto' }}
+              />
+              Show archived staff
+            </label>
             {filteredRows.map((row) => {
               const moduleCount = countGrantedModules(row.permissions || {});
               const isActive = selectedRow?.id === row.id;
@@ -412,7 +510,10 @@ export default function UsersPage() {
                   style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', cursor: 'pointer', background: isActive ? '#f1f5f9' : 'white' }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <strong style={{ color: isActive ? '#2563eb' : '#0f172a' }}>{row.user?.name}</strong>
+                    <strong style={{ color: isActive ? '#2563eb' : '#0f172a' }}>
+                      {row.user?.name}
+                      {row.isArchived && <span style={{ marginLeft: 8, fontSize: 11, background: '#fef2f2', color: '#ef4444', padding: '2px 6px', borderRadius: 4 }}>Archived</span>}
+                    </strong>
                     <span className={`staff-status-dot ${row.user?.isActive ? "live" : "muted"}`} style={{ width: 8, height: 8, borderRadius: '50%', background: row.user?.isActive ? '#10b981' : '#94a3b8' }} />
                   </div>
                   <div style={{ fontSize: 13, color: '#64748b', marginBottom: 4 }}>
@@ -449,13 +550,23 @@ export default function UsersPage() {
                   >
                     {selectedRow.user?.isActive ? "Deactivate Login" : "Activate Login"}
                   </button>
-                  <button 
-                    type="button" 
-                    onClick={() => archiveUser(selectedRow)}
-                    style={{ padding: '8px 16px', borderRadius: 6, fontSize: 14, cursor: 'pointer', border: 'none', background: '#ef4444', color: 'white' }}
-                  >
-                    Archive
-                  </button>
+                  {selectedRow.isArchived ? (
+                    <button 
+                      type="button" 
+                      onClick={() => restoreUser(selectedRow)}
+                      style={{ padding: '8px 16px', borderRadius: 6, fontSize: 14, cursor: 'pointer', border: '1px solid #10b981', background: '#f0fdf4', color: '#10b981' }}
+                    >
+                      Restore Staff
+                    </button>
+                  ) : (
+                    <button 
+                      type="button" 
+                      onClick={() => archiveUser(selectedRow)}
+                      style={{ padding: '8px 16px', borderRadius: 6, fontSize: 14, cursor: 'pointer', border: 'none', background: '#ef4444', color: 'white' }}
+                    >
+                      Archive
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -486,51 +597,115 @@ export default function UsersPage() {
                   </div>
                   
                   <form onSubmit={submit}>
-                    {/* Identity Section */}
-                    <div style={{ marginBottom: 32 }}>
-                      <h4 style={{ fontSize: 15, color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 16 }}>Identity & Scope</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    {/* Top Checkboxes */}
+                    <div style={{ display: 'flex', gap: 28, marginBottom: 28, flexWrap: 'wrap' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={form.enableAppointments} onChange={e => setForm({...form, enableAppointments: e.target.checked})} style={{ width: 18, height: 18, accentColor: '#2563eb' }} />
+                        Active
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={form.enableAppointments} onChange={e => setForm({...form, enableAppointments: e.target.checked})} style={{ width: 18, height: 18, accentColor: '#2563eb' }} />
+                        Enable Appointments
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={form.showAllStaffAppointments} onChange={e => setForm({...form, showAllStaffAppointments: e.target.checked})} style={{ width: 18, height: 18, accentColor: '#2563eb' }} />
+                        Show all staff appointments in dashboard
+                      </label>
+                    </div>
+
+                    {/* Personal Information */}
+                    <div style={{ marginBottom: 28 }}>
+                      <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Personal Information</h4>
+
+                      {/* Row 1: Name, Last Name, Phone, Email */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
                         <div className="hub-form-group">
-                          <label>Staff role</label>
-                          <select className="hub-input" value={form.salonRole} onChange={(event) => applyRolePreset(event.target.value)}>
-                            {ROLE_OPTIONS.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
-                          </select>
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>First Name</label>
+                          <input type="text" className="hub-input" value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} placeholder="Enter Name" />
                         </div>
                         <div className="hub-form-group">
-                          <label>Role title (Visible designation)</label>
-                          <input type="text" className="hub-input" value={form.roleTitle} onChange={(event) => setForm({ ...form, roleTitle: event.target.value })} />
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Last Name</label>
+                          <input type="text" className="hub-input" value={form.lastName} onChange={e => setForm({...form, lastName: e.target.value})} placeholder="Enter Lastname" />
                         </div>
                         <div className="hub-form-group">
-                          <label>Saved access role (Template)</label>
-                          <select className="hub-input" value={form.customRoleId || ""} onChange={(event) => applyCustomRole(event.target.value)}>
-                            <option value="">No saved role template</option>
-                            {customRoles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
-                          </select>
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Mobile Number</label>
+                          <div style={{ width: '100%' }}>
+                            <IndianPhoneInput value={form.phone} onChange={(phone) => setForm({...form, phone})} />
+                          </div>
                         </div>
                         <div className="hub-form-group">
-                          <label>Branch scope</label>
-                          <select className="hub-input" value={form.branchId} onChange={(event) => setForm({ ...form, branchId: event.target.value, serviceIds: [] })}>
-                            <option value="">All branches</option>
-                            {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
-                          </select>
-                        </div>
-                        <div className="hub-form-group">
-                          <label>Phone</label>
-                          <IndianPhoneInput value={form.phone} onChange={(phone) => setForm({ ...form, phone })} className="hub-input" inputStyle={{ padding: "12px 14px" }} />
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Email</label>
+                          <input type="email" className="hub-input" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="Enter Email" disabled />
                         </div>
                       </div>
-                      
-                      <div className="hub-form-group" style={{ marginTop: 16 }}>
-                        <div className="hub-toggle-group">
-                          <input type="checkbox" checked={form.showInCatalog} onChange={(event) => setForm({ ...form, showInCatalog: event.target.checked })} />
-                          <span>Show this staff member in salon catalog / expert listing</span>
+
+                      {/* Row 2: DOB, Gender, Role */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: 16, marginBottom: 16 }}>
+                        <div className="hub-form-group">
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Date of Birth</label>
+                          <input type="date" className="hub-input" value={form.dateOfBirth} onChange={e => setForm({...form, dateOfBirth: e.target.value})} />
+                        </div>
+                        <div className="hub-form-group">
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Gender</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 28, height: 38 }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
+                              <input type="radio" name="editGender" value="MALE" checked={form.gender === "MALE"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 18, height: 18, accentColor: '#2563eb', margin: 0 }} />
+                              Male
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
+                              <input type="radio" name="editGender" value="FEMALE" checked={form.gender === "FEMALE"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 18, height: 18, accentColor: '#2563eb', margin: 0 }} />
+                              Female
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
+                              <input type="radio" name="editGender" value="OTHER" checked={form.gender === "OTHER"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 18, height: 18, accentColor: '#2563eb', margin: 0 }} />
+                              Other
+                            </label>
+                          </div>
+                        </div>
+                        <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Role</label>
+                      <select className="hub-input" value={form.customRoleId || form.salonRole} onChange={(e) => {
+                        const val = e.target.value;
+                        const matchedCustom = customRoles.find(r => r.id === val);
+                        if (matchedCustom) {
+                          applyCustomRole(val);
+                        } else {
+                          applyRolePreset(val);
+                        }
+                      }}>
+                        <optgroup label="Custom Roles">
+                          {customRoles.length === 0 && <option value="" disabled>No custom roles created</option>}
+                          {customRoles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
+                        </optgroup>
+                        <optgroup label="Default Roles">
+                          {ROLE_OPTIONS.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
+                        </optgroup>
+                      </select>
+                        </div>
+                      </div>
+
+                      {/* Row 3: Username, Password, Position */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, alignItems: 'end' }}>
+                        <div className="hub-form-group">
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Username</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <input type="text" className="hub-input" style={{ flex: 1 }} value={form.useMobileAsUsername ? form.phone : form.username} onChange={e => setForm({...form, username: e.target.value, useMobileAsUsername: false})} placeholder="Enter Username" disabled={form.useMobileAsUsername} />
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#64748b', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                              <input type="checkbox" checked={form.useMobileAsUsername} onChange={e => setForm({...form, useMobileAsUsername: e.target.checked})} style={{ width: 14, height: 14, accentColor: '#2563eb' }} />
+                              Use Mobile
+                            </label>
+                          </div>
+                        </div>
+                        <div className="hub-form-group">
+                          <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Position</label>
+                          <input type="text" className="hub-input" value={form.position} onChange={e => setForm({...form, position: e.target.value, designation: e.target.value})} placeholder="Enter Position" />
                         </div>
                       </div>
                     </div>
 
                     {/* Services Section */}
-                    <div style={{ marginBottom: 32 }}>
-                      <h4 style={{ fontSize: 15, color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 16 }}>Assigned Services</h4>
+                    <div style={{ marginBottom: 28 }}>
+                      <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Assigned Services</h4>
                       <div className="staff-chip-grid">
                         {filteredServices.map((service) => (
                           <label key={service.id} className={`staff-service-chip ${form.serviceIds.includes(service.id) ? "selected" : ""}`}>
@@ -546,19 +721,71 @@ export default function UsersPage() {
                       </div>
                     </div>
 
-                    {/* Employment & HR Details */}
+                    {/* Work Experience */}
+                    <div style={{ marginBottom: 28 }}>
+                      <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Work Experience</h4>
+                      {form.workExperience.map((exp, idx) => (
+                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 12, marginBottom: 12, alignItems: 'end' }}>
+                          <div className="hub-form-group">
+                            <label style={{ fontSize: 12, color: '#64748b' }}>Company</label>
+                            <input type="text" className="hub-input" value={exp.company || ""} onChange={e => {
+                              const next = [...form.workExperience]; next[idx] = {...next[idx], company: e.target.value}; setForm({...form, workExperience: next});
+                            }} placeholder="Company name" />
+                          </div>
+                          <div className="hub-form-group">
+                            <label style={{ fontSize: 12, color: '#64748b' }}>Designation</label>
+                            <input type="text" className="hub-input" value={exp.designation || ""} onChange={e => {
+                              const next = [...form.workExperience]; next[idx] = {...next[idx], designation: e.target.value}; setForm({...form, workExperience: next});
+                            }} placeholder="Job title" />
+                          </div>
+                          <div className="hub-form-group">
+                            <label style={{ fontSize: 12, color: '#64748b' }}>Duration</label>
+                            <input type="text" className="hub-input" value={exp.duration || ""} onChange={e => {
+                              const next = [...form.workExperience]; next[idx] = {...next[idx], duration: e.target.value}; setForm({...form, workExperience: next});
+                            }} placeholder="e.g. 2 years" />
+                          </div>
+                          <button type="button" onClick={() => setForm({...form, workExperience: form.workExperience.filter((_, i) => i !== idx)})} style={{ background: '#fee2e2', color: '#b91c1c', border: 'none', borderRadius: 6, width: 32, height: 32, cursor: 'pointer' }}>x</button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => setForm({...form, workExperience: [...form.workExperience, { company: "", designation: "", duration: "" }]})} style={{ background: '#f1f5f9', border: '2px dashed #cbd5e1', borderRadius: 8, padding: '10px 16px', cursor: 'pointer', fontSize: 14, color: '#475569', fontWeight: 600 }}>+ Add Experience</button>
+                    </div>
+
+                    {/* Documents */}
+                    <div style={{ marginBottom: 28 }}>
+                      <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Documents</h4>
+                      {form.documents.map((doc, idx) => (
+                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12, marginBottom: 12, alignItems: 'end' }}>
+                          <div className="hub-form-group">
+                            <label style={{ fontSize: 12, color: '#64748b' }}>Name</label>
+                            <input type="text" className="hub-input" value={doc.name || ""} onChange={e => {
+                              const next = [...form.documents]; next[idx] = {...next[idx], name: e.target.value}; setForm({...form, documents: next});
+                            }} placeholder="Enter Name" />
+                          </div>
+                          <div className="hub-form-group">
+                            <label style={{ fontSize: 12, color: '#64748b' }}>Number</label>
+                            <input type="text" className="hub-input" value={doc.url || ""} onChange={e => {
+                              const next = [...form.documents]; next[idx] = {...next[idx], url: e.target.value}; setForm({...form, documents: next});
+                            }} placeholder="Enter Number" />
+                          </div>
+                          <button type="button" onClick={() => setForm({...form, documents: form.documents.filter((_, i) => i !== idx)})} style={{ background: '#fee2e2', color: '#b91c1c', border: 'none', borderRadius: 6, width: 32, height: 32, cursor: 'pointer' }}>x</button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => setForm({...form, documents: [...form.documents, { name: "", url: "" }]})} style={{ background: '#f1f5f9', border: '2px dashed #cbd5e1', borderRadius: 8, padding: '10px 16px', cursor: 'pointer', fontSize: 14, color: '#475569', fontWeight: 600 }}>+ Add Document</button>
+                    </div>
+
+                    {/* Joining Details */}
                     <div style={{ marginBottom: 32 }}>
-                      <h4 style={{ fontSize: 15, color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 16 }}>Employment & HR Details</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Joining Details</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 16 }}>
                         <div className="hub-form-group">
-                          <label>Date of Joining</label>
+                          <label>Joining Date</label>
                           <input type="date" className="hub-input" value={form.joiningDate} onChange={(event) => setForm({ ...form, joiningDate: event.target.value })} />
                         </div>
                         <div className="hub-form-group">
                           <label>Designation</label>
                           <div style={{ display: "grid", gap: 8 }}>
                             <select className="hub-input" value={designationOptions.includes(form.designation) ? form.designation : ""} onChange={(event) => setForm({ ...form, designation: event.target.value || form.designation })}>
-                              <option value="">Select saved designation</option>
+                              <option value="">Select Designation</option>
                               {designationOptions.map((designation) => <option key={designation} value={designation}>{designation}</option>)}
                             </select>
                             <input type="text" className="hub-input" value={form.designation} onChange={(event) => setForm({ ...form, designation: event.target.value })} placeholder="e.g. Senior Stylist" />
@@ -566,11 +793,11 @@ export default function UsersPage() {
                         </div>
                         <div className="hub-form-group">
                           <label>UAN Number</label>
-                          <input type="text" className="hub-input" value={form.uanNumber} onChange={(event) => setForm({ ...form, uanNumber: event.target.value })} placeholder="12-digit UAN" />
+                          <input type="text" className="hub-input" value={form.uanNumber} onChange={(event) => setForm({ ...form, uanNumber: event.target.value })} placeholder="Enter UAN Number" />
                         </div>
                         <div className="hub-form-group">
-                          <label>Working Hours</label>
-                          <input type="text" className="hub-input" value={form.workingHours} onChange={(event) => setForm({ ...form, workingHours: event.target.value })} placeholder="e.g. 10:00 AM - 07:00 PM" />
+                          <label>Working Hrs</label>
+                          <input type="text" className="hub-input" value={form.workingHours} onChange={(event) => setForm({ ...form, workingHours: event.target.value })} placeholder="Enter Hours" />
                         </div>
                         <div className="hub-form-group">
                           <label>Reporting To</label>
@@ -582,32 +809,33 @@ export default function UsersPage() {
                       </div>
                     </div>
 
-                    {/* Bank & Payroll Details */}
+                    {/* Bank Details */}
                     <div style={{ marginBottom: 32 }}>
-                      <h4 style={{ fontSize: 15, color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 16 }}>Bank & Payroll Details</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Bank Details</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16 }}>
                         <div className="hub-form-group">
                           <label>Bank Name</label>
-                          <input type="text" className="hub-input" value={form.bankName} onChange={(event) => setForm({ ...form, bankName: event.target.value })} placeholder="e.g. HDFC Bank" />
+                          <input type="text" className="hub-input" value={form.bankName} onChange={(event) => setForm({ ...form, bankName: event.target.value })} placeholder="Enter Name" />
                         </div>
                         <div className="hub-form-group">
-                          <label>Branch Name</label>
-                          <input type="text" className="hub-input" value={form.bankBranch} onChange={(event) => setForm({ ...form, bankBranch: event.target.value })} placeholder="Branch Area" />
+                          <label>Branch</label>
+                          <input type="text" className="hub-input" value={form.bankBranch} onChange={(event) => setForm({ ...form, bankBranch: event.target.value })} placeholder="Enter Branch" />
                         </div>
                         <div className="hub-form-group">
                           <label>Account Number</label>
-                          <input type="text" className="hub-input" value={form.accountNumber} onChange={(event) => setForm({ ...form, accountNumber: event.target.value })} placeholder="Account No." />
+                          <input type="text" className="hub-input" value={form.accountNumber} onChange={(event) => setForm({ ...form, accountNumber: event.target.value })} placeholder="Enter Number" />
                         </div>
                         <div className="hub-form-group">
-                          <label>IFSC / Routing Code</label>
-                          <input type="text" className="hub-input" value={form.ifscCode} onChange={(event) => setForm({ ...form, ifscCode: event.target.value })} placeholder="IFSC Code" />
+                          <label>IFSC Code</label>
+                          <input type="text" className="hub-input" value={form.ifscCode} onChange={(event) => setForm({ ...form, ifscCode: event.target.value })} placeholder="Enter IFSC Code" />
                         </div>
                       </div>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, borderTop: '1px solid #e2e8f0', paddingTop: 24 }}>
-                      <button type="button" className="btn-cancel" onClick={() => startEdit(selectedRow)}>Revert Changes</button>
-                      <button type="submit" className="btn-submit">Save Staff Settings</button>
+                      <button type="button" className="btn-cancel" onClick={() => startEdit(selectedRow)}>Cancel</button>
+                      <button type="button" className="btn-cancel" onClick={() => {}} style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fbbf24' }}>Weekly Off</button>
+                      <button type="submit" className="btn-submit">Save</button>
                     </div>
                   </form>
                 </div>
@@ -624,52 +852,240 @@ export default function UsersPage() {
       {/* New Staff Modal */}
       {isCreateModalOpen && (
         <div className="hub-modal-overlay" onClick={() => setIsCreateModalOpen(false)}>
-          <div className="hub-modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
+          <div className="hub-modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 960, width: '95vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
             <div className="hub-modal-header">Create New Staff</div>
             
-            <form onSubmit={submit}>
-              <div className="hub-modal-body">
-                <div className="hub-form-group" style={{ marginBottom: 16 }}>
-                  <label>Full Name *</label>
-                  <input type="text" required className="hub-input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. John Doe" />
-                </div>
-                
-                <div className="hub-form-group" style={{ marginBottom: 16 }}>
-                  <label>Email Address *</label>
-                  <input type="email" required className="hub-input" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="john@example.com" />
-                </div>
-
-                <div className="hub-form-group" style={{ marginBottom: 16 }}>
-                  <label>Password *</label>
-                  <input type="password" required className="hub-input" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Create a strong password" />
-                </div>
-
-                <div className="hub-form-group" style={{ marginBottom: 16 }}>
-                  <label>Initial Role</label>
-                  <select className="hub-input" value={form.salonRole} onChange={e => applyRolePreset(e.target.value)}>
-                    {ROLE_OPTIONS.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
-                  </select>
-                  <span style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>You can customize permissions later in the staff settings.</span>
+            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div className="hub-modal-body" style={{ overflowY: 'auto', flex: 1, padding: '24px 32px' }}>
+                {/* Top Checkboxes */}
+                <div style={{ display: 'flex', gap: 32, marginBottom: 28 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    <input type="checkbox" checked={form.enableAppointments} onChange={e => setForm({...form, enableAppointments: e.target.checked})} style={{ width: 18, height: 18, accentColor: '#2563eb' }} />
+                    Active
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    <input type="checkbox" checked={form.enableAppointments} onChange={e => setForm({...form, enableAppointments: e.target.checked})} style={{ width: 18, height: 18, accentColor: '#2563eb' }} />
+                    Enable Appointments
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    <input type="checkbox" checked={form.showAllStaffAppointments} onChange={e => setForm({...form, showAllStaffAppointments: e.target.checked})} style={{ width: 18, height: 18, accentColor: '#2563eb' }} />
+                    Show all staff appointments in dashboard
+                  </label>
                 </div>
 
-                <div className="hub-form-group" style={{ marginBottom: 16 }}>
-                  <label>Branch Assignment</label>
-                  <select className="hub-input" value={form.branchId} onChange={e => setForm({...form, branchId: e.target.value})}>
-                    <option value="">All Branches</option>
-                    {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
+                {/* Personal Information */}
+                <div style={{ marginBottom: 28 }}>
+                  <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Personal Information</h4>
+
+                  {/* Row 1: Name, Last Name, Phone, Email */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr 1fr', gap: 16, marginBottom: 16 }}>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>First Name</label>
+                      <input type="text" className="hub-input" value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} placeholder="Enter Name" />
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Last Name</label>
+                      <input type="text" className="hub-input" value={form.lastName} onChange={e => setForm({...form, lastName: e.target.value})} placeholder="Enter Lastname" />
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Mobile Number</label>
+                      <div style={{ width: '100%' }}>
+                        <IndianPhoneInput value={form.phone} onChange={(phone) => setForm({...form, phone})} />
+                      </div>
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Email</label>
+                      <input type="email" className="hub-input" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="Enter Email" />
+                    </div>
+                  </div>
+
+                  {/* Row 2: DOB, Gender, Role */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.8fr 1fr', gap: 16, marginBottom: 16, alignItems: 'end' }}>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Date of Birth</label>
+                      <input type="date" className="hub-input" value={form.dateOfBirth} onChange={e => setForm({...form, dateOfBirth: e.target.value})} />
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Gender</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 28, height: 38 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
+                          <input type="radio" name="gender" value="MALE" checked={form.gender === "MALE"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 18, height: 18, accentColor: '#2563eb', margin: 0 }} />
+                          Male
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
+                          <input type="radio" name="gender" value="FEMALE" checked={form.gender === "FEMALE"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 18, height: 18, accentColor: '#2563eb', margin: 0 }} />
+                          Female
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#334155', cursor: 'pointer' }}>
+                          <input type="radio" name="gender" value="OTHER" checked={form.gender === "OTHER"} onChange={e => setForm({...form, gender: e.target.value})} style={{ width: 18, height: 18, accentColor: '#2563eb', margin: 0 }} />
+                          Other
+                        </label>
+                      </div>
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Role</label>
+                      <select className="hub-input" value={form.customRoleId || form.salonRole} onChange={(e) => {
+                        const val = e.target.value;
+                        const matchedCustom = customRoles.find(r => r.id === val);
+                        if (matchedCustom) {
+                          applyCustomRole(val);
+                        } else {
+                          applyRolePreset(val);
+                        }
+                      }}>
+                        <optgroup label="Custom Roles">
+                          {customRoles.length === 0 && <option value="" disabled>No custom roles created</option>}
+                          {customRoles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
+                        </optgroup>
+                        <optgroup label="Default Roles">
+                          {ROLE_OPTIONS.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
+                        </optgroup>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Row 3: Username, Password, Position */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, alignItems: 'end' }}>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Username</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input type="text" className="hub-input" style={{ flex: 1 }} value={form.useMobileAsUsername ? form.phone : form.username} onChange={e => setForm({...form, username: e.target.value, useMobileAsUsername: false})} placeholder="Enter Username" disabled={form.useMobileAsUsername} />
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#64748b', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                          <input type="checkbox" checked={form.useMobileAsUsername} onChange={e => setForm({...form, useMobileAsUsername: e.target.checked})} style={{ width: 14, height: 14, accentColor: '#2563eb' }} />
+                          Use Mobile
+                        </label>
+                      </div>
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Password</label>
+                      <input type="password" required className="hub-input" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Enter Password" />
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Position</label>
+                      <input type="text" className="hub-input" value={form.position} onChange={e => setForm({...form, position: e.target.value, designation: e.target.value})} placeholder="Enter Position" />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="hub-form-group" style={{ marginBottom: 16 }}>
-                  <label>Designation</label>
-                  <select className="hub-input" value={designationOptions.includes(form.designation) ? form.designation : ""} onChange={e => setForm({ ...form, designation: e.target.value })}>
-                    <option value="">Select designation</option>
-                    {designationOptions.map((designation) => <option key={designation} value={designation}>{designation}</option>)}
-                  </select>
+                {/* Work Experience */}
+                <div style={{ marginBottom: 28 }}>
+                  <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Work Experience</h4>
+                  {form.workExperience.map((exp, idx) => (
+                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 12, marginBottom: 12, alignItems: 'end' }}>
+                      <div className="hub-form-group">
+                        <label style={{ fontSize: 12, color: '#64748b' }}>Company</label>
+                        <input type="text" className="hub-input" value={exp.company || ""} onChange={e => {
+                          const next = [...form.workExperience]; next[idx] = {...next[idx], company: e.target.value}; setForm({...form, workExperience: next});
+                        }} placeholder="Company name" />
+                      </div>
+                      <div className="hub-form-group">
+                        <label style={{ fontSize: 12, color: '#64748b' }}>Designation</label>
+                        <input type="text" className="hub-input" value={exp.designation || ""} onChange={e => {
+                          const next = [...form.workExperience]; next[idx] = {...next[idx], designation: e.target.value}; setForm({...form, workExperience: next});
+                        }} placeholder="Job title" />
+                      </div>
+                      <div className="hub-form-group">
+                        <label style={{ fontSize: 12, color: '#64748b' }}>Duration</label>
+                        <input type="text" className="hub-input" value={exp.duration || ""} onChange={e => {
+                          const next = [...form.workExperience]; next[idx] = {...next[idx], duration: e.target.value}; setForm({...form, workExperience: next});
+                        }} placeholder="e.g. 2 years" />
+                      </div>
+                      <button type="button" onClick={() => setForm({...form, workExperience: form.workExperience.filter((_, i) => i !== idx)})} style={{ background: '#fee2e2', color: '#b91c1c', border: 'none', borderRadius: 6, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>x</button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setForm({...form, workExperience: [...form.workExperience, { company: "", designation: "", duration: "" }]})} style={{ background: '#f1f5f9', border: '2px dashed #cbd5e1', borderRadius: 8, padding: '10px 16px', cursor: 'pointer', fontSize: 14, color: '#475569', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    + Add Experience
+                  </button>
                 </div>
+
+                {/* Documents */}
+                <div style={{ marginBottom: 28 }}>
+                  <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Documents</h4>
+                  {form.documents.map((doc, idx) => (
+                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12, marginBottom: 12, alignItems: 'end' }}>
+                      <div className="hub-form-group">
+                        <label style={{ fontSize: 12, color: '#64748b' }}>Name</label>
+                        <input type="text" className="hub-input" value={doc.name || ""} onChange={e => {
+                          const next = [...form.documents]; next[idx] = {...next[idx], name: e.target.value}; setForm({...form, documents: next});
+                        }} placeholder="Enter Name" />
+                      </div>
+                      <div className="hub-form-group">
+                        <label style={{ fontSize: 12, color: '#64748b' }}>Number</label>
+                        <input type="text" className="hub-input" value={doc.url || ""} onChange={e => {
+                          const next = [...form.documents]; next[idx] = {...next[idx], url: e.target.value}; setForm({...form, documents: next});
+                        }} placeholder="Enter Number" />
+                      </div>
+                      <button type="button" onClick={() => setForm({...form, documents: form.documents.filter((_, i) => i !== idx)})} style={{ background: '#fee2e2', color: '#b91c1c', border: 'none', borderRadius: 6, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>x</button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setForm({...form, documents: [...form.documents, { name: "", url: "" }]})} style={{ background: '#f1f5f9', border: '2px dashed #cbd5e1', borderRadius: 8, padding: '10px 16px', cursor: 'pointer', fontSize: 14, color: '#475569', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    + Add Document
+                  </button>
+                </div>
+
+                {/* Joining Details */}
+                <div style={{ marginBottom: 28 }}>
+                  <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Joining Details</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 16 }}>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Joining Date</label>
+                      <input type="date" className="hub-input" value={form.joiningDate} onChange={e => setForm({...form, joiningDate: e.target.value})} />
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Designation</label>
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        <select className="hub-input" value={designationOptions.includes(form.designation) ? form.designation : ""} onChange={e => setForm({...form, designation: e.target.value || form.designation})}>
+                          <option value="">Select Designation</option>
+                          {designationOptions.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                        <input type="text" className="hub-input" value={form.designation} onChange={e => setForm({...form, designation: e.target.value, position: e.target.value})} placeholder="e.g. Senior Stylist" />
+                      </div>
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>UAN Number</label>
+                      <input type="text" className="hub-input" value={form.uanNumber} onChange={e => setForm({...form, uanNumber: e.target.value})} placeholder="12-digit UAN" />
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Reporting To</label>
+                      <select className="hub-input" value={form.reportingToId} onChange={e => setForm({...form, reportingToId: e.target.value})}>
+                        <option value="">None / Self</option>
+                        {rows.map(r => r.id !== selectedRow?.id && <option key={r.id} value={r.id}>{r.user?.name || r.phone}</option>)}
+                      </select>
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Working Hrs</label>
+                      <input type="text" className="hub-input" value={form.workingHours} onChange={e => setForm({...form, workingHours: e.target.value})} placeholder="Enter Hours" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bank Details */}
+                <div style={{ marginBottom: 28 }}>
+                  <h4 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 10 }}>Bank Details</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16 }}>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Bank Name</label>
+                      <input type="text" className="hub-input" value={form.bankName} onChange={e => setForm({...form, bankName: e.target.value})} placeholder="Enter Name" />
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Branch</label>
+                      <input type="text" className="hub-input" value={form.bankBranch} onChange={e => setForm({...form, bankBranch: e.target.value})} placeholder="Enter Branch" />
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Account Number</label>
+                      <input type="text" className="hub-input" value={form.accountNumber} onChange={e => setForm({...form, accountNumber: e.target.value})} placeholder="Enter Number" />
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 4 }}>IFSC Code</label>
+                      <input type="text" className="hub-input" value={form.ifscCode} onChange={e => setForm({...form, ifscCode: e.target.value})} placeholder="Enter IFSC Code" />
+                    </div>
+                  </div>
+                </div>
+
+                {status.error && <div style={{ color: '#ef4444', padding: 12, background: '#fef2f2', borderRadius: 8, fontSize: '0.9rem', marginBottom: 16 }}>{status.error}</div>}
               </div>
 
-              <div className="hub-modal-footer">
+              <div className="hub-modal-footer" style={{ borderTop: '1px solid #e2e8f0', padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', gap: 12, background: '#f8fafc' }}>
                 <button type="button" className="btn-cancel" onClick={() => setIsCreateModalOpen(false)}>Cancel</button>
                 <button type="submit" className="btn-submit">Create Staff</button>
               </div>

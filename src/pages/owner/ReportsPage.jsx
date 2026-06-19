@@ -278,7 +278,7 @@ export default function ReportsPage() {
           </div>
 
           {(reportView === "overview" || reportView === "operations") && (
-            <div className="two-col">
+            <div className="settings-section-grid">
               <ReportList
                 title="Appointment Flow"
                 rows={data.appointments.slice(0, 8)}
@@ -352,7 +352,7 @@ export default function ReportsPage() {
           )}
 
           {(reportView === "overview" || reportView === "inventory") && (
-            <div className="two-col" style={{ marginTop: 18 }}>
+            <div className="settings-section-grid" style={{ marginTop: 18 }}>
               <ReportList
                 title="Stock Movements"
                 rows={data.stock.slice(0, 8)}
@@ -369,7 +369,7 @@ export default function ReportsPage() {
           )}
 
           {reportView === "finance" && (
-            <div className="two-col" style={{ marginTop: 18 }}>
+            <div className="settings-section-grid" style={{ marginTop: 18 }}>
               <div className="panel-card report-panel">
                 <h3>Profit & Loss</h3>
                 <div className="stats-grid compact-stats">
@@ -444,7 +444,7 @@ export default function ReportsPage() {
           )}
 
           {reportView === "workforce" && (
-            <div className="two-col" style={{ marginTop: 18 }}>
+            <div className="settings-section-grid" style={{ marginTop: 18 }}>
               <ReportList
                 title="Payroll Runs"
                 rows={data.payroll.slice(0, 8)}
@@ -467,7 +467,7 @@ export default function ReportsPage() {
           )}
 
           {(reportView === "overview" || reportView === "operations" || reportView === "sales") && (
-            <div className="two-col" style={{ marginTop: 18 }}>
+            <div className="settings-section-grid" style={{ marginTop: 18 }}>
               <ReportList
                 title="Branch Sales"
                 rows={data.branchSales}

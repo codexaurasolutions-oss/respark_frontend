@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import EmptyState from "../components/EmptyState";
+import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 import PageLoader from "../components/PageLoader";
 import { formatApiError } from "../utils/apiError";
 
@@ -21,7 +22,7 @@ export default function ResetPasswordPage() {
   );
 
   useEffect(() => {
-    document.title = "Set Password | ReSpark";
+    document.title = "Set Password | Skillify";
   }, []);
 
   useEffect(() => {
@@ -85,7 +86,7 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="page-shell">
-      <div className="two-col" style={{ alignItems: "stretch" }}>
+      <div className="settings-section-grid" style={{ alignItems: "stretch" }}>
         <div className="hero-card" style={{ padding: 28 }}>
           <div className="eyebrow-pill" style={{ marginBottom: 14 }}>Secure Password Setup</div>
           <h1 style={{ marginTop: 0 }}>Activate your account with a fresh password.</h1>
@@ -124,7 +125,7 @@ export default function ResetPasswordPage() {
               {!state.email ? <EmptyState title="Invite verified without email readback" message="You can still set a password, but the invite did not return a display email for confirmation." /> : null}
               <p className="muted">
                 {state.name ? `Hi ${state.name}, ` : ""}
-                choose your password to activate this ReSpark account.
+                choose your password to activate this Skillify account.
               </p>
               <div className="summary-box" style={{ marginBottom: 16 }}>
                 <strong>Verified email</strong>
@@ -138,6 +139,7 @@ export default function ResetPasswordPage() {
                 <label>
               <span className="muted">New password</span>
               <input type="password" value={form.password} placeholder="New password" onChange={(event) => setForm({ ...form, password: event.target.value })} />
+              <PasswordStrengthMeter password={form.password} style={{ marginTop: 10 }} />
             </label>
                 <label>
               <span className="muted">Confirm password</span>

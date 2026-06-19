@@ -1,8 +1,40 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import {
+  Zap,
+  Settings,
+  DollarSign,
+  MessageSquare,
+  Wrench,
+  LayoutDashboard,
+  User,
+  Home,
+  FolderOpen,
+  ChevronDown,
+  X,
+  LogOut,
+} from "lucide-react";
+
+const GROUP_ICONS = {
+  "My Workspace":  <User size={17} />,
+  "Operations":    <Zap size={17} />,
+  "Setup":         <Settings size={17} />,
+  "Expenses":      <DollarSign size={17} />,
+  "Enquiries":     <MessageSquare size={17} />,
+  "System":        <Wrench size={17} />,
+  "Workspace":     <Home size={17} />,
+  "Settings":      <Settings size={17} />,
+  "Manage":        <FolderOpen size={17} />,
+};
+
+const DEFAULT_ICON = <LayoutDashboard size={17} />;
 
 const isGroupActive = (group, pathname) =>
-  (group.items || []).some((item) => pathname.startsWith(item.to) || (item.children || []).some((child) => pathname.startsWith(child.to)));
+  (group.items || []).some(
+    (item) =>
+      pathname.startsWith(item.to) ||
+      (item.children || []).some((child) => pathname.startsWith(child.to))
+  );
 
 export default function Sidebar({ groups, auth, onLogout, sidebarExpanded = true, onToggleSidebar }) {
   const location = useLocation();
@@ -13,6 +45,7 @@ export default function Sidebar({ groups, auth, onLogout, sidebarExpanded = true
     }
     return next;
   }, [groups, location.pathname]);
+
   const [openGroups, setOpenGroups] = useState(defaultOpen);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -29,9 +62,7 @@ export default function Sidebar({ groups, auth, onLogout, sidebarExpanded = true
   useEffect(() => {
     if (!mobileOpen) return undefined;
     document.body.style.overflow = "hidden";
-    const onKeyDown = (event) => {
-      if (event.key === "Escape") setMobileOpen(false);
-    };
+    const onKeyDown = (e) => { if (e.key === "Escape") setMobileOpen(false); };
     window.addEventListener("keydown", onKeyDown);
     return () => {
       document.body.style.overflow = "";
@@ -41,67 +72,83 @@ export default function Sidebar({ groups, auth, onLogout, sidebarExpanded = true
 
   return (
     <>
+      {/* Mobile Toggle Bar */}
       <div className="sidebar-mobile-toggle-shell">
         <button
           type="button"
           className={`sidebar-mobile-toggle ${mobileOpen ? "active" : ""}`}
-          onClick={() => setMobileOpen((current) => !current)}
+          onClick={() => setMobileOpen((c) => !c)}
           aria-expanded={mobileOpen}
-          aria-label="Toggle workspace navigation"
+          aria-label="Toggle navigation"
         >
-          <span />
-          <span />
-          <span />
+          <span /><span /><span />
         </button>
         <div className="sidebar-mobile-brand">
+          <img src="/skillify-logo.png" alt="Skillify" height={26} />
         </div>
       </div>
 
+      {/* Overlay */}
       <div
         className={`surface-overlay ${sidebarExpanded || mobileOpen ? "active" : ""}`}
         onClick={closeWorkspace}
         aria-hidden={!(sidebarExpanded || mobileOpen)}
       />
 
+      {/* Sidebar Panel */}
       <aside className={`app-sidebar ${sidebarExpanded || mobileOpen ? "open" : "closed"}`}>
-        <div className="sidebar-brand" style={{ display: 'flex', justifyContent: 'flex-end', minHeight: '40px' }}>
-          <button type="button" className="surface-close-button sidebar-mobile-close" onClick={closeWorkspace} aria-label="Close workspace menu">X</button>
+
+        {/* Brand Row */}
+        <div className="sidebar-brand-row">
+          <div className="sidebar-brand-inner">
+            <img src="/skillify-logo.png" alt="Skillify" className="sidebar-logo" />
+          </div>
+          <button
+            type="button"
+            className="sidebar-close-btn sidebar-mobile-close"
+            onClick={closeWorkspace}
+            aria-label="Close menu"
+          >
+            <X size={16} />
+          </button>
         </div>
 
-        {auth?.user && (
-          <div className="sidebar-user-card" style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '16px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 12, margin: '0 12px 20px' }}>
-            <strong style={{ fontSize: '1.05rem', color: '#f8fafc', letterSpacing: '0.02em' }}>{auth.user.name}</strong>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {auth.user.systemRole && (
-                <span className="badge" style={{ background: 'rgba(255,255,255,0.06)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 8px', fontSize: '0.75rem' }}>
-                  {auth.user.systemRole.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
-                </span>
-              )}
-              {auth.membership?.salonRole && auth.membership.salonRole !== auth.user.systemRole && (
-                <span className="badge" style={{ background: 'rgba(14,165,233,0.15)', color: '#7dd3fc', border: '1px solid rgba(14,165,233,0.3)', padding: '4px 8px', fontSize: '0.75rem' }}>
-                  {auth.membership.salonRole.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
+        {/* Nav Groups */}
         <nav className="sidebar-nav">
           {groups.map((group) => {
             const active = isGroupActive(group, location.pathname);
             const expanded = openGroups[group.label] ?? active;
+            const icon = GROUP_ICONS[group.label] || DEFAULT_ICON;
+
             return (
-              <div key={group.label} className={`sidebar-group ${active ? "active" : ""}`}>
+              <div key={group.label} className="sidebar-group">
                 <button
                   type="button"
-                  className={`sidebar-group-toggle ${expanded ? "expanded" : ""}`}
-                  onClick={() => setOpenGroups((current) => ({ ...current, [group.label]: !expanded }))}
+                  className={`sidebar-group-toggle ${active ? "active" : ""}`}
+                  onClick={() =>
+                    setOpenGroups((c) => {
+                      const isCurrentlyOpen = c[group.label];
+                      // Close all, then open clicked one (unless it was already open)
+                      const next = {};
+                      for (const g of groups) next[g.label] = false;
+                      if (!isCurrentlyOpen) next[group.label] = true;
+                      return next;
+                    })
+                  }
                 >
-                  <span>
-                    <strong>{group.label}</strong>
-                    {group.hint && <small>{group.hint}</small>}
+                  <span className="sidebar-group-label">
+                    <span className="sidebar-group-icon">{icon}</span>
+                    <span className="sidebar-group-text">
+                      <strong>{group.label}</strong>
+                      {group.hint && <small>{group.hint}</small>}
+                    </span>
                   </span>
-                  <span className="sidebar-chevron">{expanded ? "-" : "+"}</span>
+                  <span
+                    className="sidebar-chevron"
+                    style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }}
+                  >
+                    <ChevronDown size={14} />
+                  </span>
                 </button>
 
                 {expanded && (
@@ -112,10 +159,14 @@ export default function Sidebar({ groups, auth, onLogout, sidebarExpanded = true
                           to={item.to}
                           end={!item.children?.length}
                           onClick={closeMobile}
-                          className={({ isActive }) => `sidebar-link ${isActive || location.pathname.startsWith(item.to) ? "active" : ""}`}
+                          className={({ isActive }) =>
+                            `sidebar-link ${isActive || location.pathname.startsWith(item.to) ? "active" : ""}`
+                          }
                         >
                           <span>{item.label}</span>
-                          {item.badge && <span className="sidebar-link-badge">{item.badge}</span>}
+                          {item.badge && (
+                            <span className="sidebar-link-badge">{item.badge}</span>
+                          )}
                         </NavLink>
 
                         {item.children?.length ? (
@@ -125,8 +176,11 @@ export default function Sidebar({ groups, auth, onLogout, sidebarExpanded = true
                                 key={child.to}
                                 to={child.to}
                                 onClick={closeMobile}
-                                className={({ isActive }) => `sidebar-sublink ${isActive || location.pathname.startsWith(child.to) ? "active" : ""}`}
+                                className={({ isActive }) =>
+                                  `sidebar-sublink ${isActive || location.pathname.startsWith(child.to) ? "active" : ""}`
+                                }
                               >
+                                <span className="sidebar-sublink-dot" />
                                 {child.label}
                               </NavLink>
                             ))}
@@ -141,11 +195,14 @@ export default function Sidebar({ groups, auth, onLogout, sidebarExpanded = true
           })}
         </nav>
 
-        <button type="button" onClick={onLogout} className="secondary-button sidebar-logout">
-          Logout
-        </button>
+        {/* Footer */}
+        <div className="sidebar-footer">
+          <button type="button" onClick={onLogout} className="sidebar-logout-btn">
+            <LogOut size={15} />
+            Sign Out
+          </button>
+        </div>
       </aside>
     </>
   );
 }
-

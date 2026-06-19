@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 import demoIllustration from "../../assets/public-demo-illustration.svg";
 import EmptyState from "../../components/EmptyState";
+import IndianPhoneInput from "../../components/IndianPhoneInput";
 import PageLoader from "../../components/PageLoader";
 import PublicMobileMenu from "../../components/PublicMobileMenu";
 import { formatApiError } from "../../utils/apiError";
@@ -31,7 +32,7 @@ export default function PublicDemoLeadPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    document.title = "Request Demo | ReSpark";
+    document.title = "Request Demo | Skillify";
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
       meta = document.createElement("meta");
@@ -69,15 +70,15 @@ export default function PublicDemoLeadPage() {
       <main className="public-main">
         <div className="demo-topbar">
           <Link to="/" className="brand-mark demo-brand-link">
-            <img src="/logo-respark.svg" alt="ReSpark" className="brand-logo" />
+            <img src="/skillify-logo.png" alt="Skillify" className="brand-logo" />
             <span className="brand-lockup">
-              <strong>ReSpark</strong>
+              <strong>Skillify</strong>
               <small>Salon ERP Platform</small>
             </span>
           </Link>
           <div className="demo-topbar-menu">
             <PublicMobileMenu
-              brand={{ label: "ReSpark", sublabel: "Salon ERP Platform", logo: "/logo-respark.svg", to: "/" }}
+              brand={{ label: "Skillify", sublabel: "Salon ERP Platform", logo: "/skillify-logo.png", to: "/" }}
               items={navItems}
               cta={{ label: "Request Demo", to: "/book-demo" }}
             />
@@ -138,10 +139,10 @@ export default function PublicDemoLeadPage() {
             </label>
               <label>
               <span className="muted">Phone / WhatsApp number</span>
-              <input
+              <IndianPhoneInput
                 value={form.phone}
-                placeholder="Phone / WhatsApp number"
-                onChange={(event) => setForm({ ...form, phone: event.target.value })} />
+                placeholder="9876543210"
+                onChange={(value) => setForm({ ...form, phone: value })} />
             </label>
               <label>
               <span className="muted">Salon / company name</span>

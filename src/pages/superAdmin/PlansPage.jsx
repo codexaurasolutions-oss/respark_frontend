@@ -131,7 +131,7 @@ export default function PlansPage() {
           </div>
         </div>
       </div>
-      <div className="two-col">
+      <div className="settings-section-grid">
         <div className="panel-card">
           <h3>{editingId ? "Update Plan" : "Create Plan"}</h3>
           <form onSubmit={submit} className="form-grid">

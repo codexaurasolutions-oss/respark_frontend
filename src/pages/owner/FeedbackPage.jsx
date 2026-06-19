@@ -127,6 +127,13 @@ export default function FeedbackPage() {
       {mode === "settings" && report && (
         <div className="panel-card">
           <h3>Feedback Request Settings</h3>
+          <p className="muted">Enabled: {report.settings?.enabled ? "Yes" : "No"}</p>
+          <p className="muted">Send SMS: {report.settings?.sendSms ? "Yes" : "No"}</p>
+          <p className="muted">Send WhatsApp: {report.settings?.sendWhatsapp ? "Yes" : "No"}</p>
+          <p className="muted">Delay (hours): {report.settings?.feedbackDelayHours ?? "-"}</p>
+          <p className="muted">Low rating alert email: {report.settings?.lowRatingAlertEmail || "-"}</p>
+          <p className="muted">Rating prompt: {report.settings?.ratingPrompt || "-"}</p>
+          <p className="muted">Thank you message: {report.settings?.thankYouMessage || "-"}</p>
           <p className="muted">WhatsApp: {report.settings?.whatsappNumber || "-"}</p>
           <p className="muted">Booking Notes: {report.settings?.bookingNotes || "-"}</p>
           <p className="muted">Cancellation Policy: {report.settings?.cancellationPolicy || "-"}</p>

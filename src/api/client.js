@@ -1,4 +1,5 @@
 import axios from "axios";
+import { normalizePhoneFields, validatePhoneFields } from "../utils/phone";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://resparkbackend-production-ba7b.up.railway.app/api/v1";
 
@@ -19,6 +20,20 @@ export const setAuthSessionHandlers = ({ getCurrentSession, onRefreshSuccess, on
   updateSession = onRefreshSuccess;
   clearSession = onAuthFailure;
 };
+
+api.interceptors.request.use((config) => {
+  const session = getSession?.();
+  const accessToken = session?.accessToken;
+  config.headers = config.headers || {};
+  if (accessToken && !config.headers.Authorization) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
+  }
+  if (config.data && typeof config.data === "object" && !(config.data instanceof FormData)) {
+    validatePhoneFields(config.data);
+    config.data = normalizePhoneFields(config.data);
+  }
+  return config;
+});
 
 api.interceptors.response.use(
   (response) => response,

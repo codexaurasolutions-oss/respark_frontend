@@ -71,7 +71,7 @@ export default function CustomerHistoryPage() {
             <div className="stat-card"><div className="stat-label">Packages</div><div className="stat-value">{summary.packages}</div></div>
           </div>
 
-          <div className="two-col">
+          <div className="settings-section-grid">
             <div className="panel-card">
               <h3 style={{ marginTop: 0 }}>{customer.name}</h3>
               <div className="item-meta">{customer.phone} | {customer.email || "No email"}</div>

@@ -110,6 +110,107 @@ export default function AppointmentEditPage() {
         actions={<Link to={`/admin/appointments/${id}`} className="module-tab">View Detail</Link>}
       />
 
+      <style>{`
+        .form-section-wizard {
+          display: flex;
+          gap: 32px;
+          border-bottom: 1px dashed #e2e8f0;
+          padding-bottom: 30px;
+          margin-bottom: 30px;
+        }
+        @media (max-width: 768px) {
+          .form-section-wizard {
+            flex-direction: column;
+            gap: 16px;
+          }
+        }
+        .wizard-head {
+          flex: 0 0 250px;
+        }
+        .wizard-head .step-circle {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 1.1rem;
+          margin-bottom: 12px;
+          box-shadow: none;
+        }
+        .wizard-head h4 {
+          margin: 0;
+          font-size: 1.15rem;
+          color: #0f172a;
+          font-weight: 600;
+        }
+        .wizard-body {
+          flex: 1;
+        }
+        .form-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 20px;
+        }
+        .premium-input, .wizard-body select {
+          width: 100%;
+          padding: 12px 14px;
+          border: 1px solid #cbd5e1;
+          border-radius: 10px;
+          font-size: 0.95rem;
+          box-sizing: border-box;
+          background: #fff;
+          transition: all 0.2s;
+        }
+        .premium-input:focus, .wizard-body select:focus {
+          border-color: #3b82f6;
+          box-shadow: none;
+          outline: none;
+        }
+        .wizard-body label {
+          display: block;
+        }
+        .wizard-body .muted {
+          color: #64748b;
+          font-weight: 600;
+          display: block;
+          margin-bottom: 8px;
+          letter-spacing: 0.5px;
+        }
+        .btn-primary-wizard {
+          padding: 14px 28px;
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          color: white;
+          border: none;
+          border-radius: 10px;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: none;
+        }
+        .btn-primary-wizard:hover {
+          transform: translateY(-1px);
+          box-shadow: none;
+        }
+        .checkbox-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          cursor: pointer;
+        }
+        .checkbox-row input[type="checkbox"] {
+          width: 20px;
+          height: 20px;
+          border-radius: 6px;
+          border: 1px solid #cbd5e1;
+          cursor: pointer;
+        }
+      `}</style>
+
       {status.loading && (
         <PageLoader
           title="Loading appointment edit form"
@@ -124,78 +225,166 @@ export default function AppointmentEditPage() {
       ) : null}
 
       {form && (
-        <div className="panel-card">
-          <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
-            <div className="form-grid">
-              <select value={form.customerId} onChange={(event) => setForm((current) => ({ ...current, customerId: event.target.value }))}>
-                <option value="">Select customer</option>
-                {context.customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
-              </select>
-              <select value={form.branchId} onChange={(event) => setForm((current) => ({ ...current, branchId: event.target.value }))}>
-                <option value="">Select branch</option>
-                {context.branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
-              </select>
-              <select value={form.bookingChannel} onChange={(event) => setForm((current) => ({ ...current, bookingChannel: event.target.value }))}>
-                <option value="MANUAL">Manual</option>
-                <option value="WALK_IN">Walk-in</option>
-                <option value="PHONE">Phone</option>
-                <option value="ONLINE_PLACEHOLDER">Online Placeholder</option>
-              </select>
-              <input value={form.title} placeholder="Appointment title" onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} />
-              <label><span className="muted">Appointment start</span><input type="datetime-local" value={form.startAt} onChange={(event) => setForm((current) => ({ ...current, startAt: event.target.value }))} /></label>
-              <label><span className="muted">Appointment end</span><input type="datetime-local" value={form.endAt} onChange={(event) => setForm((current) => ({ ...current, endAt: event.target.value }))} /></label>
-            </div>
-
-            <div className="form-grid">
-              <label className="checkbox-row">
-                <input type="checkbox" checked={form.isWalkIn} onChange={(event) => setForm((current) => ({ ...current, isWalkIn: event.target.checked }))} />
-                Walk-in booking
-              </label>
-              <label className="checkbox-row">
-                <input type="checkbox" checked={form.advancePaymentRequired} onChange={(event) => setForm((current) => ({ ...current, advancePaymentRequired: event.target.checked }))} />
-                Advance required
-              </label>
-              <input type="number" min="0" value={form.advancePaidAmount} placeholder="Advance paid" onChange={(event) => setForm((current) => ({ ...current, advancePaidAmount: event.target.value }))} />
-              <input value={form.roomResourceNote} placeholder="Room/resource note" onChange={(event) => setForm((current) => ({ ...current, roomResourceNote: event.target.value }))} />
-            </div>
-
-            <textarea value={form.notes} placeholder="Booking notes" onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} />
-            <textarea value={form.customerPreferences} placeholder="Customer preferences" onChange={(event) => setForm((current) => ({ ...current, customerPreferences: event.target.value }))} />
-
-            <div className="list-stack">
-              {!form.items.length ? <EmptyState title="No service items attached" message="Add service lines from the appointment detail or recreate the booking structure before editing staff timing here." /> : null}
-              {form.items.map((item, index) => (
-                <div key={`appointment-edit-${index}`} className="list-item">
-                  <div className="form-grid">
-                    <select value={item.serviceId} onChange={(event) => updateItem(index, { serviceId: event.target.value })}>
-                      <option value="">Select service</option>
-                      {context.services.map((service) => <option key={service.id} value={service.id}>{service.name}</option>)}
+        <div className="panel-card premium-panel" style={{ padding: 0, overflow: "hidden" }}>
+          <form onSubmit={submit}>
+            
+            <div className="form-section-wizard">
+              <div className="wizard-head">
+                <div className="step-circle">1</div>
+                <h4>Client & Core Details</h4>
+              </div>
+              <div className="wizard-body">
+                <div className="form-grid">
+                  <label>
+                    <span className="muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>Customer</span>
+                    <select value={form.customerId} onChange={(event) => setForm((current) => ({ ...current, customerId: event.target.value }))} placeholder="Walk-in / Select Customer">
+                      <option value="">Walk-in / Select Customer</option>
+                      {context.customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
                     </select>
-                    <label><span className="muted">Service start time</span><input type="datetime-local" value={item.startAt} onChange={(event) => updateItem(index, { startAt: event.target.value })} /></label>
-                    <label><span className="muted">Service end time</span><input type="datetime-local" value={item.endAt} onChange={(event) => updateItem(index, { endAt: event.target.value })} /></label>
-                  </div>
-                  <div className="badge-row" style={{ marginTop: 10 }}>
-                    {!staffByBranch.length ? <EmptyState title="No active staff in this branch" message="Assign or activate branch staff first so service timing can be mapped cleanly." /> : null}
-                    {staffByBranch.map((user) => (
-                      <button
-                        key={user.id}
-                        type="button"
-                        className={item.staffUserIds.includes(user.id) ? "" : "secondary-button"}
-                        onClick={() => toggleStaff(index, user.id)}
-                      >
-                        {user.user?.name}
-                      </button>
-                    ))}
-                  </div>
+                  </label>
+                  <label>
+                    <span className="muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>Branch</span>
+                    <select value={form.branchId} onChange={(event) => setForm((current) => ({ ...current, branchId: event.target.value }))} placeholder="Select Branch">
+                      <option value="">Select Branch</option>
+                      {context.branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>Booking Channel</span>
+                    <select value={form.bookingChannel} onChange={(event) => setForm((current) => ({ ...current, bookingChannel: event.target.value }))}>
+                      <option value="MANUAL">Manual</option>
+                      <option value="WALK_IN">Walk-in</option>
+                      <option value="PHONE">Phone</option>
+                      <option value="ONLINE_PLACEHOLDER">Online Booking</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span className="muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>Appointment Title</span>
+                    <input className="premium-input" value={form.title} placeholder="e.g. Haircut & Wash" onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} />
+                  </label>
                 </div>
-              ))}
+              </div>
             </div>
 
-            <div className="form-actions">
-              <button type="submit">Save Appointment</button>
-              <Link to={`/admin/appointments/${id}`} className="cta-secondary">Cancel</Link>
+            <div className="form-section-wizard">
+              <div className="wizard-head">
+                <div className="step-circle">2</div>
+                <h4>Schedule & Settings</h4>
+              </div>
+              <div className="wizard-body">
+                <div className="form-grid" style={{ marginBottom: 20 }}>
+                  <label>
+                    <span className="muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>Overall Start Time</span>
+                    <input className="premium-input" type="datetime-local" value={form.startAt} onChange={(event) => setForm((current) => ({ ...current, startAt: event.target.value }))} />
+                  </label>
+                  <label>
+                    <span className="muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>Overall End Time</span>
+                    <input className="premium-input" type="datetime-local" value={form.endAt} onChange={(event) => setForm((current) => ({ ...current, endAt: event.target.value }))} />
+                  </label>
+                  <label>
+                    <span className="muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>Advance Paid ($)</span>
+                    <input className="premium-input" type="number" min="0" value={form.advancePaidAmount} placeholder="e.g. 50" onChange={(event) => setForm((current) => ({ ...current, advancePaidAmount: event.target.value }))} />
+                  </label>
+                  <label>
+                    <span className="muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>Room / Resource Note</span>
+                    <input className="premium-input" value={form.roomResourceNote} placeholder="e.g. VIP Room 1" onChange={(event) => setForm((current) => ({ ...current, roomResourceNote: event.target.value }))} />
+                  </label>
+                </div>
+                <div style={{ display: "flex", gap: 24, padding: "16px", background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0" }}>
+                  <label className="checkbox-row" style={{ margin: 0 }}>
+                    <input type="checkbox" checked={form.isWalkIn} onChange={(event) => setForm((current) => ({ ...current, isWalkIn: event.target.checked }))} style={{ width: 18, height: 18 }} />
+                    <span style={{ fontWeight: 500 }}>Is Walk-in Booking?</span>
+                  </label>
+                  <label className="checkbox-row" style={{ margin: 0 }}>
+                    <input type="checkbox" checked={form.advancePaymentRequired} onChange={(event) => setForm((current) => ({ ...current, advancePaymentRequired: event.target.checked }))} style={{ width: 18, height: 18 }} />
+                    <span style={{ fontWeight: 500 }}>Advance Payment Required?</span>
+                  </label>
+                </div>
+              </div>
             </div>
-            {status.success && <p className="success-text">{status.success}</p>}
+
+            <div className="form-section-wizard">
+              <div className="wizard-head">
+                <div className="step-circle">3</div>
+                <h4>Services & Staff Assignment</h4>
+              </div>
+              <div className="wizard-body">
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {!form.items.length ? <EmptyState title="No service items attached" message="Add service lines from the appointment detail or recreate the booking structure before editing staff timing here." /> : null}
+                  {form.items.map((item, index) => (
+                    <div key={`appointment-edit-${index}`} className="portal-list-item" style={{ flexDirection: "column", alignItems: "stretch", background: "#f8fafc", padding: 20, border: "1px solid #e2e8f0", borderRadius: 16 }}>
+                      <strong style={{ color: "var(--accent)", fontSize: "1rem", marginBottom: 12, display: "block" }}>Service Item {index + 1}</strong>
+                      <div className="form-grid">
+                        <label>
+                          <span className="muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>Service</span>
+                          <select value={item.serviceId} onChange={(event) => updateItem(index, { serviceId: event.target.value })} placeholder="Select Service">
+                            <option value="">Select service</option>
+                            {context.services.map((service) => <option key={service.id} value={service.id}>{service.name}</option>)}
+                          </select>
+                        </label>
+                        <label>
+                          <span className="muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>Start Time</span>
+                          <input className="premium-input" type="datetime-local" value={item.startAt} onChange={(event) => updateItem(index, { startAt: event.target.value })} />
+                        </label>
+                        <label>
+                          <span className="muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>End Time</span>
+                          <input className="premium-input" type="datetime-local" value={item.endAt} onChange={(event) => updateItem(index, { endAt: event.target.value })} />
+                        </label>
+                      </div>
+                      <div style={{ marginTop: 16 }}>
+                        <span className="muted" style={{ fontSize: "0.8rem", textTransform: "uppercase", display: "block", marginBottom: 8 }}>Assign Staff</span>
+                        <div className="badge-row">
+                          {!staffByBranch.length ? <EmptyState title="No active staff in this branch" message="Assign or activate branch staff first." /> : null}
+                          {staffByBranch.map((user) => (
+                            <button
+                              key={user.id}
+                              type="button"
+                              className={item.staffUserIds.includes(user.id) ? "mark-read" : "secondary-button"}
+                              style={{ 
+                                padding: "6px 16px", 
+                                borderRadius: 20,
+                                ...(item.staffUserIds.includes(user.id) ? { background: "var(--accent)", color: "white", border: "1px solid var(--accent)" } : { background: "white", border: "1px solid #cbd5e1" })
+                              }}
+                              onClick={() => toggleStaff(index, user.id)}
+                            >
+                              {user.user?.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="form-section-wizard" style={{ borderBottom: "none", paddingBottom: 0, marginBottom: 0 }}>
+              <div className="wizard-head">
+                <div className="step-circle">4</div>
+                <h4>Notes & Confirmation</h4>
+              </div>
+              <div className="wizard-body">
+                <div style={{ display: "grid", gap: 16, marginBottom: 24 }}>
+                  <label>
+                    <span className="muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>Booking Notes</span>
+                    <textarea className="premium-input" style={{ minHeight: 80 }} value={form.notes} placeholder="Internal booking notes..." onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} />
+                  </label>
+                  <label>
+                    <span className="muted" style={{ fontSize: "0.8rem", textTransform: "uppercase" }}>Customer Preferences</span>
+                    <textarea className="premium-input" style={{ minHeight: 80 }} value={form.customerPreferences} placeholder="Customer preferences or requests..." onChange={(event) => setForm((current) => ({ ...current, customerPreferences: event.target.value }))} />
+                  </label>
+                </div>
+                
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <button type="submit" className="btn-primary-wizard">
+                    Save Appointment Details
+                  </button>
+                  <Link to={`/admin/appointments/${id}`} className="cta-secondary" style={{ padding: "10px 20px" }}>Cancel</Link>
+                </div>
+                
+                {status.success && <div className="alert-item green-alert" style={{ padding: 12, borderRadius: 8, marginTop: 16 }}>{status.success}</div>}
+              </div>
+            </div>
           </form>
         </div>
       )}

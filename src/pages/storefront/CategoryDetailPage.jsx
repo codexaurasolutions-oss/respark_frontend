@@ -1,11 +1,24 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useOutletContext } from "react-router-dom";
 import { api } from "../../api/client";
+import { formatCurrency, normalizeCurrencyCode } from "../../utils/currency";
 
 export default function CategoryDetailPage() {
-  const { salon } = useOutletContext();
+  const { salon, genericSettings } = useOutletContext();
   const { categoryId } = useParams();
   const [services, setServices] = useState([]);
+  const currencyCode = normalizeCurrencyCode(
+    genericSettings?.defaultCurrency ||
+    genericSettings?.currency ||
+    salon?.defaultCurrency ||
+    salon?.currency ||
+    "INR"
+  );
+  const money = (value) => formatCurrency(value, currencyCode);
+  const listStyle = genericSettings.showProductGrid === false
+    ? { display: "grid", gridTemplateColumns: "1fr", gap: 24 }
+    : undefined;
+  const showThumbnails = genericSettings.showProductThumbnails !== false;
 
   useEffect(() => {
     // In a real app, fetch products specific to this category
@@ -44,7 +57,7 @@ export default function CategoryDetailPage() {
 
               <h3 className="sf-filter-heading" style={{ marginTop: 32 }}>Sort By</h3>
               <div className="sf-select-wrapper">
-                <select className="sf-select">
+                <select >
                   <option>Featured</option>
                   <option>Price: Low to High</option>
                   <option>Price: High to Low</option>
@@ -55,17 +68,17 @@ export default function CategoryDetailPage() {
             </div>
           </aside>
 
-          <div className="sf-grid">
+          <div className="sf-grid" style={listStyle}>
             {services.length === 0 ? (
               [1, 2, 3, 4, 5, 6].map(i => (
                 <Link to={`/site/${salon.slug}/product/${i}`} key={i} className="sf-product-card">
-                  <div className="sf-product-media">
+                  {showThumbnails ? <div className="sf-product-media">
                     <img src={`https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=800&auto=format&fit=crop&sig=${i+10}`} alt="Sample Service" />
-                  </div>
+                  </div> : null}
                   <div className="sf-product-info">
                     <span className="sf-product-category">Sample Category</span>
                     <h3 className="sf-product-title">Luxury Item {i}</h3>
-                    <p className="sf-product-price">$99.00</p>
+                    <p className="sf-product-price">{money(99)}</p>
                     <div style={{ marginTop: 'auto', paddingTop: '20px', paddingBottom: '24px' }}>
                       <span className="sf-btn-outline">Purchase Now</span>
                     </div>
@@ -75,13 +88,13 @@ export default function CategoryDetailPage() {
             ) : (
               services.map(service => (
                 <Link to={`/site/${salon.slug}/product/${service.id}`} key={service.id} className="sf-product-card">
-                  <div className="sf-product-media">
+                  {showThumbnails ? <div className="sf-product-media">
                     <img src={`https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=800&auto=format&fit=crop&sig=${service.id}`} alt={service.name} />
-                  </div>
+                  </div> : null}
                   <div className="sf-product-info">
                     <span className="sf-product-category">Signature Service</span>
                     <h3 className="sf-product-title">{service.name}</h3>
-                    <p className="sf-product-price">{salon.currency} {service.price}</p>
+                    <p className="sf-product-price">{money(service.price)}</p>
                     <div style={{ marginTop: 'auto', paddingTop: '20px', paddingBottom: '24px' }}>
                       <span className="sf-btn-outline">Purchase Now</span>
                     </div>

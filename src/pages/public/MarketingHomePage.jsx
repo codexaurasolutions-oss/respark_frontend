@@ -8,6 +8,7 @@ import homeIllustration from "../../assets/public-home-illustration.svg";
 import featuresIllustration from "../../assets/public-features-illustration.svg";
 import pricingIllustration from "../../assets/public-pricing-illustration.svg";
 import platformIllustration from "../../assets/public-platform-illustration.svg";
+import { formatCurrency, normalizeCurrencyCode } from "../../utils/currency";
 
 const navLinks = [
   { label: "Home", to: "/" },
@@ -17,7 +18,7 @@ const navLinks = [
   { label: "Request Demo", to: "/book-demo" }
 ];
 
-const brandLogo = "/logo-respark.svg";
+const brandLogo = "/skillify-logo.png";
 
 const featureGroups = [
   {
@@ -56,7 +57,7 @@ const pageContent = {
   "/": {
     heroEyebrow: "Salon ERP Platform",
     title: "Run your entire salon business from one calm, controlled operating system.",
-    subtitle: "ReSpark brings Super Admin controls, a unified owner/admin panel, POS billing, team permissions, CRM, support, and reporting into one responsive platform for modern salon businesses.",
+    subtitle: "Skillify brings Super Admin controls, a unified owner/admin panel, POS billing, team permissions, CRM, support, and reporting into one responsive platform for modern salon businesses.",
     primaryCta: "Request Demo",
     secondaryCta: "See Pricing"
   },
@@ -143,20 +144,6 @@ const proofStrip = [
   { label: "Deployment shape", value: "Unified multi-tenant SaaS" }
 ];
 
-function getCurrencyMeta(currencyCode) {
-  const code = String(currencyCode || "INR").toUpperCase();
-  if (code === "INR") return { code, locale: "en-IN" };
-  if (code === "PKR") return { code, locale: "en-PK" };
-  if (code === "AED") return { code, locale: "en-AE" };
-  if (code === "USD") return { code, locale: "en-US" };
-  return { code, locale: "en-IN" };
-}
-
-function formatPrice(value, currencyCode) {
-  const meta = getCurrencyMeta(currencyCode);
-  return new Intl.NumberFormat(meta.locale, { maximumFractionDigits: 0 }).format(Number(value || 0));
-}
-
 export default function MarketingHomePage() {
   const location = useLocation();
   const [settings, setSettings] = useState(null);
@@ -190,7 +177,8 @@ export default function MarketingHomePage() {
   const whatsappHref = settings?.whatsappNumber
     ? `https://wa.me/${String(settings.whatsappNumber).replace(/[^\d]/g, "")}`
     : null;
-  const pricingCurrency = String(settings?.defaultCurrency || "INR").toUpperCase();
+  const pricingCurrency = normalizeCurrencyCode(settings?.defaultCurrency || "INR");
+  const money = (value) => formatCurrency(value, pricingCurrency);
 
   const selectedPageFeatures = useMemo(() => {
     if (location.pathname === "/features") return publicFeatureCards;
@@ -219,7 +207,7 @@ export default function MarketingHomePage() {
   }, [location.pathname]);
 
   useEffect(() => {
-    document.title = `${page.title} | ${settings?.systemName || "ReSpark"}`;
+    document.title = `${page.title} | ${settings?.systemName || "Skillify"}`;
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
       meta = document.createElement("meta");
@@ -234,7 +222,7 @@ export default function MarketingHomePage() {
       {isLoading ? (
         <div className="page-shell" style={{ minHeight: "100vh" }}>
           <div className="panel-card">
-            <PageLoader title="Loading ReSpark website" message="We are preparing plans, public settings, and the latest marketing content." />
+            <PageLoader title="Loading Skillify website" message="We are preparing plans, public settings, and the latest marketing content." />
           </div>
         </div>
       ) : (
@@ -244,9 +232,9 @@ export default function MarketingHomePage() {
       <header className="public-nav-shell">
         <div className="public-nav">
           <Link to="/" className="brand-mark">
-            <img src={brandLogo} alt="ReSpark" className="brand-logo" />
+            <img src={brandLogo} alt="Skillify" className="brand-logo" />
             <span className="brand-lockup">
-              <strong>{settings?.systemName || "ReSpark"}</strong>
+              <strong>{settings?.systemName || "Skillify"}</strong>
               <small>Salon ERP Platform</small>
             </span>
           </Link>
@@ -261,7 +249,7 @@ export default function MarketingHomePage() {
             <Link to="/book-demo" className="nav-demo-link">Request Demo</Link>
           </div>
           <PublicMobileMenu
-            brand={{ label: settings?.systemName || "ReSpark", sublabel: "Salon ERP Platform", logo: brandLogo, to: "/" }}
+            brand={{ label: settings?.systemName || "Skillify", sublabel: "Salon ERP Platform", logo: brandLogo, to: "/" }}
             items={navLinks}
             cta={{ label: "Book Demo", to: "/book-demo" }}
           />
@@ -305,7 +293,7 @@ export default function MarketingHomePage() {
           </div>
           <div className="trust-card">
             <small>Primary contact</small>
-            <strong>{settings?.contactEmail || "hello@respark.local"}</strong>
+            <strong>{settings?.contactEmail || "hello@skillify.local"}</strong>
           </div>
           <div className="trust-card">
             <small>Demo access</small>
@@ -441,8 +429,8 @@ export default function MarketingHomePage() {
                       {index === 1 && <strong>Popular</strong>}
                     </div>
                     <h3>{plan.name}</h3>
-                    <div className="plan-price">{pricingCurrency} {formatPrice(plan.monthlyPrice, pricingCurrency)}<small>/month</small></div>
-                    <p className="muted">Yearly {pricingCurrency} {formatPrice(plan.yearlyPrice, pricingCurrency)} | Trial {plan.trialDays} days</p>
+                    <div className="plan-price">{money(plan.monthlyPrice)}<small>/month</small></div>
+                    <p className="muted">Yearly {money(plan.yearlyPrice)} | Trial {plan.trialDays} days</p>
                     <ul className="public-list compact">
                       <li>{plan.branchLimit} branches</li>
                       <li>{plan.userLimit} users</li>
@@ -544,10 +532,10 @@ export default function MarketingHomePage() {
 
       <footer className="public-footer">
         <div className="footer-brand">
-          <img src={brandLogo} alt="ReSpark" className="footer-brand-logo" />
+          <img src={brandLogo} alt="Skillify" className="footer-brand-logo" />
           <div>
-            <strong>{settings?.systemName || "ReSpark"}</strong>
-            <p>{settings?.supportEmail || "support@respark.local"}</p>
+            <strong>{settings?.systemName || "Skillify"}</strong>
+            <p>{settings?.supportEmail || "support@skillify.local"}</p>
           </div>
         </div>
         <div className="footer-links">

@@ -10,9 +10,21 @@ const addMinutes = (value, minutes) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
+const matchesApplicableFor = (service, applicableFor) => {
+  const target = String(applicableFor || "both").toLowerCase();
+  if (target === "both") return true;
+  const gender = String(service?.gender || "both").toLowerCase();
+  return gender === "both" || gender === "unisex" || gender === "all" || gender === target;
+};
+
 export default function PublicBookingForm({ slug, data, onSuccess, onTrack, initialServiceId = "" }) {
   const branches = useMemo(() => data?.salon?.branches || [], [data]);
-  const services = useMemo(() => data?.services || [], [data]);
+  const genericSettings = useMemo(() => data?.genericSettings || {}, [data]);
+  const bookingClosed = genericSettings.businessOpen === false || genericSettings.appointmentBookingEnabled === false;
+  const services = useMemo(() => {
+    const rows = data?.services || [];
+    return rows.filter((service) => matchesApplicableFor(service, genericSettings.applicableFor));
+  }, [data, genericSettings.applicableFor]);
   const staff = useMemo(() => data?.staff || [], [data]);
   const defaultBranchId = branches[0]?.id || "";
   const defaultServiceId = initialServiceId && services.some((item) => item.id === initialServiceId) ? initialServiceId : (services[0]?.id || "");
@@ -52,7 +64,8 @@ export default function PublicBookingForm({ slug, data, onSuccess, onTrack, init
     event.preventDefault();
     setStatus({ loading: true, error: "", success: "" });
     try {
-      const endAt = addMinutes(form.startAt, selectedService?.durationMin || 0);
+      const durationMin = Number(selectedService?.durationMin || 15);
+      const endAt = addMinutes(form.startAt, durationMin);
       const response = await api.post(`/public/salons/${slug}/book`, {
         customerName: form.customerName,
         customerPhone: form.customerPhone,
@@ -85,6 +98,19 @@ export default function PublicBookingForm({ slug, data, onSuccess, onTrack, init
     <div className="panel-card">
       <h3>Book Appointment</h3>
       <p className="muted">Choose branch, service, staff, and time. Booking follows the same salon rules as the admin calendar.</p>
+      {bookingClosed ? (
+        <p className="error-text">This salon is currently closed for online booking.</p>
+      ) : null}
+      {genericSettings.applicableFor && String(genericSettings.applicableFor).toLowerCase() !== "both" ? (
+        <p className="muted" style={{ marginTop: -4 }}>
+          Showing {String(genericSettings.applicableFor).toLowerCase()} services based on salon booking defaults.
+        </p>
+      ) : null}
+      {!services.length ? (
+        <p className="muted" style={{ marginTop: -4 }}>
+          No services are currently available for the selected salon booking audience.
+        </p>
+      ) : null}
       {status.error && <p className="error-text">{status.error}</p>}
       {status.success && <p className="success-text">{status.success}</p>}
       <form className="form-grid" onSubmit={submit}>
@@ -102,10 +128,10 @@ export default function PublicBookingForm({ slug, data, onSuccess, onTrack, init
           {eligibleStaff.map((member) => <option key={member.id} value={member.id}>{member.user?.name || member.name || "Staff"}{member.branch?.name ? ` - ${member.branch.name}` : ""}</option>)}
         </select>
         <input type="datetime-local" value={form.startAt} onChange={(event) => setForm((current) => ({ ...current, startAt: event.target.value }))} />
-        <input value={selectedService?.durationMin || ""} readOnly placeholder="Duration" />
+        <input value={selectedService?.durationMin ? `${selectedService.durationMin} min` : ""} readOnly placeholder="Duration" />
         <textarea placeholder="Notes" value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} />
         <textarea placeholder="Preferences" value={form.customerPreferences} onChange={(event) => setForm((current) => ({ ...current, customerPreferences: event.target.value }))} />
-        <button disabled={status.loading || !form.staffMembershipId || !form.startAt || !form.branchId || !form.serviceId}>
+        <button disabled={bookingClosed || status.loading || !form.staffMembershipId || !form.startAt || !form.branchId || !form.serviceId}>
           {status.loading ? "Creating..." : "Create Booking"}
         </button>
       </form>

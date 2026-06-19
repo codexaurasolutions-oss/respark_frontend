@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api/client";
+import { formatApiError } from "../../utils/apiError";
 import EmptyState from "../../components/EmptyState";
 import ModuleTabs from "../../components/ModuleTabs";
 import PageLoader from "../../components/PageLoader";
@@ -11,7 +12,7 @@ export default function PaymentsPage() {
   const [selectedBranch, setSelectedBranch] = useState("");
   const [filters, setFilters] = useState({ q: "", mode: "", type: "" });
   const [refundForm, setRefundForm] = useState({ invoiceId: "", amount: 0, note: "" });
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState({ error: "", success: "" });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -113,12 +114,16 @@ export default function PaymentsPage() {
         <h3>Refund Invoice</h3>
         <form onSubmit={async (event) => {
           event.preventDefault();
-          await api.post("/owner/payments/refund", { ...refundForm, amount: Number(refundForm.amount) });
-          setStatus("Refund posted.");
-          setRefundForm({ invoiceId: "", amount: 0, note: "" });
-          const params = selectedBranch ? { branchId: selectedBranch } : {};
-          const paymentResponse = await api.get("/owner/payments", { params });
-          setRows(paymentResponse.data);
+          try {
+            await api.post("/owner/payments/refund", { ...refundForm, amount: Number(refundForm.amount) });
+            setStatus({ error: "", success: "Refund posted." });
+            setRefundForm({ invoiceId: "", amount: 0, note: "" });
+            const params = selectedBranch ? { branchId: selectedBranch } : {};
+            const paymentResponse = await api.get("/owner/payments", { params });
+            setRows(paymentResponse.data);
+          } catch (err) {
+            setStatus({ error: formatApiError(err, "Refund failed"), success: "" });
+          }
         }} className="form-grid">
           <label>
               <span className="muted">Invoice ID</span>
@@ -134,7 +139,8 @@ export default function PaymentsPage() {
             </label>
           <button>Post Refund</button>
         </form>
-        {status && <p className="success-text">{status}</p>}
+        {status.success && <p className="success-text">{status.success}</p>}
+        {status.error && <p className="error-text">{status.error}</p>}
       </div>}
 
       <div className="panel-card">

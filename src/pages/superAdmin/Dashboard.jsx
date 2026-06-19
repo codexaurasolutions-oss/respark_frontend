@@ -69,7 +69,7 @@ export default function SuperAdminDashboard() {
         ))}
       </div>
 
-      <div className="two-col">
+      <div className="settings-section-grid">
         <div className="panel-card dashboard-section">
           <div className="section-heading">
             <h3>Revenue Snapshot</h3>
@@ -113,7 +113,7 @@ export default function SuperAdminDashboard() {
         </div>
       </div>
 
-      <div className="two-col" style={{ marginTop: 20 }}>
+      <div className="settings-section-grid" style={{ marginTop: 20 }}>
         <div className="panel-card dashboard-section">
           <div className="section-heading">
             <h3>Recent Salons</h3>

@@ -182,3 +182,16 @@
     border-right-color: var(--border);
   }
 }
+
+/* FIX FOR LAYOUT ALIGNMENT */
+.app-shell { align-items: start !important; }
+.app-content-wrapper { justify-content: flex-start !important; margin-top: 0 !important; }
+.app-main { margin-top: 0 !important; display: flex; flex-direction: column; }
+.respark-header-container { margin-top: 0 !important; }
+
+@media (min-width: 1025px) {
+  .app-shell { grid-template-columns: 240px 1fr !important; }
+  .app-shell.sidebar-collapsed { grid-template-columns: 0 1fr !important; }
+  .app-shell.sidebar-collapsed .app-sidebar { display: none !important; }
+}
+

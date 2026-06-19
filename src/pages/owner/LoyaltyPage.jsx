@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { api } from "../../api/client";
+import { useSalonSettings } from "../../context/SalonSettingsContext";
 import ModuleTabs from "../../components/ModuleTabs";
 import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
@@ -11,17 +12,22 @@ const emptyRule = {
   pointsPerCurrency: 1,
   minRedeemPoints: 100,
   maxRedeemPercent: 20,
-  expiryDays: 180
+  expiryDays: 180,
+  serviceMultiplier: "",
+  productMultiplier: "",
+  birthdayPoints: ""
 };
 
 export default function LoyaltyPage() {
   const location = useLocation();
   const params = useParams();
+  const { formatMoney } = useSalonSettings();
   const [rules, setRules] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [report, setReport] = useState(null);
   const [customerView, setCustomerView] = useState(null);
   const [form, setForm] = useState(emptyRule);
+  const [editingRule, setEditingRule] = useState(null);
   const [adjustment, setAdjustment] = useState({ customerId: "", points: 0, type: "ADJUST", note: "" });
   const [status, setStatus] = useState({ error: "", success: "" });
   const [loading, setLoading] = useState(true);
@@ -70,19 +76,64 @@ export default function LoyaltyPage() {
   const saveRule = async (event) => {
     event.preventDefault();
     try {
-      await api.post("/owner/loyalty/rules", {
-        ...form,
+      const payload = {
+        name: form.name,
         pointsPerCurrency: Number(form.pointsPerCurrency),
         minRedeemPoints: Number(form.minRedeemPoints),
         maxRedeemPercent: Number(form.maxRedeemPercent),
-        expiryDays: Number(form.expiryDays)
-      });
+        expiryDays: Number(form.expiryDays),
+        serviceMultiplier: form.serviceMultiplier ? Number(form.serviceMultiplier) : null,
+        productMultiplier: form.productMultiplier ? Number(form.productMultiplier) : null,
+        birthdayPoints: form.birthdayPoints ? Number(form.birthdayPoints) : null
+      };
+      if (editingRule) {
+        await api.patch(`/owner/loyalty/rules/${editingRule.id}`, payload);
+        setStatus({ error: "", success: "Loyalty rule updated." });
+      } else {
+        await api.post("/owner/loyalty/rules", payload);
+        setStatus({ error: "", success: "Loyalty rule created." });
+      }
       setForm(emptyRule);
-      setStatus({ error: "", success: "Loyalty rule saved." });
+      setEditingRule(null);
       await load();
     } catch (error) {
       setStatus({ error: formatApiError(error, "Could not save loyalty rule"), success: "" });
     }
+  };
+
+  const deleteRule = async (ruleId) => {
+    if (!confirm("Delete this loyalty rule?")) return;
+    try {
+      await api.delete(`/owner/loyalty/rules/${ruleId}`);
+      setStatus({ error: "", success: "Loyalty rule deleted." });
+      if (editingRule?.id === ruleId) {
+        setEditingRule(null);
+        setForm(emptyRule);
+      }
+      await load();
+    } catch (error) {
+      setStatus({ error: formatApiError(error, "Could not delete loyalty rule"), success: "" });
+    }
+  };
+
+  const startEdit = (rule) => {
+    setEditingRule(rule);
+    setForm({
+      name: rule.name || "",
+      pointsPerCurrency: rule.pointsPerCurrency ?? 1,
+      minRedeemPoints: rule.minRedeemPoints ?? 100,
+      maxRedeemPercent: rule.maxRedeemPercent ?? 20,
+      expiryDays: rule.expiryDays ?? 180,
+      serviceMultiplier: rule.serviceMultiplier ?? "",
+      productMultiplier: rule.productMultiplier ?? "",
+      birthdayPoints: rule.birthdayPoints ?? ""
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const cancelEdit = () => {
+    setEditingRule(null);
+    setForm(emptyRule);
   };
 
   const postAdjustment = async (event) => {
@@ -131,35 +182,63 @@ export default function LoyaltyPage() {
 
       {!loading && (mode === "overview" || mode === "rules") && (
         <div className="panel-card">
-          <h3>Create Loyalty Rule</h3>
+          <h3>{editingRule ? "Edit Loyalty Rule" : "Create Loyalty Rule"}</h3>
           <form className="form-grid" onSubmit={saveRule}>
             <label>
               <span className="muted">Rule name</span>
               <input placeholder="Rule name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </label>
             <label>
-              <span className="muted">Points per currency</span>
-              <input type="number" placeholder="Points per currency" value={form.pointsPerCurrency} onChange={(e) => setForm({ ...form, pointsPerCurrency: e.target.value })} />
+              <span className="muted">Points per currency (earn rate)</span>
+              <input type="number" placeholder={`e.g. 1 = 1 point per ${formatMoney(1)}`} value={form.pointsPerCurrency} onChange={(e) => setForm({ ...form, pointsPerCurrency: e.target.value })} />
             </label>
             <label>
               <span className="muted">Minimum redeem points</span>
               <input type="number" placeholder="Minimum redeem points" value={form.minRedeemPoints} onChange={(e) => setForm({ ...form, minRedeemPoints: e.target.value })} />
             </label>
             <label>
-              <span className="muted">Maximum redeem %</span>
-              <input type="number" placeholder="Maximum redeem %" value={form.maxRedeemPercent} onChange={(e) => setForm({ ...form, maxRedeemPercent: e.target.value })} />
+              <span className="muted">Maximum redeem % of bill</span>
+              <input type="number" placeholder="Max %" value={form.maxRedeemPercent} onChange={(e) => setForm({ ...form, maxRedeemPercent: e.target.value })} />
             </label>
             <label>
               <span className="muted">Expiry days</span>
               <input type="number" placeholder="Expiry days" value={form.expiryDays} onChange={(e) => setForm({ ...form, expiryDays: e.target.value })} />
             </label>
-            <button>Save Rule</button>
+            <label>
+              <span className="muted">Service multiplier (bonus pts per service)</span>
+              <input type="number" placeholder="Optional extra pts" value={form.serviceMultiplier} onChange={(e) => setForm({ ...form, serviceMultiplier: e.target.value })} />
+            </label>
+            <label>
+              <span className="muted">Product multiplier (bonus pts per product)</span>
+              <input type="number" placeholder="Optional extra pts" value={form.productMultiplier} onChange={(e) => setForm({ ...form, productMultiplier: e.target.value })} />
+            </label>
+            <label>
+              <span className="muted">Birthday bonus points</span>
+              <input type="number" placeholder="Optional birthday pts" value={form.birthdayPoints} onChange={(e) => setForm({ ...form, birthdayPoints: e.target.value })} />
+            </label>
+            <div style={{ gridColumn: "1 / -1", display: "flex", gap: 8, marginTop: 4 }}>
+              <button type="submit">{editingRule ? "Update Rule" : "Save Rule"}</button>
+              {editingRule && (
+                <button type="button" onClick={cancelEdit} style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0" }}>Cancel Edit</button>
+              )}
+            </div>
           </form>
           <div className="list-stack" style={{ marginTop: 16 }}>
             {rules.map((rule) => (
-              <div key={rule.id} className="list-item">
-                <strong>{rule.name}</strong>
-                <div className="item-meta">Earn {rule.pointsPerCurrency} | Min redeem {rule.minRedeemPoints} | Expiry {rule.expiryDays || 0} days</div>
+              <div key={rule.id} className="list-item" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ flex: 1 }}>
+                  <strong>{rule.name}</strong>
+                  <div className="item-meta">
+                    Earn {rule.pointsPerCurrency} pts/{formatMoney(1)} | Min redeem {rule.minRedeemPoints} | Max {rule.maxRedeemPercent}% | Expiry {rule.expiryDays || 0}d
+                    {rule.serviceMultiplier ? ` | Svc ×${rule.serviceMultiplier}` : ""}
+                    {rule.productMultiplier ? ` | Prod ×${rule.productMultiplier}` : ""}
+                    {rule.birthdayPoints ? ` | Bday +${rule.birthdayPoints}` : ""}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6, marginLeft: 12 }}>
+                  <button onClick={() => startEdit(rule)} style={{ padding: "4px 12px", fontSize: 12, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 6, cursor: "pointer", fontWeight: 600 }}>Edit</button>
+                  <button onClick={() => deleteRule(rule.id)} style={{ padding: "4px 12px", fontSize: 12, background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, cursor: "pointer", fontWeight: 600 }}>Delete</button>
+                </div>
               </div>
             ))}
             {!rules.length && <EmptyState title="No loyalty rules yet" message="Create a rule to define how points are earned, redeemed, and expired." />}

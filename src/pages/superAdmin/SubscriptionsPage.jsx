@@ -201,7 +201,7 @@ export default function SubscriptionsPage() {
           <button type="button" className="secondary-button" onClick={() => setFilters({ q: "", status: "", paymentStatus: "" })}>Reset</button>
         </div>
       </div>
-      <div className="two-col">
+      <div className="settings-section-grid">
         <div className="panel-card">
           <h3>Create Subscription</h3>
           <form onSubmit={submit} style={{ display: "grid", gap: 10 }}>

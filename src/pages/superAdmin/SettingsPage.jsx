@@ -122,18 +122,18 @@ export default function SuperAdminSettingsPage() {
           message="Collecting communication defaults, public links, and system controls."
         />
       ) : (
-      <div className="two-col">
+      <div className="settings-section-grid">
         <div className="panel-card">
           {status.error && <p className="error-text">{status.error}</p>}
           {status.success && <p className="success-text">{status.success}</p>}
           <form onSubmit={submit} style={{ display: "grid", gap: 8 }}>
             <input value={form.systemName} placeholder="System name" onChange={(event) => setForm({ ...form, systemName: event.target.value })} />
-            <div className="two-col" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <div className="settings-section-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
               <input value={form.taxLabel} placeholder="Tax label" onChange={(event) => setForm({ ...form, taxLabel: event.target.value })} />
               <input value={form.defaultCurrency} placeholder="Default currency" onChange={(event) => setForm({ ...form, defaultCurrency: event.target.value })} />
             </div>
             <input value={form.currencyOptions} placeholder="Currency list (comma separated)" onChange={(event) => setForm({ ...form, currencyOptions: event.target.value })} />
-            <div className="two-col" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <div className="settings-section-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
               <input value={form.defaultCountry} placeholder="Default country" onChange={(event) => setForm({ ...form, defaultCountry: event.target.value })} />
               <input value={form.defaultCity} placeholder="Default city" onChange={(event) => setForm({ ...form, defaultCity: event.target.value })} />
             </div>

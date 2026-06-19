@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="page-shell">
-      <div className="two-col" style={{ alignItems: "stretch" }}>
+      <div className="settings-section-grid" style={{ alignItems: "stretch" }}>
         <div className="hero-card" style={{ padding: 28 }}>
           <div className="eyebrow-pill" style={{ marginBottom: 14 }}>Account Recovery</div>
           <h1 style={{ marginTop: 0 }}>Reset access without support delays.</h1>

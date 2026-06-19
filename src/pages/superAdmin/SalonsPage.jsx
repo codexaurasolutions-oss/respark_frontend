@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
+import IndianPhoneInput from "../../components/IndianPhoneInput";
 import PageLoader from "../../components/PageLoader";
 
 const businessTypes = ["Salon", "Spa", "Beauty Clinic", "Nail Studio", "Tattoo Studio", "Pet Grooming", "Wellness Center"];
@@ -62,7 +63,7 @@ const emptyForm = {
   city: "",
   country: "",
   timezone: "",
-  currency: "PKR",
+  currency: "INR",
   taxRate: 0,
   trialStartsAt: "",
   trialEndsAt: "",
@@ -177,7 +178,7 @@ export default function SalonsPage() {
       city: salon.city || "",
       country: salon.country || "",
       timezone: salon.timezone || "",
-      currency: salon.currency || "PKR",
+      currency: salon.currency || "INR",
       taxRate: Number(salon.taxRate || 0),
       trialStartsAt: salon.trialStartsAt ? new Date(salon.trialStartsAt).toISOString().slice(0, 10) : "",
       trialEndsAt: salon.trialEndsAt ? new Date(salon.trialEndsAt).toISOString().slice(0, 10) : "",
@@ -237,7 +238,7 @@ export default function SalonsPage() {
           <button type="button" className="secondary-button" onClick={() => { setQuery(""); setStatusFilter(""); }}>Reset</button>
         </div>
       </div>
-      <div className="two-col">
+      <div className="settings-section-grid">
         <div className="panel-card">
           <h3>{editingId ? "Update Salon" : "Create Salon"}</h3>
           <form onSubmit={createOrUpdateSalon} className="form-grid">
@@ -247,7 +248,11 @@ export default function SalonsPage() {
               {businessTypes.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
             <input placeholder="Email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
-            <input placeholder="Phone" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
+            <IndianPhoneInput
+              value={form.phone}
+              onChange={(value) => setForm({ ...form, phone: value })}
+              placeholder="9876543210"
+            />
             <input placeholder="Address" value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} />
             <input placeholder="City" value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} />
             <input placeholder="Country" value={form.country} onChange={(event) => setForm({ ...form, country: event.target.value })} />
@@ -352,7 +357,7 @@ export default function SalonsPage() {
                 <p>{selectedSalon.email || "-"} | {selectedSalon.phone || "-"}</p>
                 <p>{selectedSalon.address || "-"}</p>
                 <p>{selectedSalon.city || "-"}, {selectedSalon.country || "-"} | {selectedSalon.timezone || "-"}</p>
-                <p>Currency {selectedSalon.currency || "PKR"} | Tax {String(selectedSalon.taxRate || 0)}%</p>
+                <p>Currency {selectedSalon.currency || "INR"} | Tax {String(selectedSalon.taxRate || 0)}%</p>
                 <p>Trial: {selectedSalon.trialStartsAt ? new Date(selectedSalon.trialStartsAt).toLocaleDateString() : "-"} to {selectedSalon.trialEndsAt ? new Date(selectedSalon.trialEndsAt).toLocaleDateString() : "-"}</p>
                 <p>Internal note: {selectedSalon.internalNote || "-"}</p>
               </div>
