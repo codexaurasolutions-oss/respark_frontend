@@ -37,9 +37,21 @@ const fallbackTemplates = {
     title: "Appointment Reminder",
     content: "Reminder: {{customer_name}}, your appointment at {{salon_name}} is on {{appointment_date_time}}."
   },
+  appointment_cancelled: {
+    title: "Appointment Cancelled",
+    content: "Hi {{customer_name}}, your appointment at {{salon_name}} scheduled for {{appointment_date_time}} has been cancelled."
+  },
   order_confirmation: {
     title: "Order Confirmation",
     content: "Hi {{customer_name}}, your order {{order_number}} at {{salon_name}} has been received. Total: {{order_amount}}."
+  },
+  enquiry_follow_up: {
+    title: "Enquiry Follow Up",
+    content: "Hi {{customer_name}}, thank you for your enquiry with {{salon_name}}. Our team has shared a follow-up update for you."
+  },
+  feedback_follow_up: {
+    title: "Feedback Follow Up",
+    content: "Hi {{customer_name}}, thank you for sharing your feedback with {{salon_name}}. Our team has added an update and will stay in touch."
   }
 };
 
@@ -67,24 +79,33 @@ export const attemptCustomerTemplateEmail = async ({ salonId, toEmail, templateT
     return { skipped: true, reason: "missing-recipient" };
   }
 
-  const template = await resolveMessageTemplate(salonId, templateType);
-  if (!template?.content) {
-    return { skipped: true, reason: "missing-template" };
+  try {
+    const template = await resolveMessageTemplate(salonId, templateType);
+    if (!template?.content) {
+      return { skipped: true, reason: "missing-template" };
+    }
+
+    const variables = await resolveTemplateContext(salonId, context);
+    const html = renderTemplateText(template.content, variables);
+    const subject = template.title || "Salon update";
+    const delivery = await sendMail({
+      to: toEmail,
+      subject,
+      html: `<div>${html}</div>`,
+      text: html
+    });
+
+    return {
+      skipped: false,
+      templateType: template.type,
+      delivery
+    };
+  } catch (error) {
+    console.error(`[emailNotifications] Failed to send email of type ${templateType} to ${toEmail}:`, error);
+    return {
+      skipped: true,
+      reason: "delivery-error",
+      error: error.message
+    };
   }
-
-  const variables = await resolveTemplateContext(salonId, context);
-  const html = renderTemplateText(template.content, variables);
-  const subject = template.title || "Salon update";
-  const delivery = await sendMail({
-    to: toEmail,
-    subject,
-    html: `<div>${html}</div>`,
-    text: html
-  });
-
-  return {
-    skipped: false,
-    templateType: template.type,
-    delivery
-  };
 };
