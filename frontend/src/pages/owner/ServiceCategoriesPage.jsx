@@ -3,6 +3,7 @@ import { api } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
 import { formatApiError } from "../../utils/apiError";
+import { downloadFromApi } from "../../utils/download";
 
 export default function ServiceCategoriesPage() {
   const [categories, setCategories] = useState([]);
@@ -183,8 +184,42 @@ export default function ServiceCategoriesPage() {
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ padding: "12px 16px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontWeight: 700, color: "#2563eb", fontSize: 14, textAlign: "center" }}>
               {selectedSub ? `${selectedCat?.name}/${selectedSub.name}/Items` : "Select a subcategory"}
-              <div style={{ float: "right" }}>
-                <button style={{ padding: "4px 12px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Import/Export</button>
+              <div style={{ float: "right", display: "flex", gap: "8px", alignItems: "center" }}>
+                <label style={{ padding: "4px 12px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                  Import
+                  <input
+                    type="file"
+                    accept=".csv"
+                    style={{ display: "none" }}
+                    onChange={async (event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      const formData = new FormData();
+                      formData.append("file", file);
+                      try {
+                        const res = await api.post("/owner/service-categories/import", formData, {
+                          headers: { "Content-Type": "multipart/form-data" }
+                        });
+                        alert(res.data.message);
+                        await load();
+                      } catch (error) {
+                        alert(formatApiError(error, "Could not import service categories"));
+                      }
+                    }}
+                  />
+                </label>
+                <button
+                  onClick={async () => {
+                    try {
+                      await downloadFromApi("/owner/service-categories/export", { fallbackFilename: "ServiceCategories.csv" });
+                    } catch (error) {
+                      alert("Could not export service categories");
+                    }
+                  }}
+                  style={{ padding: "4px 12px", background: "#f8fafc", color: "#2563eb", border: "1px solid #bfdbfe", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Export
+                </button>
               </div>
             </div>
             <div style={{ padding: "8px 16px", borderBottom: "1px solid #e2e8f0" }}>

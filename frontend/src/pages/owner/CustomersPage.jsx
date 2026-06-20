@@ -1006,7 +1006,29 @@ export default function CustomersPage() {
         <div className="crm-actions">
           <button className="crm-btn crm-btn-light" onClick={() => setShowFilters(true)}><Filter size={16} /> Filters</button>
           <button className="crm-btn" onClick={() => setShowAddGuest(true)}><Plus size={16} /> Add Guest</button>
-          <button className="crm-btn"><Download size={16} /> Import</button>
+          <label className="crm-btn" style={{ cursor: "pointer" }}>
+            <Download size={16} /> Import
+            <input
+              type="file"
+              accept=".csv"
+              style={{ display: "none" }}
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                const formData = new FormData();
+                formData.append("file", file);
+                try {
+                  const res = await api.post("/owner/customers/import", formData, {
+                    headers: { "Content-Type": "multipart/form-data" }
+                  });
+                  alert(res.data.message);
+                  await load();
+                } catch (error) {
+                  alert(formatApiError(error, "Could not import customers"));
+                }
+              }}
+            />
+          </label>
           <div className="export-dropdown">
             <button className="crm-btn" onClick={() => setShowExportMenu((current) => !current)}><Upload size={16} /> Export <ChevronDown size={16} /></button>
             {showExportMenu && (
