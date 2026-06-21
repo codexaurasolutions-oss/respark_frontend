@@ -107,60 +107,6 @@ export default function AppointmentsPage() {
   const navigate = useNavigate();
   const { formatMoney } = useSalonSettings();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [salonSettings, setSalonSettings] = useState(null);
-
-  // Dynamic start and end hours based on roster management settings
-  const { APPOINTMENT_START_HOUR, APPOINTMENT_END_HOUR } = useMemo(() => {
-    let start = 9;
-    let end = 21;
-
-    const rosterRows = salonSettings?.advancedSettings?.rosterManagement?.rows;
-    if (Array.isArray(rosterRows) && rosterRows.length > 0) {
-      const workingRows = rosterRows.filter(row => row.isWorking);
-      if (workingRows.length > 0) {
-        let minHour = 24;
-        let maxHour = 0;
-
-        workingRows.forEach(row => {
-          if (row.fromTime) {
-            const h = parseInt(row.fromTime.split(":")[0], 10);
-            if (!isNaN(h) && h < minHour) {
-              minHour = h;
-            }
-          }
-          if (row.toTime) {
-            const h = parseInt(row.toTime.split(":")[0], 10);
-            if (!isNaN(h) && h > maxHour) {
-              maxHour = h;
-            }
-          }
-        });
-
-        if (minHour < 24) start = minHour;
-        if (maxHour > 0) end = maxHour;
-      }
-    }
-    return { APPOINTMENT_START_HOUR: start, APPOINTMENT_END_HOUR: end };
-  }, [salonSettings]);
-
-  const TIME_SLOTS = useMemo(() => {
-    const slots = [];
-    for (let h = APPOINTMENT_START_HOUR; h <= APPOINTMENT_END_HOUR; h++) {
-      const ampm = h >= 12 ? "PM" : "AM";
-      const hour12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
-      const hourText = String(hour12).padStart(2, "0");
-      [0, 15, 30, 45].forEach((minutes) => {
-        if (h === APPOINTMENT_END_HOUR && minutes > 0) return;
-        slots.push(`${hourText}:${String(minutes).padStart(2, "0")} ${ampm}`);
-      });
-    }
-    return slots;
-  }, [APPOINTMENT_START_HOUR, APPOINTMENT_END_HOUR]);
-
-  const TIME_SLOT_INDEX = useMemo(() => {
-    return new Map(TIME_SLOTS.map((slot, index) => [slot, index]));
-  }, [TIME_SLOTS]);
-
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingAppointmentId, setEditingAppointmentId] = useState(null);
@@ -185,6 +131,66 @@ export default function AppointmentsPage() {
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [showServiceDropdown, setShowServiceDropdown] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [hoveredAppt, setHoveredAppt] = useState(null);
+
+  const handleMouseEnter = (event, appt) => {
+    setHoveredAppt({
+      appt,
+      x: event.clientX,
+      y: event.clientY
+    });
+  };
+
+  const handleMouseMove = (event, appt) => {
+    setHoveredAppt(prev => {
+      if (!prev || prev.appt.id !== appt.id) return prev;
+      return {
+        ...prev,
+        x: event.clientX,
+        y: event.clientY
+      };
+    });
+  };
+
+  const getStatusColor = (status) => {
+    if (status === "COMPLETED") return "#84cc16";
+    if (status === "CHECKED_IN") return "#f97316";
+    if (status === "CANCELLED") return "#ef4444";
+    return "#eab308";
+  };
+
+  const tooltipStyle = useMemo(() => {
+    if (!hoveredAppt) return { display: "none" };
+    
+    let left = hoveredAppt.x + 12;
+    let top = hoveredAppt.y + 12;
+    
+    const tooltipWidth = 320;
+    const itemsCount = hoveredAppt.appt.items?.length || 1;
+    const tooltipHeight = 80 + itemsCount * 76;
+    
+    if (left + tooltipWidth > window.innerWidth) {
+      left = hoveredAppt.x - tooltipWidth - 12;
+    }
+    if (top + tooltipHeight > window.innerHeight) {
+      top = window.innerHeight - tooltipHeight - 20;
+    }
+    
+    return {
+      position: "fixed",
+      left: `${Math.max(10, left)}px`,
+      top: `${Math.max(10, top)}px`,
+      width: `${tooltipWidth}px`,
+      backgroundColor: "#e2e8f0",
+      border: "1px solid #cbd5e1",
+      borderRadius: "4px",
+      padding: "8px 12px",
+      boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)",
+      zIndex: 9999,
+      pointerEvents: "none",
+      fontFamily: "inherit"
+    };
+  }, [hoveredAppt]);
   const [form, setForm] = useState({
     customerId: "",
     branchId: "",
@@ -344,10 +350,7 @@ export default function AppointmentsPage() {
 
   const loadContext = async () => {
     try {
-      const [contextResponse, settingsResponse] = await Promise.all([
-        api.get("/owner/pos/context"),
-        api.get("/owner/settings")
-      ]);
+      const contextResponse = await api.get("/owner/pos/context");
       setCustomers(contextResponse.data.customers || []);
       setServices(contextResponse.data.services || []);
       const staff = contextResponse.data.staffUsers || [];
@@ -359,7 +362,6 @@ export default function AppointmentsPage() {
         ...current,
         branchId: current.branchId || defaultBranch?.id || ""
       }));
-      setSalonSettings(settingsResponse.data || null);
     } catch (error) {
       console.error(error);
     }
@@ -387,7 +389,7 @@ export default function AppointmentsPage() {
             const h = new Date(row.startAt).getHours();
             if (h < earliestHour) earliestHour = h;
           });
-          if (earliestHour >= APPOINTMENT_START_HOUR && earliestHour < APPOINTMENT_END_HOUR) {
+          if (earliestHour >= 9 && earliestHour <= 20) {
             const calendarBody = document.querySelector('.sp-calendar-body');
             if (calendarBody) {
               const rowIndex = (earliestHour - APPOINTMENT_START_HOUR) * (60 / APPOINTMENT_SLOT_MINUTES);
@@ -1486,7 +1488,9 @@ export default function AppointmentsPage() {
                                   handleAppointmentClick(event, appt);
                                 }}
                                 onContextMenu={(event) => handleContextMenuOpen(event, appt, staff.id, slot)}
-                                title={`${appt.customer?.name || "Walk-in"} • ${serviceName} • ${totalDurationMin} min`}
+                                onMouseEnter={(event) => handleMouseEnter(event, appt)}
+                                onMouseLeave={() => setHoveredAppt(null)}
+                                onMouseMove={(event) => handleMouseMove(event, appt)}
                               >
                                 <div style={{ fontWeight: 600 }}>{appt.customer?.name || "Walk-in"}</div>
                                 <div>{serviceName}</div>
@@ -2211,6 +2215,54 @@ export default function AppointmentsPage() {
             </div>
           </div>
         </>
+      )}
+      {hoveredAppt && (
+        <div style={tooltipStyle}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: "700", fontSize: "0.75rem", color: "#1e293b", marginBottom: "6px" }}>
+            <span style={{ display: "inline-block", width: "12px", height: "8px", backgroundColor: getStatusColor(hoveredAppt.appt.status), border: "1px solid #000" }}></span>
+            {String(hoveredAppt.appt.status || "CONFIRMED").toUpperCase()}
+          </div>
+          <div style={{ fontSize: "0.78rem", color: "#1e293b", fontWeight: "500", marginBottom: "8px" }}>
+            Guest: {hoveredAppt.appt.customer?.name || "Walk-in"}{hoveredAppt.appt.customer?.phone ? `, ${hoveredAppt.appt.customer.phone}` : ""}
+          </div>
+          <div>
+            {(hoveredAppt.appt.items || []).map((item, idx) => {
+              const serviceName = item.service?.name || services.find(s => s.id === item.serviceId)?.name || "Service";
+              
+              const staffIds = (item.assignedStaff || []).map(a => a.userSalonId).filter(Boolean);
+              let staffName = "Staff";
+              if (staffIds.length > 0) {
+                staffName = staffIds.map(id => {
+                  const s = staffUsers.find(su => su.id === id);
+                  return s?.user?.name || s?.name || "Staff";
+                }).join(", ");
+              } else {
+                const primaryId = hoveredAppt.appt.primaryStaffUserId;
+                if (primaryId) {
+                  const s = staffUsers.find(su => su.id === primaryId);
+                  staffName = s?.user?.name || s?.name || "Staff";
+                }
+              }
+
+              return (
+                <div key={item.id || idx} style={{
+                  background: "#ffffff",
+                  border: `1px solid ${hoveredAppt.appt.itemId === item.id ? "#3b82f6" : "#cbd5e1"}`,
+                  borderRadius: "4px",
+                  padding: "6px 8px",
+                  marginBottom: idx < (hoveredAppt.appt.items.length - 1) ? "6px" : "0px",
+                  fontSize: "0.75rem",
+                  color: "#334155",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                }}>
+                  <div style={{ marginBottom: "2px" }}>Stylist: <span style={{ color: "#000" }}>{staffName}</span></div>
+                  <div style={{ marginBottom: "2px" }}>Service: <span style={{ color: "#000" }}>{serviceName}</span></div>
+                  <div>Timing: <span style={{ color: "#000" }}>{formatTimeForSelect(item.startAt)} to {formatTimeForSelect(item.endAt)}</span></div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );
