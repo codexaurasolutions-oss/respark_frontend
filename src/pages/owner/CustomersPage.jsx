@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { Search, Filter, Plus, Download, Upload, MoreVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, X, ChevronDown, Trash2, GitMerge, MessageCircle, User, FileText, CreditCard, Gift, Wallet, AlertCircle, Package, Users, UserCog, Tag, Phone, StickyNote, Edit3, CheckCircle, Circle } from "lucide-react";
 import { api } from "../../api/client";
 import IndianPhoneInput from "../../components/IndianPhoneInput";
@@ -70,6 +70,8 @@ const isWithinDateRange = (value, start, end) => {
 export default function CustomersPage() {
   const { formatMoney } = useSalonSettings();
   const [rows, setRows] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -602,6 +604,19 @@ export default function CustomersPage() {
     return true;
   });
 
+  const totalPages = Math.ceil(visibleRows.length / pageSize) || 1;
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [visibleRows.length, currentPage, totalPages]);
+
+  const paginatedRows = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return visibleRows.slice(startIndex, startIndex + pageSize);
+  }, [visibleRows, currentPage, pageSize]);
+
   const renderFilterContent = () => {
     switch (activeFilterSection) {
       case "gender":
@@ -1102,7 +1117,7 @@ export default function CustomersPage() {
                 </tr>
               </thead>
               <tbody>
-                {visibleRows.map((row) => (
+                {paginatedRows.map((row) => (
                   <tr
                     key={row.id}
                     onClick={(event) => {
@@ -1159,12 +1174,47 @@ export default function CustomersPage() {
             </table>
             <div className="crm-pagination">
               <div style={{ display: "flex", gap: 8 }}>
-                <button><ChevronsLeft size={18} /></button>
-                <button><ChevronLeft size={18} /></button>
-                <button><ChevronRight size={18} /></button>
-                <button><ChevronsRight size={18} /></button>
+                <button 
+                  onClick={() => setCurrentPage(1)} 
+                  disabled={currentPage === 1}
+                  style={{ opacity: currentPage === 1 ? 0.4 : 1, cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
+                >
+                  <ChevronsLeft size={18} />
+                </button>
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                  disabled={currentPage === 1}
+                  style={{ opacity: currentPage === 1 ? 0.4 : 1, cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                
+                <span style={{ display: "flex", alignItems: "center", padding: "0 8px", fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
+                  disabled={currentPage === totalPages}
+                  style={{ opacity: currentPage === totalPages ? 0.4 : 1, cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
+                >
+                  <ChevronRight size={18} />
+                </button>
+                <button 
+                  onClick={() => setCurrentPage(totalPages)} 
+                  disabled={currentPage === totalPages}
+                  style={{ opacity: currentPage === totalPages ? 0.4 : 1, cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
+                >
+                  <ChevronsRight size={18} />
+                </button>
               </div>
-              <div>1-{visibleRows.length || 0} of {visibleRows.length || 0}</div>
+              <div style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 500 }}>
+                {visibleRows.length > 0 ? (
+                  `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, visibleRows.length)} of ${visibleRows.length}`
+                ) : (
+                  "0-0 of 0"
+                )}
+              </div>
             </div>
           </>
         )}
