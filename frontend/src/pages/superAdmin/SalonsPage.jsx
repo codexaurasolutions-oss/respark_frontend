@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
+import IndianPhoneInput from "../../components/IndianPhoneInput";
 
 const businessTypes = ["Salon", "Spa", "Beauty Clinic", "Nail Studio", "Tattoo Studio", "Pet Grooming", "Wellness Center"];
 const featureFlagKeys = [
@@ -247,7 +248,7 @@ export default function SalonsPage() {
               {businessTypes.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
             <input placeholder="Email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
-            <input placeholder="Phone" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
+            <IndianPhoneInput value={form.phone} onChange={(phone) => setForm((prev) => ({ ...prev, phone }))} />
             <input placeholder="Address" value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} />
             <input placeholder="City" value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} />
             <input placeholder="Country" value={form.country} onChange={(event) => setForm({ ...form, country: event.target.value })} />

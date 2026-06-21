@@ -15,7 +15,7 @@ const manageCards = [
   { title: "Digital Catalog", description: "Storefront products and public pages.", to: "/site/demo", icon: Globe },
   { title: "Ecommerce / Orders", description: "Card-based order board and bill flow.", to: "/admin/order-dashboard", icon: Store },
   { title: "Customer Portal", description: "Customer links, portal rules, and access.", to: "/admin/customer-portal-settings", icon: Smartphone },
-  { title: "WhatsApp / Notifications", description: "Messaging rules, alerts, and logs.", to: "/admin/whatsapp", icon: MessagesSquare },
+  { title: "Messaging / Notifications", description: "Email rules, alerts, logs, and manual outreach.", to: "/admin/whatsapp", icon: MessagesSquare },
   { title: "Campaigns", description: "Templates, broadcasts, and promos.", to: "/admin/campaigns", icon: Megaphone },
   { title: "Reports Hub", description: "Operational and revenue summaries.", to: "/admin/reports", icon: ReceiptText }
 ];

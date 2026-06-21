@@ -3,6 +3,7 @@ import { api } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import ModuleTabs from "../../components/ModuleTabs";
 import PageLoader from "../../components/PageLoader";
+import IndianPhoneInput from "../../components/IndianPhoneInput";
 
 export default function MyProfilePage() {
   const [form, setForm] = useState({ phone: "", profileNote: "", avatarUrl: "" });
@@ -59,7 +60,7 @@ export default function MyProfilePage() {
           }} style={{ display: "grid", gap: 10 }}>
             <label>
               <span className="muted">Phone</span>
-              <input value={form.phone} placeholder="Phone" onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} />
+              <IndianPhoneInput value={form.phone} onChange={(phone) => setForm((current) => ({ ...current, phone }))} />
             </label>
             <label>
               <span className="muted">Avatar URL</span>

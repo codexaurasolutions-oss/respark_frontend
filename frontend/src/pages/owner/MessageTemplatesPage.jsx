@@ -89,7 +89,7 @@ export default function MessageTemplatesPage() {
     <div className="page-shell">
       <ModuleTabs
         title="Message Templates"
-        description="Salon-scoped editable templates with variable preview and WhatsApp-safe generation."
+        description="Salon-scoped editable templates with variable preview and email-first delivery support."
         tabs={[
           { label: "Template List", to: "/admin/message-templates", hint: "Library" },
           ...(params.type ? [
@@ -102,7 +102,7 @@ export default function MessageTemplatesPage() {
         <div className="item-head">
           <div>
             <h1 style={{ marginTop: 0 }}>Message Templates</h1>
-            <p style={{ marginBottom: 0 }}>Keep reusable customer communication templates editable, previewable, and ready for WhatsApp-safe output.</p>
+            <p style={{ marginBottom: 0 }}>Keep reusable customer communication templates editable, previewable, and ready for email-first delivery output.</p>
           </div>
           <div className="badge-row">
             <span className="badge">Templates {rows.length}</span>
@@ -162,7 +162,7 @@ export default function MessageTemplatesPage() {
               <input placeholder="Customer Package ID" value={previewInput.customerPackageId} onChange={(event) => setPreviewInput((current) => ({ ...current, customerPackageId: event.target.value }))} />
             </label>
             </div>
-            {preview ? <div className="summary-box" style={{ marginTop: 16 }}><strong>Preview Output</strong><p style={{ marginBottom: 12 }}>{preview}</p>{previewMeta.whatsappLink ? <div className="inline-actions"><a className="secondary-button" href={previewMeta.whatsappLink} target="_blank" rel="noreferrer">Open WhatsApp Link</a><button type="button" className="secondary-button" onClick={() => navigator.clipboard.writeText(previewMeta.whatsappLink)}>Copy Share Link</button></div> : null}</div> : <p className="muted" style={{ marginTop: 16 }}>Generate a preview with live IDs to test variable replacement.</p>}
+            {preview ? <div className="summary-box" style={{ marginTop: 16 }}><strong>Preview Output</strong><p style={{ marginBottom: 12 }}>{preview}</p>{previewMeta.whatsappLink ? <div className="inline-actions"><a className="secondary-button" href={previewMeta.whatsappLink} target="_blank" rel="noreferrer">Open Share Link</a><button type="button" className="secondary-button" onClick={() => navigator.clipboard.writeText(previewMeta.whatsappLink)}>Copy Share Link</button></div> : null}</div> : <p className="muted" style={{ marginTop: 16 }}>Generate a preview with live IDs to test variable replacement.</p>}
             {Object.keys(previewMeta.variables || {}).length ? <div className="summary-box" style={{ marginTop: 16 }}><strong>Resolved Variables</strong><div className="list-stack" style={{ marginTop: 10 }}>{Object.entries(previewMeta.variables).map(([key, value]) => <div key={key} className="list-item"><strong>{key}</strong><div className="item-meta">{String(value ?? "")}</div></div>)}</div></div> : null}
           </div>
         </div>

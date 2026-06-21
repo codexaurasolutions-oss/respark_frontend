@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from "react";
-import { Navigate, Outlet, Route, Routes, useLocation, useParams } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar.jsx";
 import Topbar from "./components/Topbar.jsx";
 import { useAuth } from "./context/AuthContext";
@@ -41,10 +41,10 @@ const ExpertsPage = lazy(() => import("./pages/owner/ExpertsPage.jsx"));
 const StaffRolesPage = lazy(() => import("./pages/owner/StaffRolesPage.jsx"));
 const ReportsPage = lazy(() => import("./pages/owner/ReportsPage.jsx"));
 const PosPage = lazy(() => import("./pages/owner/PosPage.jsx"));
+const InvoicesPage = lazy(() => import("./pages/owner/InvoicesPage.jsx"));
 const PosDashboardPage = lazy(() => import("./pages/owner/PosDashboardPage.jsx"));
 const PaymentsPage = lazy(() => import("./pages/owner/PaymentsPage.jsx"));
 const TrendsPage = lazy(() => import("./pages/owner/TrendsPage.jsx"));
-const ServiceHubPage = lazy(() => import("./pages/owner/ServiceHubPage.jsx"));
 const ReportsHubPage = lazy(() => import("./pages/owner/ReportsHubPage.jsx"));
 const SupportTicketsPage = lazy(() => import("./pages/owner/SupportTicketsPage.jsx"));
 const SettingsPage = lazy(() => import("./pages/owner/SettingsPage.jsx"));
@@ -114,14 +114,6 @@ const Protected = () => {
           hint: "Branches and team",
           items: [
             can("branches") && { label: "Branches", to: "/admin/branches" },
-            can("services") && {
-              label: "Services",
-              to: "/admin/services"
-            },
-            can("services") && {
-              label: "Service Categories",
-              to: "/admin/service-categories"
-            },
             can("staff") && {
               label: "Staff Details",
               to: "/admin/users"
@@ -294,11 +286,6 @@ const Home = () => {
   return <OwnerDashboard />;
 };
 
-const InvoiceRedirect = () => {
-  const { id } = useParams();
-  return <Navigate to={`/admin/pos-dashboard/${id}`} replace />;
-};
-
 export default function App() {
   const location = useLocation();
 
@@ -357,7 +344,7 @@ export default function App() {
           <Route path="/admin/appointments/:id" element={<OwnerRoute moduleKey="appointments" featureKey="appointments" element={<AppointmentDetailPage />} />} />
           <Route path="/admin/appointments/:id/edit" element={<OwnerRoute moduleKey="appointments" featureKey="appointments" element={<AppointmentEditPage />} />} />
           <Route path="/admin/branches" element={<OwnerRoute moduleKey="branches" element={<BranchesPage />} />} />
-          <Route path="/admin/services" element={<OwnerRoute moduleKey="services" element={<ServiceHubPage />} />} />
+          <Route path="/admin/services" element={<OwnerRoute moduleKey="services" element={<ServiceCategoriesPage />} />} />
           <Route path="/admin/service-categories" element={<OwnerRoute moduleKey="services" element={<ServiceCategoriesPage />} />} />
           <Route path="/admin/staff-schedule" element={<OwnerRoute moduleKey="staffSchedule" featureKey="appointments" element={<StaffSchedulePage />} />} />
           <Route path="/admin/staff-availability" element={<OwnerRoute moduleKey="staffSchedule" featureKey="appointments" element={<StaffSchedulePage />} />} />
@@ -382,8 +369,8 @@ export default function App() {
           <Route path="/admin/pos-dashboard/:id" element={<OwnerRoute moduleKey="orders" featureKey="onlineOrders" element={<PosDashboardPage />} />} />
           <Route path="/admin/trends" element={<OwnerRoute moduleKey="reports" featureKey="reports" element={<TrendsPage />} />} />
           <Route path="/admin/reports-hub" element={<OwnerRoute moduleKey="reports" featureKey="reports" element={<ReportsHubPage />} />} />
-          <Route path="/admin/invoices" element={<Navigate to="/admin/pos-dashboard" replace />} />
-          <Route path="/admin/invoices/:id" element={<InvoiceRedirect />} />
+          <Route path="/admin/invoices" element={<OwnerRoute moduleKey="pos" element={<InvoicesPage />} />} />
+          <Route path="/admin/invoices/:id" element={<OwnerRoute moduleKey="pos" element={<InvoicesPage />} />} />
           <Route path="/admin/payments" element={<OwnerRoute moduleKey="payments" element={<PaymentsPage />} />} />
           <Route path="/admin/product-categories" element={<OwnerRoute moduleKey="inventory" featureKey="inventory" element={<ProductCategoriesPage />} />} />
           <Route path="/admin/inventory" element={<OwnerRoute moduleKey="inventory" featureKey="inventory" element={<InventoryPage />} />} />

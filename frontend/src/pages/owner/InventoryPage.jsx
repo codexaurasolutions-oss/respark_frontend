@@ -5,6 +5,7 @@ import { useSalonSettings } from "../../context/SalonSettingsContext";
 import { formatApiError } from "../../utils/apiError";
 import PageLoader from "../../components/PageLoader";
 import VendorManagement from "./VendorManagement";
+import IndianPhoneInput from "../../components/IndianPhoneInput";
 import { Package, Search, ShoppingCart, CheckCircle, XCircle, AlertTriangle, ArrowLeft, Tag, Layers, RefreshCw, Users, FileText, Activity, Plus, Trash2, ChevronDown, Save, Upload, Download } from "lucide-react";
 
 const emptyCategory = { name: "", description: "", imageUrl: "", sortOrder: 0, isPublicVisible: true };
@@ -1489,7 +1490,7 @@ export default function InventoryPage() {
                 </div>
                 <div className="sp-group">
                   <label className="sp-label">Phone</label>
-                  <input className="sp-input" value={vendorForm.phone} onChange={e => setVendorForm({ ...vendorForm, phone: e.target.value })} placeholder="9876543210" />
+                  <IndianPhoneInput value={vendorForm.phone} onChange={(phone) => setVendorForm(prev => ({ ...prev, phone }))} />
                 </div>
                 <div className="sp-group">
                   <label className="sp-label">Email</label>

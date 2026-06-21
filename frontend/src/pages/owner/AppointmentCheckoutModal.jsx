@@ -3,11 +3,25 @@ import { X, Trash2 } from "lucide-react";
 import { api } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import { useSalonSettings } from "../../context/SalonSettingsContext";
+import { downloadFromApi } from "../../utils/download";
 import PosReceipt from "../../components/PosReceipt";
 
 const toAmount = (value, fallback = 0) => {
   const next = Number(value);
   return Number.isFinite(next) ? next : fallback;
+};
+
+const clampMoneyInput = (value, max = Number.POSITIVE_INFINITY) => {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  const cleaned = raw.replace(/[^\d.]/g, "");
+  if (!cleaned) return "";
+  const [whole = "", ...fractionParts] = cleaned.split(".");
+  const normalized = fractionParts.length ? `${whole}.${fractionParts.join("")}` : whole;
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed < 0) return "";
+  const capped = Number.isFinite(max) ? Math.min(parsed, Math.max(0, max)) : parsed;
+  return String(Number(capped.toFixed(2)));
 };
 
 export default function AppointmentCheckoutModal({ appointment, onClose, onComplete }) {
@@ -204,7 +218,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
   };
 
   const handleAddMembershipToCart = () => {
-    if (!selectedMembership && membershipDraft.membershipPlanId !== "CUSTOM") return;
+    if (!selectedMembership) return;
     if (!membershipDraft.staffId) {
       alert("Please select a staff member to assign the membership");
       return;
@@ -215,8 +229,8 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
         ...prev,
         items: [...prev.items, {
           itemType: "MEMBERSHIP",
-          membershipPlanId: selectedMembership ? selectedMembership.id : "CUSTOM",
-          name: selectedMembership ? selectedMembership.name : "Custom Membership",
+          membershipPlanId: selectedMembership.id,
+          name: selectedMembership.name,
           staffUserSalonId: membershipDraft.staffId || "",
           staffName: staff?.user?.name || "",
           qty: 1,
@@ -225,10 +239,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
           discountPct: 0,
           discountAmt: 0,
           taxPct: 0,
-          isCustom: !selectedMembership,
-          validityDays: !selectedMembership ? Number(membershipDraft.validityDays || 0) : undefined,
-          customServices: !selectedMembership ? membershipDraft.customServices : [],
-          customProducts: !selectedMembership ? membershipDraft.customProducts : [],
+          isCustom: false,
           remark: membershipDraft.remark || ""
         }]
       };
@@ -240,7 +251,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
     }));
     setShowMembershipModal(false);
     setSelectedMembership(null);
-    setMembershipDraft({ staffId: "", price: "", validityDays: "", online: "", offline: "", remark: "", membershipPlanId: "CUSTOM", customServices: [], customProducts: [] });
+    setMembershipDraft({ staffId: "", price: "", validityDays: "", online: "", offline: "", remark: "", membershipPlanId: "", customServices: [], customProducts: [] });
     setMemServiceSearch("");
     setMemProductSearch("");
   };
@@ -257,18 +268,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
     }
     setPkgProductSearch("");
   };
-  const handleMemServiceAdd = (srv) => {
-    if(!membershipDraft.customServices.find(s => s.id === srv.id)) {
-      setMembershipDraft({...membershipDraft, customServices: [...membershipDraft.customServices, srv]});
-    }
-    setMemServiceSearch("");
-  };
-  const handleMemProductAdd = (prd) => {
-    if(!membershipDraft.customProducts.find(p => p.id === prd.id)) {
-      setMembershipDraft({...membershipDraft, customProducts: [...membershipDraft.customProducts, prd]});
-    }
-    setMemProductSearch("");
-  };
+
 
   const handleAddPackageToCart = () => {
     if (!selectedPackage && packageDraft.packageId !== "CUSTOM") return;
@@ -313,7 +313,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
   };
 
   const handleAddGcToCart = () => {
-    if (!gcModalGc && gcModalGc?.id !== "CUSTOM") return;
+    if (!gcModalGc) return;
     if (!gcDraft.staffId) {
       alert("Please select a staff member to assign the gift card");
       return;
@@ -324,8 +324,8 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
         ...prev,
         items: [...prev.items, {
           itemType: "GIFT_CARD",
-          giftCardId: gcModalGc ? gcModalGc.id : "CUSTOM",
-          name: gcModalGc ? gcModalGc.name : "Custom Gift Card",
+          giftCardId: gcModalGc.id,
+          name: gcModalGc.name,
           staffUserSalonId: gcDraft.staffId || "",
           staffName: staff?.user?.name || "",
           qty: 1,
@@ -334,8 +334,9 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
           discountPct: 0,
           discountAmt: 0,
           taxPct: 0,
-          isCustom: gcModalGc?.id === "CUSTOM",
-          validityDays: Number(gcDraft.validityDays || 30)
+          isCustom: false,
+          validityDays: Number(gcDraft.validityDays || 0),
+          remark: gcDraft.remark || ""
         }]
       };
     });
@@ -475,7 +476,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
           salonPhone={salonPhone}
           onClose={handleCloseBill} 
           onPrint={() => window.print()}
-          onDownload={() => {}} // Could wire this to a download util if needed
+          onDownload={() => downloadFromApi(`/owner/invoices/${billInvoice.id}/pdf`, { fallbackFilename: `invoice-${billInvoice.invoiceNumber || billInvoice.id}.pdf` })}
         />
       </div>
     );
@@ -819,16 +820,13 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
                     </div>
                   );
                 })}
-                <div style={{ flexShrink: 0, width: "200px", minHeight: "150px", padding: "16px", borderRadius: "8px", background: "#eff6ff", border: "1px solid #bfdbfe", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }} onClick={() => { setGcModalGc({ id: "CUSTOM", name: "CUSTOM GIFT CARD" }); setGcDraft({ staffId: "", price: "", validityDays: "30", purchaseDate: new Date().toISOString().slice(0,10) }); }}>
-                  <span style={{ fontWeight: 700, color: "#3b82f6", fontSize: "0.85rem" }}>CUSTOM GIFT CARD</span>
-                </div>
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr", gap: "12px" }}>
                 <div>
                   <div style={{ fontSize: "0.75rem", color: "#475569", fontWeight: 600, marginBottom: "4px" }}>Name</div>
                   <div style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: "0.75rem", color: "#0f172a", fontWeight: 600, height: "36px", display: "flex", alignItems: "center" }}>
-                    {gcModalGc ? gcModalGc.name : "CUSTOM GIFT CARD"}
+                    {gcModalGc ? gcModalGc.name : ""}
                   </div>
                 </div>
                 <div>
@@ -933,9 +931,6 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
                     </div>
                   );
                 })}
-                <div style={{ flexShrink: 0, width: "200px", minHeight: "150px", padding: "16px", borderRadius: "8px", background: "#eff6ff", border: "1px solid #bfdbfe", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }} onClick={() => { setSelectedMembership(null); setMembershipDraft(prev => ({...prev, membershipPlanId: "CUSTOM"})); }}>
-                  <span style={{ fontWeight: 700, color: "#3b82f6", fontSize: "0.85rem" }}>CUSTOM MEMBERSHIP</span>
-                </div>
               </div>
 
               {/* Details Form */}
@@ -943,7 +938,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
                 <div>
                   <div style={{ fontSize: "0.75rem", color: "#475569", fontWeight: 600, marginBottom: "4px" }}>Name</div>
                   <div style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: "0.75rem", color: "#0f172a", fontWeight: 600, height: "36px", display: "flex", alignItems: "center" }}>
-                    {selectedMembership ? selectedMembership.name : "CUSTOM"}
+                    {selectedMembership ? selectedMembership.name : ""}
                   </div>
                 </div>
                 <div>
@@ -966,83 +961,6 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
                   <div style={{ padding: "8px 12px", borderRadius: "6px", border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: "0.75rem", color: "#475569", height: "36px", display: "flex", alignItems: "center" }}>
                     {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).replace(/ /g, "-")}
                   </div>
-                </div>
-              </div>
-
-              {/* Add Services & Products */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {membershipDraft.customServices?.length > 0 && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingLeft: "112px", width: "100%", maxWidth: "500px" }}>
-                    <div style={{ fontSize: "0.8rem", color: "#475569", fontWeight: 600, marginBottom: "4px" }}>Selected services</div>
-                    {membershipDraft.customServices.map(s => (
-                      <div key={s.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "white", padding: "8px 12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-                        <div style={{ fontSize: "0.8rem", color: "#0f172a", fontWeight: 600, flex: 1 }}>{s.name}</div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                          <input 
-                            type="number" 
-                            min="1" 
-                            value={s.qty || 1} 
-                            onChange={(e) => {
-                              const newQty = Number(e.target.value) || 1;
-                              setMembershipDraft(prev => ({
-                                ...prev,
-                                customServices: prev.customServices.map(x => x.id === s.id ? { ...x, qty: newQty } : x)
-                              }));
-                            }}
-                            style={{ width: "60px", padding: "4px 8px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none", textAlign: "center" }}
-                          />
-                          <button onClick={() => setMembershipDraft({...membershipDraft, customServices: membershipDraft.customServices.filter(x => x.id !== s.id)})} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "50%", width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b" }}>
-                            X
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-                  <span style={{ fontSize: "0.8rem", color: "#475569", fontWeight: 600, width: "100px" }}>Add services</span>
-                  <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: "6px", padding: "8px 12px", flex: 1 }}>
-                    <input type="text" value={memServiceSearch} onChange={e => setMemServiceSearch(e.target.value)} placeholder="Search Service By Category Or Name" style={{ border: "none", outline: "none", width: "100%", fontSize: "0.75rem", background: "transparent" }} />
-                    <span style={{ color: "#94a3b8", fontSize: "0.8rem" }}>🔍</span>
-                  </div>
-                  {memServiceSearch.trim().length > 0 && (
-                    <div style={{ position: "absolute", top: "100%", left: "112px", right: 0, background: "white", border: "1px solid #e2e8f0", borderRadius: "6px", zIndex: 10, maxHeight: "200px", overflowY: "auto", boxShadow: "none" }}>
-                      {(posContext.services || [])
-                        .filter(s => s.name.toLowerCase().includes(memServiceSearch.toLowerCase()))
-                        .map(s => (
-                          <div key={s.id} onClick={() => handleMemServiceAdd(s)} style={{ padding: "8px 12px", cursor: "pointer", fontSize: "0.75rem", borderBottom: "1px solid #f1f5f9" }}>{s.name}</div>
-                        ))
-                      }
-                    </div>
-                  )}
-                </div>
-
-                {membershipDraft.customProducts?.length > 0 && (
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", paddingLeft: "112px" }}>
-                    {membershipDraft.customProducts.map(p => (
-                      <div key={p.id} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "4px 8px", background: "#dcfce7", color: "#166534", borderRadius: "12px", fontSize: "0.7rem", fontWeight: 600 }}>
-                        {p.name}
-                        <span style={{ cursor: "pointer", color: "#15803d" }} onClick={() => setMembershipDraft({...membershipDraft, customProducts: membershipDraft.customProducts.filter(x => x.id !== p.id)})}>&times;</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-                  <span style={{ fontSize: "0.8rem", color: "#475569", fontWeight: 600, width: "100px" }}>Add products</span>
-                  <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: "6px", padding: "8px 12px", flex: 1 }}>
-                    <input type="text" value={memProductSearch} onChange={e => setMemProductSearch(e.target.value)} placeholder="Search Product By Category Or Name" style={{ border: "none", outline: "none", width: "100%", fontSize: "0.75rem", background: "transparent" }} />
-                    <span style={{ color: "#94a3b8", fontSize: "0.8rem" }}>🔍</span>
-                  </div>
-                  {memProductSearch.trim().length > 0 && (
-                    <div style={{ position: "absolute", top: "100%", left: "112px", right: 0, background: "white", border: "1px solid #e2e8f0", borderRadius: "6px", zIndex: 10, maxHeight: "200px", overflowY: "auto", boxShadow: "none" }}>
-                      {(posContext.products || [])
-                        .filter(p => p.name.toLowerCase().includes(memProductSearch.toLowerCase()))
-                        .map(p => (
-                          <div key={p.id} onClick={() => handleMemProductAdd(p)} style={{ padding: "8px 12px", cursor: "pointer", fontSize: "0.75rem", borderBottom: "1px solid #f1f5f9" }}>{p.name}</div>
-                        ))
-                      }
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -1217,7 +1135,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
                   </div>
                   {pkgServiceSearch.trim().length > 0 && (
                     <div style={{ position: "absolute", top: "100%", left: "112px", right: 0, background: "white", border: "1px solid #e2e8f0", borderRadius: "6px", zIndex: 10, maxHeight: "200px", overflowY: "auto", boxShadow: "none" }}>
-                      {(posContext.services || [])
+                      {((typeof context !== 'undefined' ? context.services : null) || (typeof posContext !== 'undefined' ? posContext.services : null) || [])
                         .filter(s => s.name.toLowerCase().includes(pkgServiceSearch.toLowerCase()))
                         .map(s => (
                           <div key={s.id} onClick={() => handlePackageServiceAdd(s)} style={{ padding: "8px 12px", cursor: "pointer", fontSize: "0.75rem", borderBottom: "1px solid #f1f5f9" }}>{s.name}</div>
@@ -1245,7 +1163,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
                   </div>
                   {pkgProductSearch.trim().length > 0 && (
                     <div style={{ position: "absolute", top: "100%", left: "112px", right: 0, background: "white", border: "1px solid #e2e8f0", borderRadius: "6px", zIndex: 10, maxHeight: "200px", overflowY: "auto", boxShadow: "none" }}>
-                      {(posContext.products || [])
+                      {((typeof context !== 'undefined' ? context.products : null) || (typeof posContext !== 'undefined' ? posContext.products : null) || [])
                         .filter(p => p.name.toLowerCase().includes(pkgProductSearch.toLowerCase()))
                         .map(p => (
                           <div key={p.id} onClick={() => handlePackageProductAdd(p)} style={{ padding: "8px 12px", cursor: "pointer", fontSize: "0.75rem", borderBottom: "1px solid #f1f5f9" }}>{p.name}</div>

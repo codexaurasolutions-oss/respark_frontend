@@ -1,0 +1,1 @@
+var e=(e,t=`Something went wrong.`)=>{if(e?.name===`SyntaxError`)return e.message||t;let n=e?.response?.data;return n?Array.isArray(n.issues)&&n.issues.length?n.issues.map(e=>e?.field?`${e.field}: ${e.message}`:e?.message).filter(Boolean).join(` | `):n.message||t:t};export{e as t};

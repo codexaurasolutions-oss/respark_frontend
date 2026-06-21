@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../api/client";
+import { formatApiError } from "../../utils/apiError";
 
 export default function WebsiteEditorPage() {
   const { auth } = useAuth();
@@ -11,24 +12,43 @@ export default function WebsiteEditorPage() {
   });
   const [saving, setSaving] = useState(false);
   const [iframeKey, setIframeKey] = useState(Date.now());
+  const [status, setStatus] = useState({ error: "", success: "" });
 
   const slug = auth?.membership?.salon?.slug || "demo-salon";
 
   useEffect(() => {
-    // In a real app, load the config from the backend here
-    // api.get("/owner/website/config").then(res => setConfig(res.data));
+    let active = true;
+    api.get("/owner/website/config").then((response) => {
+      if (!active) return;
+      setConfig({
+        heroTitle: response.data?.heroTitle || "Elevate Your Beauty Experience",
+        heroSubtitle: response.data?.heroSubtitle || "Discover premium salon services and exclusive products curated just for you.",
+        heroImage: response.data?.heroImage || ""
+      });
+    }).catch((error) => {
+      if (!active) return;
+      setStatus({ error: formatApiError(error, "Could not load website editor settings"), success: "" });
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleSave = async () => {
     setSaving(true);
+    setStatus({ error: "", success: "" });
     try {
-      // In a real app, save to backend
-      // await api.post("/owner/website/config", config);
-      
+      const response = await api.post("/owner/website/config", config);
+      setConfig({
+        heroTitle: response.data?.heroTitle || "",
+        heroSubtitle: response.data?.heroSubtitle || "",
+        heroImage: response.data?.heroImage || ""
+      });
       // Force iframe reload to reflect changes
       setIframeKey(Date.now());
+      setStatus({ error: "", success: "Website content published successfully." });
     } catch (err) {
-      console.error(err);
+      setStatus({ error: formatApiError(err, "Could not publish website content"), success: "" });
     } finally {
       setSaving(false);
     }
@@ -49,6 +69,12 @@ export default function WebsiteEditorPage() {
             {saving ? "Saving..." : "Publish"}
           </button>
         </div>
+
+        {(status.error || status.success) ? (
+          <div style={{ padding: '12px 20px', borderBottom: '1px solid #e0e0e0', background: status.error ? '#fef2f2' : '#f0fdf4', color: status.error ? '#b91c1c' : '#166534', fontSize: '0.9rem', fontWeight: 600 }}>
+            {status.error || status.success}
+          </div>
+        ) : null}
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           

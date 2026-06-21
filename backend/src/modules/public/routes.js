@@ -93,6 +93,36 @@ publicRouter.get("/plans", asyncHandler(async (req, res) => {
   ]);
 }));
 
+publicRouter.get("/debug-db", asyncHandler(async (req, res) => {
+  if (req.query.key !== "respark123") {
+    return res.status(403).json({ error: "Unauthorized" });
+  }
+  const users = await prisma.user.findMany({
+    select: { id: true, email: true, systemRole: true }
+  });
+  const settings = await prisma.salonSetting.findMany({
+    select: { id: true, salonId: true, branchId: true, advancedSettings: true }
+  });
+  const giftCards = await prisma.giftCard.findMany({
+    take: 10,
+    orderBy: { createdAt: "desc" }
+  });
+  res.json({ users, settings, giftCards });
+}));
+
+publicRouter.get("/debug-code", asyncHandler(async (req, res) => {
+  if (req.query.key !== "respark123") {
+    return res.status(403).json({ error: "Unauthorized" });
+  }
+  const fs = await import("node:fs/promises");
+  try {
+    const code = await fs.readFile("./src/modules/owner/phase4/promotions.js", "utf8");
+    res.json({ code });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}));
+
 publicRouter.get("/run-seed-services", asyncHandler(async (req, res) => {
   if (req.query.key !== "respark123") {
     return res.status(403).json({ error: "Unauthorized" });

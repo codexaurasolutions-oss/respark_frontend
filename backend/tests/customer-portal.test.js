@@ -91,7 +91,7 @@ describe("customer portal contract", () => {
     prismaMock.customer.findFirst.mockResolvedValue({
       id: "customer-1",
       salonId: "salon-1",
-      phone: "+923001112233",
+      phone: "+913001112233",
       user: {
         id: "user-1",
         name: "Portal Customer",
@@ -104,7 +104,7 @@ describe("customer portal contract", () => {
 
     const response = await request(buildApp()).post("/customer/login").send({
       salonSlug: "demo-salon",
-      emailOrPhone: "+923001112233",
+      emailOrPhone: "+913001112233",
       password: "Password@123"
     });
 
@@ -131,7 +131,7 @@ describe("customer portal contract", () => {
       id: "customer-1",
       salonId: "salon-1",
       name: "Portal Customer",
-      phone: "+923001112233",
+      phone: "+913001112233",
       email: "customer@test.local"
     });
     prismaMock.catalogSetting.findFirst.mockResolvedValue({ customSlug: "demo-store" });

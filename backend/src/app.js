@@ -23,7 +23,7 @@ const normalizeOrigins = (origins = []) =>
   [...new Set(
     origins
       .flatMap((value) => String(value || "").split(","))
-      .map((value) => value.trim())
+      .map((value) => value.trim().replace(/\/$/, ""))
       .filter(Boolean)
   )];
 
@@ -32,6 +32,7 @@ const getAllowedOrigins = (overrideOrigins = null) => {
   return normalizeOrigins([
     process.env.FRONTEND_APP_URL,
     process.env.FRONTEND_APP_URLS,
+    "https://respark-frontend.vercel.app",
     "http://127.0.0.1:5173",
     "http://localhost:5173"
   ]);
@@ -70,7 +71,8 @@ export const createApp = ({
       error.status = 403;
       return callback(error);
     },
-    credentials: true
+    credentials: true,
+    exposedHeaders: ["Content-Disposition"]
   }));
 
   app.use(helmet({

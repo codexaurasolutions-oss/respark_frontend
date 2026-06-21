@@ -83,22 +83,157 @@ const COLUMNS = {
   inventory_transaction: ["Date", "Product", "Type", "Qty", "Reference", "Branch", "Staff"],
 };
 
+const REPORT_ENDPOINTS = {
+  sales_summary: "/reports/sales-summary-list",
+  product_sales: "/reports/product-sales",
+  service_sales: "/reports/service-sales",
+  customers: "/reports/customers",
+  staff_performance: "/reports/staff-performance",
+  appointments: "/reports/appointments",
+  memberships: "/reports/memberships",
+  packages: "/reports/packages",
+  cancelled_invoices: "/reports/cancelled-invoices",
+  minimum_stock: "/reports/low-stock",
+  daily_stock: "/reports/stock",
+  stock_transaction: "/reports/stock",
+  day_wise: "/reports/branch-sales",
+  monthly_sale: "/reports/sales-summary-list",
+};
+
+const normalizeColumnKey = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+
+const prettifyDate = (value) => {
+  if (!value) return value;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString();
+};
+
+const normalizeRowForReport = (reportKey, row, index) => {
+  if (!row || typeof row !== "object") return row;
+
+  if (reportKey === "appointments") {
+    return {
+      Date: prettifyDate(row.startAt || row.createdAt),
+      Customer: row.customer?.name || "Walk-in",
+      Service: row.items?.map((item) => item.service?.name || item.serviceName).filter(Boolean).join(", ") || "-",
+      Staff: row.items?.flatMap((item) => item.assignedStaff || []).map((assignment) => assignment.userSalon?.user?.name).filter(Boolean).join(", ") || "-",
+      Branch: row.branch?.name || "-",
+      Status: row.status || "-",
+      Amount: row.totalAmount ?? row.total ?? 0
+    };
+  }
+
+  if (reportKey === "memberships") {
+    return {
+      Date: prettifyDate(row.createdAt),
+      Customer: row.customer?.name || "-",
+      "Membership Plan": row.membershipPlan?.name || "-",
+      Price: row.pricePaid ?? row.soldInvoice?.total ?? 0,
+      Validity: row.validUntil ? prettifyDate(row.validUntil) : row.membershipPlan?.validityDays ? `${row.membershipPlan.validityDays} days` : "-",
+      Branch: row.soldInvoice?.branchName || row.branch?.name || "-"
+    };
+  }
+
+  if (reportKey === "packages") {
+    return {
+      Date: prettifyDate(row.createdAt),
+      Customer: row.customer?.name || "-",
+      Package: row.package?.name || "-",
+      "Price Paid": row.pricePaid ?? row.soldInvoice?.total ?? 0,
+      Validity: row.validUntil ? prettifyDate(row.validUntil) : row.package?.validityDays ? `${row.package.validityDays} days` : "-",
+      "Services Included": row.package?.sessionCount ?? row.package?.items?.length ?? "-"
+    };
+  }
+
+  if (reportKey === "cancelled_invoices") {
+    return {
+      Invoice: row.invoiceNumber || "-",
+      Customer: row.customer?.name || "Walk-in",
+      Branch: row.branch?.name || "-",
+      Status: row.status || "-",
+      Total: row.total ?? 0,
+      Paid: row.paidAmount ?? 0,
+      Refunded: row.refundAmount ?? 0
+    };
+  }
+
+  if (reportKey === "day_wise") {
+    return {
+      Date: row.branch || `Branch ${index + 1}`,
+      Invoices: row.count ?? 0,
+      Cash: row.paid ?? 0,
+      Card: "-",
+      UPI: "-",
+      Online: "-",
+      Total: row.sales ?? 0
+    };
+  }
+
+  if (reportKey === "daily_stock" || reportKey === "minimum_stock") {
+    return {
+      "SR. NO.": index + 1,
+      "ITEM NAME": row.name || row.productName || "-",
+      "VARIATION NAME": row.variantName || row.variationName || "-",
+      "CATEGORY NAME": row.category?.name || row.categoryName || "-",
+      "STORE SKU": row.sku || "-",
+      SKU: row.sku || "-",
+      "OPENING STOCK": row.openingStock ?? "-",
+      "CURRENT STOCK": row.currentStock ?? 0,
+      "CURRENT ONFLOOR": row.currentOnFloor ?? "-",
+      "UNIT PRICE": row.price ?? row.unitPrice ?? 0,
+      "TOTAL STOCK PRICE": row.totalStockPrice ?? "-",
+      "TOTAL ONFLOOR PRICE": row.totalOnFloorPrice ?? "-",
+      "TOTAL PRICE": row.totalPrice ?? "-",
+      "STOCK TYPE": row.stockType || "-",
+      "MINIMUM QUANTITY": row.minStock ?? row.minimumQuantity ?? "-"
+    };
+  }
+
+  if (reportKey === "stock_transaction") {
+    return {
+      Date: prettifyDate(row.createdAt),
+      Product: row.product?.name || row.name || "-",
+      Type: row.type || row.reason || "-",
+      Qty: row.qty ?? row.quantity ?? 0,
+      Staff: row.staffName || "-",
+      Note: row.note || row.reference || "-"
+    };
+  }
+
+  return row;
+};
+
 const getCellValue = (row, col) => {
+  if (!row || typeof row !== "object") return null;
+
+  if (row[col] !== undefined && row[col] !== null) {
+    return row[col];
+  }
+
   const aliases = {
-    "Product": ["name", "productName"],
-    "Service": ["name", "serviceName"],
-    "Staff": ["staffName", "name"],
-    "Completed": ["completedAppointments"],
-    "Qty": ["qty", "quantity"],
-    "Customer": ["customerName"],
+    Product: ["name", "productName"],
+    Service: ["name", "serviceName"],
+    Staff: ["staffName", "name"],
+    Completed: ["completedAppointments"],
+    Qty: ["qty", "quantity"],
+    Customer: ["customerName"],
     "Total Visits": ["totalVisits"],
     "Last Visit": ["lastVisitDate"],
     "Loyalty Pts": ["rewardPoints"],
     "Total Spend": ["totalSpend"],
     "Invoice #": ["invoiceNumber", "invoice"],
-    "Date": ["date", "createdAt"],
-    "Sales": ["sales", "revenue"]
+    Date: ["date", "createdAt"],
+    Sales: ["sales", "revenue"]
   };
+
+  const normalizedCol = normalizeColumnKey(col);
+  const matchingKey = Object.keys(row).find((key) => normalizeColumnKey(key) === normalizedCol);
+  if (matchingKey && row[matchingKey] !== undefined && row[matchingKey] !== null) {
+    return row[matchingKey];
+  }
 
   if (col === "Customer") {
     if (row.customer?.name) return row.customer.name;
@@ -130,35 +265,26 @@ const getCellValue = (row, col) => {
 
   const defaultKey = col.toLowerCase().replace(/ /g, "_");
   const defaultKey2 = col.toLowerCase();
-  const camelKey = col.toLowerCase().replace(/ ([a-z])/g, (_, c) => c.toUpperCase());
-  
-  let val = row[col] ?? row[defaultKey] ?? row[defaultKey2] ?? row[camelKey];
-  if (col === "Invoice #") val = row.invoiceNumber || row.invoice;
-  if (col === "Invoice") val = row.invoiceNumber || row.invoice || val;
-  if (col === "Total") val = row.total ?? row.amount ?? val;
-  if (col === "Paid") val = row.paidAmount ?? val;
-  if (col === "Refunded") val = row.refundAmount ?? val;
-  if (col === "Status") val = row.status ?? val;
-  
-  if (val !== null && val !== undefined && typeof val === "object") {
-    return val.name || val.label || JSON.stringify(val);
-  }
-  
-  return val;
-};
+  const camelKey = col.toLowerCase().replace(/ ([a-z])/g, (_, char) => char.toUpperCase());
 
-function EmptyRows({ cols }) {
-  return (
-    <tr>
-      <td colSpan={cols} style={{ textAlign: "center", padding: "48px 0", color: "#cbd5e1", fontSize: "0.95rem" }}>
-        No records found for the selected filters.
-      </td>
-    </tr>
-  );
-}
+  let value = row[defaultKey] ?? row[defaultKey2] ?? row[camelKey];
+  if (col === "Invoice #") value = row.invoiceNumber || row.invoice || value;
+  if (col === "Invoice") value = row.invoiceNumber || row.invoice || value;
+  if (col === "Total") value = row.total ?? row.amount ?? value;
+  if (col === "Paid") value = row.paidAmount ?? value;
+  if (col === "Refunded") value = row.refundAmount ?? value;
+  if (col === "Status") value = row.status ?? value;
+
+  if (value !== null && value !== undefined && typeof value === "object") {
+    return value.name || value.label || JSON.stringify(value);
+  }
+
+  return value;
+};
 
 function ReportTable({ reportKey, rows, loading }) {
   const cols = COLUMNS[reportKey] || ["Data"];
+
   return (
     <table className="rpt-table">
       <thead>
@@ -168,20 +294,22 @@ function ReportTable({ reportKey, rows, loading }) {
       </thead>
       <tbody>
         {loading ? (
-          Array.from({ length: 6 }).map((_, i) => (
-            <tr key={i} className="rpt-loading">
-              {cols.map((_, ci) => <td key={ci}>&nbsp;</td>)}
+          Array.from({ length: 6 }).map((_, index) => (
+            <tr key={index} className="rpt-loading">
+              {cols.map((_, cellIndex) => <td key={cellIndex}>&nbsp;</td>)}
             </tr>
           ))
-        ) : rows?.length ? rows.map((row, ri) => (
-          <tr key={ri}>
-            {cols.map((col, ci) => {
-              const val = col === "SR. NO." ? (ri + 1) : getCellValue(row, col);
-              return <td key={ci}>{val ?? "—"}</td>;
+        ) : rows?.length ? rows.map((row, rowIndex) => (
+          <tr key={rowIndex}>
+            {cols.map((col, cellIndex) => {
+              const value = col === "SR. NO." ? rowIndex + 1 : getCellValue(row, col);
+              return <td key={cellIndex}>{value ?? "—"}</td>;
             })}
           </tr>
         )) : (
-          <tr><td colSpan={cols.length} className="rpt-empty">No records found for the selected filters.</td></tr>
+          <tr>
+            <td colSpan={cols.length} className="rpt-empty">No records found for the selected filters.</td>
+          </tr>
         )}
       </tbody>
     </table>
@@ -194,41 +322,57 @@ export default function ReportsHubPage() {
   const [filters, setFilters] = useState({ start: "", end: "", branchId: "" });
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
-  
-  const currentReport = ALL_REPORTS.find((r) => r.key === activeReport);
+  const [statusText, setStatusText] = useState("Loaded");
+
+  const currentReport = ALL_REPORTS.find((report) => report.key === activeReport);
 
   useEffect(() => {
-    setLoading(true);
+    const endpoint = REPORT_ENDPOINTS[activeReport];
     setRows([]);
+
+    if (!endpoint) {
+      setLoading(false);
+      setStatusText("Pending wiring");
+      return;
+    }
+
+    setLoading(true);
+    setStatusText("Loading...");
+
     const params = {};
     if (filters.start) params.start = filters.start;
     if (filters.end) params.end = filters.end;
     if (filters.branchId) params.branchId = filters.branchId;
 
-    let endpoint = `/reports/${activeReport.replace(/_/g, "-")}`;
-    if (activeReport === "sales_summary") endpoint = "/reports/sales-summary-list";
-
     api.get(endpoint, { params })
-      .then((res) => setRows(Array.isArray(res.data) ? res.data : res.data?.rows || []))
-      .catch(() => setRows([]))
+      .then((res) => {
+        const payload = Array.isArray(res.data) ? res.data : res.data?.rows || [];
+        setRows(payload.map((row, index) => normalizeRowForReport(activeReport, row, index)));
+        setStatusText("Loaded");
+      })
+      .catch(() => {
+        setRows([]);
+        setStatusText("Load failed");
+      })
       .finally(() => setLoading(false));
-  }, [activeReport, filters.start, filters.end, filters.branchId]);
+  }, [activeReport, filters.branchId, filters.end, filters.start]);
 
-  const filteredReports = ALL_REPORTS.filter((r) => !search || r.label.toLowerCase().includes(search.toLowerCase()));
+  const filteredReports = ALL_REPORTS.filter((report) => !search || report.label.toLowerCase().includes(search.toLowerCase()));
 
   const handleExportCSV = () => {
-    if (!rows.length) return alert("No data to export");
+    if (!rows.length) return;
+
     const cols = COLUMNS[activeReport] || ["Data"];
-    
-    let csv = cols.join(",") + "\n";
-    rows.forEach(row => {
-      const csvRow = cols.map(col => {
-        let val = getCellValue(row, col) ?? "—";
-        return `"${String(val).replace(/"/g, '""')}"`;
+    let csv = `${cols.join(",")}\n`;
+
+    rows.forEach((row) => {
+      const csvRow = cols.map((col) => {
+        const value = getCellValue(row, col) ?? "—";
+        return `"${String(value).replace(/"/g, "\"\"")}"`;
       });
-      csv += csvRow.join(",") + "\n";
+      csv += `${csvRow.join(",")}\n`;
     });
-    
+
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -276,22 +420,23 @@ export default function ReportsHubPage() {
           .rpt-table th { background: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 2; font-size: 0.68rem; }
           .rpt-table td { padding: 7px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: middle; font-size: 0.78rem; }
           .rpt-table tr:hover td { background: #f8fafc; }
-          .rpt-table tfoot td { background: #f8fafc; font-weight: 700; color: #0f172a; padding: 7px 12px; border-top: 2px solid #e2e8f0; }
           .rpt-empty { text-align: center; padding: 48px; color: #94a3b8; font-size: 0.82rem; }
           .rpt-loading td { animation: rpt-shimmer 1.2s infinite; background: linear-gradient(90deg, #f1f5f9 25%, #e8edf3 50%, #f1f5f9 75%); background-size: 200% 100%; height: 28px; }
           @keyframes rpt-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
         `}
       </style>
 
-      {/* LEFT SIDEBAR */}
       <div className="rpt-sidebar no-print">
         <div className="rpt-search-box">
           <div className="rpt-search-wrap">
-            <svg className="rpt-search-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg className="rpt-search-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
             <input
               className="rpt-search-input"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(event) => setSearch(event.target.value)}
               placeholder="Search reports..."
             />
           </div>
@@ -302,7 +447,10 @@ export default function ReportsHubPage() {
               key={report.key}
               type="button"
               className={`rpt-nav-item ${activeReport === report.key ? "active" : ""}`}
-              onClick={() => { setActiveReport(report.key); setSearch(""); }}
+              onClick={() => {
+                setActiveReport(report.key);
+                setSearch("");
+              }}
             >
               {report.label}
             </button>
@@ -310,10 +458,7 @@ export default function ReportsHubPage() {
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
       <div id="printable-report" className="rpt-main">
-
-        {/* Top bar — stats + filters all in ONE row */}
         <div className="rpt-topbar">
           <h2 className="rpt-title">{currentReport?.label || "Report"}</h2>
           <div className="rpt-stat" style={{ flexShrink: 0 }}>
@@ -322,26 +467,38 @@ export default function ReportsHubPage() {
           </div>
           <div className="rpt-stat" style={{ flexShrink: 0 }}>
             <div className="rpt-stat-label">Range</div>
-            <div className="rpt-stat-val">{filters.start && filters.end ? `${filters.start} → ${filters.end}` : "All Time"}</div>
+            <div className="rpt-stat-val">{filters.start && filters.end ? `${filters.start} to ${filters.end}` : "All Time"}</div>
           </div>
           <div className="rpt-stat" style={{ flexShrink: 0 }}>
             <div className="rpt-stat-label">Status</div>
-            <div className="rpt-stat-val" style={{ color: loading ? "#f59e0b" : "#10b981" }}>{loading ? "Loading..." : "Loaded"}</div>
+            <div
+              className="rpt-stat-val"
+              style={{
+                color: loading
+                  ? "#f59e0b"
+                  : statusText === "Load failed"
+                    ? "#dc2626"
+                    : statusText === "Pending wiring"
+                      ? "#64748b"
+                      : "#10b981"
+              }}
+            >
+              {statusText}
+            </div>
           </div>
           <div id="report-filters" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginLeft: "auto" }}>
             <span className="rpt-filter-label">FROM</span>
-            <input type="date" className="rpt-date-input" value={filters.start} onChange={(e) => setFilters((f) => ({ ...f, start: e.target.value }))} />
+            <input type="date" className="rpt-date-input" value={filters.start} onChange={(event) => setFilters((current) => ({ ...current, start: event.target.value }))} />
             <span className="rpt-filter-label">TO</span>
-            <input type="date" className="rpt-date-input" value={filters.end} onChange={(e) => setFilters((f) => ({ ...f, end: e.target.value }))} />
+            <input type="date" className="rpt-date-input" value={filters.end} onChange={(event) => setFilters((current) => ({ ...current, end: event.target.value }))} />
             {(filters.start || filters.end) && (
-              <button type="button" className="rpt-btn rpt-btn-clear" onClick={() => setFilters((f) => ({ ...f, start: "", end: "" }))}>✕</button>
+              <button type="button" className="rpt-btn rpt-btn-clear" onClick={() => setFilters((current) => ({ ...current, start: "", end: "" }))}>×</button>
             )}
-            <button type="button" className="rpt-btn rpt-btn-dark" onClick={handleExportCSV}>⬇ Export CSV</button>
-            <button type="button" className="rpt-btn rpt-btn-blue" onClick={() => window.print()}>🖨 Print</button>
+            <button type="button" className="rpt-btn rpt-btn-dark" onClick={handleExportCSV}>Export CSV</button>
+            <button type="button" className="rpt-btn rpt-btn-blue" onClick={() => window.print()}>Print</button>
           </div>
         </div>
 
-        {/* Table */}
         <div className="rpt-table-wrap">
           <ReportTable reportKey={activeReport} rows={rows} loading={loading} />
         </div>

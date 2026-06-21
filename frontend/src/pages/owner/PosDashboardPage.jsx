@@ -795,7 +795,7 @@ export default function PosDashboardPage() {
                   <button className={posTab === "billing" ? "active" : ""} onClick={() => setPosTab("billing")}>Add Service</button>
                   <button className={posTab === "products" ? "active" : ""} onClick={() => setPosTab("products")}>Add Product</button>
                   <button type="button" onClick={() => { setPkgModalPkg(null); setPkgDraft({ staffId: "", price: "", validityDays: "", purchaseDate: new Date().toISOString().slice(0,10), customServices: [] }); setShowPkgModal(true); }}>Add Package</button>
-                  <button type="button" onClick={() => { setGcModalGc({ id: "CUSTOM", name: "CUSTOM GIFT CARD" }); setGcDraft({ staffId: "", price: "", validityDays: "30", purchaseDate: new Date().toISOString().slice(0,10) }); setShowGcModal(true); }}>Add GiftCard</button>
+                  <button type="button" onClick={() => { setGcModalGc(null); setGcDraft({ staffId: "", price: "", validityDays: "30", purchaseDate: new Date().toISOString().slice(0,10) }); setShowGcModal(true); }}>Add GiftCard</button>
                   <button type="button" onClick={() => { setMemModalMem(null); setMemDraft({ staffId: "", price: "", validityDays: "", purchaseDate: new Date().toISOString().slice(0,10), customServices: [] }); setShowMemModal(true); }}>Add Membership</button>
                 </div>
 
@@ -947,7 +947,20 @@ export default function PosDashboardPage() {
                         min={paidOnline}
                         disabled={!isEditing}
                         value={isEditing ? paymentDraft.online : paidOnline.toFixed(0)}
-                        onChange={(event) => setPaymentDraft((current) => ({ ...current, online: event.target.value }))}
+                        onChange={(event) => {
+                          const val = event.target.value;
+                          if (val === "") {
+                            setPaymentDraft((current) => ({ ...current, online: "" }));
+                            return;
+                          }
+                          const numVal = Number(val);
+                          const maxOnline = Math.max(paidOnline, totals.total - Number(paymentDraft.offline || 0));
+                          if (numVal <= maxOnline) {
+                            setPaymentDraft((current) => ({ ...current, online: val }));
+                          } else {
+                            setPaymentDraft((current) => ({ ...current, online: String(maxOnline) }));
+                          }
+                        }}
                       />
                     </div>
                     <div className="payment-box">
@@ -957,7 +970,20 @@ export default function PosDashboardPage() {
                         min={paidOffline}
                         disabled={!isEditing}
                         value={isEditing ? paymentDraft.offline : paidOffline.toFixed(0)}
-                        onChange={(event) => setPaymentDraft((current) => ({ ...current, offline: event.target.value }))}
+                        onChange={(event) => {
+                          const val = event.target.value;
+                          if (val === "") {
+                            setPaymentDraft((current) => ({ ...current, offline: "" }));
+                            return;
+                          }
+                          const numVal = Number(val);
+                          const maxOffline = Math.max(paidOffline, totals.total - Number(paymentDraft.online || 0));
+                          if (numVal <= maxOffline) {
+                            setPaymentDraft((current) => ({ ...current, offline: val }));
+                          } else {
+                            setPaymentDraft((current) => ({ ...current, offline: String(maxOffline) }));
+                          }
+                        }}
                       />
                     </div>
                     <div className="payment-box">
@@ -1101,19 +1127,13 @@ export default function PosDashboardPage() {
                     </div>
                   );
                 })}
-                <div onClick={() => {
-                  setGcModalGc({ id: "CUSTOM", name: "CUSTOM GIFT CARD" });
-                  setGcDraft({ staffId: "", price: "", validityDays: "30", purchaseDate: new Date().toISOString().slice(0,10) });
-                }} style={{ background: gcModalGc?.id==="CUSTOM"?"#fdf4ff":"#f8fafc", border: gcModalGc?.id==="CUSTOM"?"2px solid #e879f9":"1px solid #e2e8f0", borderRadius:12, padding:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", minHeight:100, transition:"all 0.2s" }}>
-                  <div style={{ fontSize:"1rem", fontWeight:700, color:"#e879f9", textTransform:"uppercase" }}>CUSTOM GIFT CARD</div>
-                </div>
               </div>
 
               {/* Bottom Form */}
               <div style={{ display:"flex", gap:16, alignItems:"flex-end", flexWrap:"wrap" }}>
                 <div style={{ flex:1, minWidth:150 }}>
                   <label style={{ fontSize:"0.82rem", fontWeight:600, color:"#475569", display:"block", marginBottom:6 }}>Name</label>
-                  <input readOnly value={gcModalGc ? (gcModalGc.id==="CUSTOM" ? "CUSTOM GIFT CARD" : gcModalGc.name) : ""} placeholder="Enter Name" style={{ width:"100%", padding:"10px 12px", border:"1px solid #cbd5e1", borderRadius:8, fontSize:"0.9rem", background:"#f8fafc", color:"#94a3b8", boxSizing:"border-box" }} />
+                  <input readOnly value={gcModalGc ? gcModalGc.name : ""} placeholder="Enter Name" style={{ width:"100%", padding:"10px 12px", border:"1px solid #cbd5e1", borderRadius:8, fontSize:"0.9rem", background:"#f8fafc", color:"#94a3b8", boxSizing:"border-box" }} />
                 </div>
                 <div style={{ flex:1, minWidth:120 }}>
                   <label style={{ fontSize:"0.82rem", fontWeight:600, color:"#475569", display:"block", marginBottom:6 }}>Validity</label>
@@ -1297,47 +1317,24 @@ export default function PosDashboardPage() {
                     </div>
                   );
                 })}
-                <div onClick={() => {
-                  setMemModalMem({ id: "CUSTOM", name: "CUSTOM MEMBERSHIP" });
-                  setMemDraft({ staffId: "", price: "", validityDays: "", purchaseDate: new Date().toISOString().slice(0,10), customServices: [] });
-                }} style={{ background: memModalMem?.id==="CUSTOM"?"#eff6ff":"#f8fafc", border: memModalMem?.id==="CUSTOM"?"2px solid #3b82f6":"1px solid #e2e8f0", borderRadius:12, padding:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", minHeight:150, transition:"all 0.2s" }}>
-                  <div style={{ fontSize:"1rem", fontWeight:700, color:"#2563eb", textTransform:"uppercase" }}>CUSTOM MEMBERSHIP</div>
-                </div>
               </div>
 
               {/* Selected Services & Form */}
               <div style={{ display:"flex", flexDirection:"column", gap:16, marginTop:8 }}>
                 {/* Services List exactly like screenshot */}
-                <div style={{ fontWeight:600, color:"#64748b", fontSize:"0.9rem", marginBottom:4 }}>Selected services</div>
-                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                  {memDraft.customServices.map((svc, idx) => (
-                    <div key={idx} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", border:"1px solid #e2e8f0", borderRadius:8, background:"#fff" }}>
-                      <span style={{ fontSize:"0.9rem", color:"#0f172a", fontWeight:500 }}>{svc.name} <span style={{color:"#64748b", fontSize:"0.8rem", marginLeft:8}}>({formatMoney(Number(svc.price||0) * Number(svc.qty||1))})</span></span>
-                      <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                        <input type="number" min="1" value={svc.qty} onChange={e => { const n=[...memDraft.customServices]; n[idx]={...n[idx],qty:Number(e.target.value)}; const newTotal = n.reduce((acc,s)=>acc+(Number(s.price||0)*Number(s.qty||1)),0); setMemDraft(d=>({...d,customServices:n, price: memModalMem?.id==="CUSTOM"?String(newTotal):d.price})); }} style={{ width:60, padding:"8px", border:"1px solid #cbd5e1", borderRadius:6, fontSize:"0.9rem", textAlign:"center" }} />
-                        <button onClick={() => { const n=memDraft.customServices.filter((_,i)=>i!==idx); const newTotal = n.reduce((acc,s)=>acc+(Number(s.price||0)*Number(s.qty||1)),0); setMemDraft(d=>({...d,customServices:n, price: memModalMem?.id==="CUSTOM"?String(newTotal):d.price})); }} style={{ width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", background:"#fff", border:"1px solid #cbd5e1", borderRadius:6, cursor:"pointer", color:"#0f172a", fontWeight:600 }}>X</button>
-                      </div>
+                {memDraft.customServices.length > 0 && (
+                  <>
+                    <div style={{ fontWeight:600, color:"#64748b", fontSize:"0.9rem", marginBottom:4 }}>Selected services</div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                      {memDraft.customServices.map((svc, idx) => (
+                        <div key={idx} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", border:"1px solid #e2e8f0", borderRadius:8, background:"#fff" }}>
+                          <span style={{ fontSize:"0.9rem", color:"#0f172a", fontWeight:500 }}>{svc.name}</span>
+                          <span style={{ fontSize:"0.9rem", color:"#64748b" }}>Qty: {svc.qty}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-
-                {/* Add Services Search Bar */}
-                <div style={{ display:"flex", alignItems:"center", marginTop:8, gap:16 }}>
-                  <div style={{ fontWeight:600, color:"#64748b", fontSize:"0.9rem", minWidth:100 }}>Add services</div>
-                  <div style={{ position:"relative", flex:1, maxWidth:400 }}>
-                    <input placeholder="Search Service By Category Or Name" value={memServiceSearch} onChange={e => setMemServiceSearch(e.target.value)} style={{ width:"100%", padding:"10px 14px", paddingRight:36, border:"1px solid #cbd5e1", borderRadius:8, fontSize:"0.9rem", boxSizing:"border-box" }} />
-                    <span style={{ position:"absolute", right:12, top:10, color:"#000", fontWeight:700 }}>🔍</span>
-                    {memServiceSearch.trim() && (
-                      <div style={{ position:"absolute", top:"100%", left:0, right:0, background:"#fff", border:"1px solid #e2e8f0", borderRadius:8, maxHeight:200, overflowY:"auto", marginTop:4, zIndex:10, boxShadow: "none" }}>
-                        {(posContext.services || []).filter(s => s.name.toLowerCase().includes(memServiceSearch.toLowerCase())).map(svc => (
-                          <div key={svc.id} onClick={() => { if(!memDraft.customServices.find(c=>c.id===svc.id)) { const newSvc = [...memDraft.customServices, {id:svc.id, name:svc.name, price: svc.salesPrice || svc.price || 0, qty:1}]; const newTotal = newSvc.reduce((acc,s)=>acc+(Number(s.price||0)*Number(s.qty||1)),0); setMemDraft(d=>({...d, customServices: newSvc, price: memModalMem?.id==="CUSTOM"?String(newTotal):d.price})); } setMemServiceSearch(""); }} style={{ padding:"10px 16px", cursor:"pointer", fontSize:"0.9rem", color:"#334155", borderBottom:"1px solid #f1f5f9" }} onMouseEnter={e => e.currentTarget.style.background="#f8fafc"} onMouseLeave={e => e.currentTarget.style.background="transparent"}>
-                            {svc.name}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  </>
+                )}
 
                 {/* The Meta Form (Name, Validity, Price, Staff, Date) */}
                 <div style={{ display:"flex", gap:16, alignItems:"flex-end", marginTop:16, flexWrap:"wrap" }}>

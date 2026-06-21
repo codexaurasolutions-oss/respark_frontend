@@ -233,7 +233,7 @@ export default function CampaignsPage() {
     <div className="page-shell">
       <ModuleTabs
         title="Campaign Creator"
-        description="Build WhatsApp, SMS, email, social, and catalog banner campaigns from real CRM filters."
+        description="Build email-first campaigns, reminder journeys, social promos, and catalog banner pushes from live CRM filters."
         tabs={[
           { label: "Campaign List", to: "/admin/campaigns", hint: "History" },
           { label: "Create Campaign", to: "/admin/campaigns/create", hint: "New" }
@@ -241,7 +241,7 @@ export default function CampaignsPage() {
       />
       {status.error && <div className="panel-card"><p className="error-text">{status.error}</p></div>}
       {status.success && <div className="panel-card"><p className="success-text">{status.success}</p></div>}
-      {lastShareLink && <div className="panel-card"><strong>Manual WhatsApp Share</strong><p className="muted">Use this generated link for manual dispatch.</p><div className="inline-actions"><a className="secondary-button" href={lastShareLink} target="_blank" rel="noreferrer">Open Share Link</a><button type="button" className="secondary-button" onClick={() => navigator.clipboard.writeText(lastShareLink)}>Copy Link</button></div></div>}
+      {lastShareLink && <div className="panel-card"><strong>Manual share fallback</strong><p className="muted">This link is only used for WhatsApp-style manual dispatch when the selected campaign is not email based.</p><div className="inline-actions"><a className="secondary-button" href={lastShareLink} target="_blank" rel="noreferrer">Open Share Link</a><button type="button" className="secondary-button" onClick={() => navigator.clipboard.writeText(lastShareLink)}>Copy Link</button></div></div>}
 
       {(isCreate || isEdit) && (
         <div className="panel-card">
@@ -252,7 +252,7 @@ export default function CampaignsPage() {
               <input placeholder="Campaign name" value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
             </label>
             <label>
-              <span className="muted">WhatsApp</span>
+              <span className="muted">Channel</span>
               <select value={form.type} onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}>
               <option value="WHATSAPP">WhatsApp</option>
               <option value="SMS">SMS</option>
@@ -371,7 +371,7 @@ export default function CampaignsPage() {
                     <Link className="secondary-button" to={`/admin/campaigns/${row.id}/logs`}>Logs</Link>
                     <button type="button" onClick={() => duplicate(row.id)}>Duplicate</button>
                     <button type="button" onClick={() => schedule(row.id)}>Schedule</button>
-                    <button type="button" onClick={() => sendPlaceholder(row.id)}>Send Placeholder</button>
+                    <button type="button" onClick={() => sendPlaceholder(row.id)}>{row.type === "EMAIL" ? "Send Email" : "Send Campaign"}</button>
                   </div>
                 </div>
               ))}
@@ -457,7 +457,7 @@ export default function CampaignsPage() {
                 </div>
                 <div className="summary-box" style={{ marginTop: 16 }}>
                   <strong>Social Share Pack</strong>
-                  <p className="item-meta" style={{ marginTop: 8 }}>Use the campaign caption and banner to publish quickly across WhatsApp, Facebook, LinkedIn, and X.</p>
+                  <p className="item-meta" style={{ marginTop: 8 }}>Use this only for social/manual sharing. Email campaigns are now dispatched directly from the send action.</p>
                   <div className="inline-actions" style={{ marginTop: 12, flexWrap: "wrap" }}>
                     <button type="button" className="secondary-button" onClick={copyShareCaption}>Copy Caption</button>
                     {shareAssets.whatsapp ? <a className="secondary-button" href={shareAssets.whatsapp} target="_blank" rel="noreferrer">Share on WhatsApp</a> : null}

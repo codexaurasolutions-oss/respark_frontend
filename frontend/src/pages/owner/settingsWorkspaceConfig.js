@@ -10,7 +10,7 @@ export const SETTINGS_WORKSPACE_SECTIONS = [
   { key: "packages", label: "Packages", to: "/admin/settings/packages", hint: "Package rules" },
   { key: "gift-card", label: "Gift Card", to: "/admin/settings/gift-card", hint: "Voucher limits" },
   { key: "notification-settings", label: "Notification Settings", to: "/admin/settings/notification-settings", hint: "Alerts" },
-  { key: "sms-center", label: "SMS Center", to: "/admin/settings/sms-center", hint: "Gateway" },
+  { key: "sms-center", label: "Messaging Center", to: "/admin/settings/sms-center", hint: "Email gateway" },
   { key: "crm-segment", label: "CRM Segment", to: "/admin/settings/crm-segment", hint: "Audience groups" },
   { key: "coupons", label: "Coupons", to: "/admin/settings/coupons", hint: "Promo rules" },
   { key: "referrals", label: "Referrals", to: "/admin/settings/referrals", hint: "Referral benefits" },

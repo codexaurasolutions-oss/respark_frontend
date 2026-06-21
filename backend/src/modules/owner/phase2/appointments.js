@@ -1,5 +1,7 @@
 import crypto from "crypto";
 import { prisma } from "../../../lib/prisma.js";
+import { maybeSendFeedbackRequestForAppointment } from "../../../lib/emailAutomation.js";
+import { attemptCustomerTemplateEmail } from "../../../lib/emailNotifications.js";
 import { checkStaffAvailability, ensureScopedBranch, ensureScopedCustomer, ensureScopedService, ensureScopedStaffMembership, getSalonSetting, logCustomerTimeline, normalizeBranchId, toAmount } from "../../../lib/phase2.js";
 import { requireFeatureEnabled, requireSalonPermission } from "../../../middlewares/rbac.js";
 import { schemas, validate } from "../../../middlewares/validate.js";
@@ -9,6 +11,23 @@ const sendRouteError = (res, error, fallbackMessage) => {
   const status = error?.status || error?.response?.status || 500;
   const message = error?.message || fallbackMessage;
   return res.status(status).json({ message });
+};
+
+const sendAppointmentTemplateEmail = async (salonId, appointmentId, templateType) => {
+  const appointment = await fetchAppointment(salonId, appointmentId);
+  const toEmail = appointment?.customer?.email || "";
+  if (!toEmail) {
+    return { skipped: true, reason: "missing-recipient" };
+  }
+  return attemptCustomerTemplateEmail({
+    salonId,
+    toEmail,
+    templateType,
+    context: {
+      appointmentId,
+      customerId: appointment.customerId
+    }
+  });
 };
 
 export const registerAppointmentRoutes = (ownerRouter) => {
@@ -124,7 +143,9 @@ export const registerAppointmentRoutes = (ownerRouter) => {
         return appointment.id;
       });
 
-      res.status(201).json(await fetchAppointment(req.salonId, createdId));
+      const created = await fetchAppointment(req.salonId, createdId);
+      await sendAppointmentTemplateEmail(req.salonId, createdId, "appointment_confirmation");
+      res.status(201).json(created);
     } catch (error) {
       return sendRouteError(res, error, "Could not create appointment");
     }
@@ -185,9 +206,33 @@ export const registerAppointmentRoutes = (ownerRouter) => {
         await logAppointmentChange(tx, existing.id, req.user.id, "UPDATED", existing.status, req.body.status || existing.status, "Appointment updated");
       });
 
-      res.json(await fetchAppointment(req.salonId, existing.id));
+      const updated = await fetchAppointment(req.salonId, existing.id);
+      await sendAppointmentTemplateEmail(req.salonId, existing.id, "appointment_confirmation");
+      res.json(updated);
     } catch (error) {
       return sendRouteError(res, error, "Could not update appointment");
+    }
+  });
+
+  ownerRouter.delete("/appointments/:id", requireFeatureEnabled("appointments"), requireSalonPermission("appointments", "edit"), async (req, res) => {
+    try {
+      const appointment = await prisma.appointment.findFirst({ where: { id: req.params.id, salonId: req.salonId } });
+      if (!appointment) return res.status(404).json({ message: "Appointment not found" });
+
+      await prisma.$transaction(async (tx) => {
+        const apptServices = await tx.appointmentService.findMany({ where: { appointmentId: appointment.id } });
+        const apptServiceIds = apptServices.map(s => s.id);
+
+        await tx.appointmentServiceStaff.deleteMany({ where: { appointmentServiceId: { in: apptServiceIds } } });
+        await tx.appointmentService.deleteMany({ where: { appointmentId: appointment.id } });
+        await tx.appointmentLog.deleteMany({ where: { appointmentId: appointment.id } });
+        await tx.invoice.updateMany({ where: { appointmentId: appointment.id }, data: { appointmentId: null } });
+        await tx.appointment.delete({ where: { id: appointment.id } });
+      });
+
+      res.json({ message: "Appointment deleted successfully" });
+    } catch (error) {
+      return sendRouteError(res, error, "Could not delete appointment");
     }
   });
 
@@ -200,6 +245,18 @@ export const registerAppointmentRoutes = (ownerRouter) => {
       await tx.appointment.update({ where: { id: appointment.id }, data: { status: req.body.status } });
       await logAppointmentChange(tx, appointment.id, req.user.id, "STATUS_CHANGED", appointment.status, req.body.status, req.body.note || null);
     });
+    if (req.body.status === "CONFIRMED") {
+      await sendAppointmentTemplateEmail(req.salonId, appointment.id, "appointment_confirmation");
+    } else if (req.body.status === "CANCELLED") {
+      await sendAppointmentTemplateEmail(req.salonId, appointment.id, "appointment_cancelled");
+    } else if (req.body.status === "COMPLETED") {
+      await maybeSendFeedbackRequestForAppointment({
+        salonId: req.salonId,
+        appointmentId: appointment.id,
+        actorUserId: req.user.userId,
+        actorMembershipId: req.user.membershipId
+      });
+    }
     res.json(await fetchAppointment(req.salonId, appointment.id));
   });
 
@@ -214,6 +271,7 @@ export const registerAppointmentRoutes = (ownerRouter) => {
       await logAppointmentChange(tx, appointment.id, req.user.id, "CANCELLED", appointment.status, "CANCELLED", req.body.note || "Appointment cancelled");
     });
 
+    await sendAppointmentTemplateEmail(req.salonId, appointment.id, "appointment_cancelled");
     res.json(await fetchAppointment(req.salonId, appointment.id));
   });
 
@@ -270,7 +328,9 @@ export const registerAppointmentRoutes = (ownerRouter) => {
         await logAppointmentChange(tx, appointment.id, req.user.id, "RESCHEDULED", appointment.status, appointment.status, req.body.note || "Appointment rescheduled");
       });
 
-      res.json(await fetchAppointment(req.salonId, appointment.id));
+      const updated = await fetchAppointment(req.salonId, appointment.id);
+      await sendAppointmentTemplateEmail(req.salonId, appointment.id, "appointment_confirmation");
+      res.json(updated);
     } catch (error) {
       return sendRouteError(res, error, "Could not reschedule appointment");
     }

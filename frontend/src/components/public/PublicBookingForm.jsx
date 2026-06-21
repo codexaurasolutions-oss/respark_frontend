@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { api } from "../../api/client";
 import { formatApiError } from "../../utils/apiError";
+import IndianPhoneInput from "../IndianPhoneInput";
 
 const addMinutes = (value, minutes) => {
   if (!value) return "";
@@ -89,7 +90,7 @@ export default function PublicBookingForm({ slug, data, onSuccess, onTrack, init
       {status.success && <p className="success-text">{status.success}</p>}
       <form className="form-grid" onSubmit={submit}>
         <input placeholder="Your name" value={form.customerName} onChange={(event) => setForm((current) => ({ ...current, customerName: event.target.value }))} />
-        <input placeholder="Phone" value={form.customerPhone} onChange={(event) => setForm((current) => ({ ...current, customerPhone: event.target.value }))} />
+        <IndianPhoneInput value={form.customerPhone} onChange={(phone) => setForm((current) => ({ ...current, customerPhone: phone }))} />
         <input placeholder="Email" value={form.customerEmail} onChange={(event) => setForm((current) => ({ ...current, customerEmail: event.target.value }))} />
         <select value={form.branchId} onChange={(event) => setForm((current) => ({ ...current, branchId: event.target.value, staffMembershipId: "" }))}>
           {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}

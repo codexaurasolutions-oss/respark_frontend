@@ -419,7 +419,7 @@ export default function ExpensesPage() {
           display: flex;
           min-height: calc(100vh - 120px);
           background-color: #f8fafc;
-          font-family: 'Inter', system-ui, -apple-system, sans-serif;
+          font-family: 'Poppins', system-ui, -apple-system, sans-serif;
           color: #1e293b;
         }
 

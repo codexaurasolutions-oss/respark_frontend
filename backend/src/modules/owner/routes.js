@@ -517,6 +517,12 @@ ownerRouter.post("/services", requireSalonPermission("services", "create"), vali
   const branchId = normalizeBranchId(req.body.branchId);
   if (branchId) await ensureBranch(req.salonId, branchId);
   const categoryId = req.body.categoryId || null;
+  const salonSettings = await prisma.salonSetting.findFirst({ where: { salonId: req.salonId, branchId: null } });
+  const taxRows = Array.isArray(salonSettings?.advancedSettings?.taxMapping?.rates)
+    ? salonSettings.advancedSettings.taxMapping.rates
+    : [];
+  const defaultServiceTax = taxRows.find((row) => row?.active !== false && Array.isArray(row?.applicableFor) && row.applicableFor.includes("SERVICE"));
+  const explicitTaxRate = req.body.taxRate != null ? toAmount(req.body.taxRate) : null;
   const { gender, ...createData } = req.body;
   res.status(201).json(await prisma.service.create({
     data: {
@@ -525,7 +531,7 @@ ownerRouter.post("/services", requireSalonPermission("services", "create"), vali
       categoryId,
       price: toAmount(req.body.price),
       durationMin: Number(req.body.durationMin),
-      taxRate: req.body.taxRate != null ? toAmount(req.body.taxRate) : null,
+      taxRate: explicitTaxRate ?? (defaultServiceTax?.rate != null ? toAmount(defaultServiceTax.rate) : null),
       commissionPct: req.body.commissionPct != null ? toAmount(req.body.commissionPct) : null,
       salonId: req.salonId
     },
@@ -538,6 +544,12 @@ ownerRouter.patch("/services/:id", requireSalonPermission("services", "edit"), v
   const branchId = normalizeBranchId(req.body.branchId);
   if (branchId) await ensureBranch(req.salonId, branchId);
   const { gender, ...updateData } = req.body;
+  const salonSettings = await prisma.salonSetting.findFirst({ where: { salonId: req.salonId, branchId: null } });
+  const taxRows = Array.isArray(salonSettings?.advancedSettings?.taxMapping?.rates)
+    ? salonSettings.advancedSettings.taxMapping.rates
+    : [];
+  const defaultServiceTax = taxRows.find((taxRow) => taxRow?.active !== false && Array.isArray(taxRow?.applicableFor) && taxRow.applicableFor.includes("SERVICE"));
+  const explicitTaxRate = req.body.taxRate != null ? toAmount(req.body.taxRate) : null;
   res.json(await prisma.service.update({
     where: { id: req.params.id },
     data: {
@@ -546,7 +558,7 @@ ownerRouter.patch("/services/:id", requireSalonPermission("services", "edit"), v
       categoryId: req.body.categoryId !== undefined ? req.body.categoryId : row.categoryId,
       price: toAmount(req.body.price),
       durationMin: Number(req.body.durationMin),
-      taxRate: req.body.taxRate != null ? toAmount(req.body.taxRate) : null,
+      taxRate: explicitTaxRate ?? (defaultServiceTax?.rate != null ? toAmount(defaultServiceTax.rate) : row.taxRate),
       commissionPct: req.body.commissionPct != null ? toAmount(req.body.commissionPct) : null
     },
     include: { branch: true, category: true }
@@ -773,6 +785,10 @@ ownerRouter.get("/customers", requireSalonPermission("customers", "view"), async
       }
     }, 0);
 
+    const namePart = (row.name || "GUEST").trim().split(" ")[0].replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+    const phonePart = (row.phone || "0000").replace(/[^0-9]/g, "").slice(-4);
+    const referralCode = `${namePart}${phonePart}`;
+
     const { invoices, timelineEntries, ...rest } = row;
     return {
       ...rest,
@@ -780,7 +796,8 @@ ownerRouter.get("/customers", requireSalonPermission("customers", "view"), async
       membershipCount: row._count?.memberships || 0,
       packageCount: row._count?.packages || 0,
       advanceAmount,
-      balanceAmount
+      balanceAmount,
+      referralCode
     };
   });
   res.json(mapped);
@@ -850,12 +867,17 @@ ownerRouter.get("/customers/:id", requireSalonPermission("customers", "view"), a
   });
 
   const totalOrders = customer.invoices.length;
+  const namePart = (customer.name || "GUEST").trim().split(" ")[0].replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  const phonePart = (customer.phone || "0000").replace(/[^0-9]/g, "").slice(-4);
+  const referralCode = `${namePart}${phonePart}`;
+
   res.json({
     ...customer,
     totalOrders,
     advanceAmount,
     balanceAmount,
-    familyMembers
+    familyMembers,
+    referralCode
   });
 });
 

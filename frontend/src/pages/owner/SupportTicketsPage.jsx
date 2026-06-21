@@ -4,6 +4,9 @@ import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
 import { formatApiError } from "../../utils/apiError";
 
+const formatAttachmentValue = (value) => String(value || "").trim();
+const isAttachmentLink = (value) => /^https?:\/\//i.test(formatAttachmentValue(value));
+
 export default function SupportTicketsPage() {
   const [rows, setRows] = useState([]);
   const [filters, setFilters] = useState({ q: "", status: "", priority: "" });
@@ -96,8 +99,8 @@ export default function SupportTicketsPage() {
             </label>
             <textarea rows="5" value={form.description} placeholder="Describe the issue clearly" onChange={(event) => setForm({ ...form, description: event.target.value })} />
             <label>
-              <span className="muted">Attachment URL / file reference placeholder</span>
-              <input value={form.attachmentUrl} placeholder="Attachment URL / file reference placeholder" onChange={(event) => setForm({ ...form, attachmentUrl: event.target.value })} />
+              <span className="muted">Attachment URL</span>
+              <input value={form.attachmentUrl} placeholder="https://example.com/file.pdf" onChange={(event) => setForm({ ...form, attachmentUrl: event.target.value })} />
             </label>
             <button>Create Ticket</button>
           </form>
@@ -154,7 +157,15 @@ export default function SupportTicketsPage() {
                     </div>
                     <div className="item-meta">{new Date(message.createdAt).toLocaleString()}</div>
                     <p style={{ marginBottom: 0 }}>{message.message}</p>
-                    {message.attachmentUrl && <div className="item-meta">Attachment placeholder: {message.attachmentUrl}</div>}
+                    {message.attachmentUrl && (
+                      <div className="item-meta">
+                        Attachment: {isAttachmentLink(message.attachmentUrl) ? (
+                          <a href={formatAttachmentValue(message.attachmentUrl)} target="_blank" rel="noreferrer">Open file</a>
+                        ) : (
+                          formatAttachmentValue(message.attachmentUrl)
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -179,10 +190,10 @@ export default function SupportTicketsPage() {
                     onChange={(event) => setReplyDrafts((current) => ({ ...current, [row.id]: event.target.value }))}
                   />
                   <label>
-              <span className="muted">Attachment URL / file reference placeholder</span>
+              <span className="muted">Attachment URL</span>
               <input
                     value={replyAttachments[row.id] || ""}
-                    placeholder="Attachment URL / file reference placeholder"
+                    placeholder="https://example.com/file.pdf"
                     onChange={(event) => setReplyAttachments((current) => ({ ...current, [row.id]: event.target.value }))}
                     style={{ marginTop: 8 }} />
             </label>

@@ -4,6 +4,7 @@ import { customerApi } from "../../api/customerClient";
 import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
 import { formatApiError } from "../../utils/apiError";
+import IndianPhoneInput from "../../components/IndianPhoneInput";
 
 export default function CustomerRegisterPage() {
   const navigate = useNavigate();
@@ -63,7 +64,7 @@ export default function CustomerRegisterPage() {
             </label>
             <label>
               <span className="muted">Phone</span>
-              <input placeholder="Phone" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
+              <IndianPhoneInput value={form.phone} onChange={(phone) => setForm((current) => ({ ...current, phone }))} />
             </label>
             <label>
               <span className="muted">Email</span>

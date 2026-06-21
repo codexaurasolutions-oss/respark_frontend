@@ -1,0 +1,1 @@
+import{a as e}from"./index-DlH8WHUa.js";var t=e();function n({title:e=`Nothing here yet`,message:n=`New items will appear here once activity starts.`}){return(0,t.jsxs)(`div`,{className:`empty-state`,children:[(0,t.jsx)(`div`,{className:`empty-state-orb`,"aria-hidden":`true`}),(0,t.jsx)(`strong`,{children:e}),(0,t.jsx)(`p`,{className:`muted`,children:n})]})}export{n as t};

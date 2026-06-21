@@ -6,6 +6,7 @@ import ModuleTabs from "../../components/ModuleTabs";
 import { formatApiError } from "../../utils/apiError";
 import { downloadFromApi } from "../../utils/download";
 import PageLoader from "../../components/PageLoader";
+import IndianPhoneInput from "../../components/IndianPhoneInput";
 
 const emptySettings = {
   providerName: "",
@@ -270,7 +271,7 @@ export default function WhatsAppPage() {
                   </option>
                 ))}
               </select>
-              <input placeholder="Phone" value={message.phone} onChange={(e) => setMessage({ ...message, phone: e.target.value })} />
+              <IndianPhoneInput value={message.phone} onChange={(phone) => setMessage((prev) => ({ ...prev, phone }))} />
               <input placeholder="Template type" value={message.templateType} onChange={(e) => setMessage({ ...message, templateType: e.target.value })} />
               <select value={message.mediaKind} onChange={(e) => setMessage({ ...message, mediaKind: e.target.value })}>
                 <option value="IMAGE">Image</option>

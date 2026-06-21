@@ -3,6 +3,36 @@ import { calculatePayrollItem, createAuditLog, createStaffNotification } from ".
 import { buildCsv } from "../../../lib/phase2.js";
 import { requireFeatureEnabled, requireSalonPermission } from "../../../middlewares/rbac.js";
 import { schemas, validate } from "../../../middlewares/validate.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const INJECTIONS_FILE = path.join(__dirname, "../../../../data/injections.json");
+
+const getInjections = () => {
+  try {
+    if (!fs.existsSync(INJECTIONS_FILE)) {
+      fs.mkdirSync(path.dirname(INJECTIONS_FILE), { recursive: true });
+      fs.writeFileSync(INJECTIONS_FILE, JSON.stringify([]));
+      return [];
+    }
+    const data = fs.readFileSync(INJECTIONS_FILE, "utf8");
+    return JSON.parse(data || "[]");
+  } catch (err) {
+    return [];
+  }
+};
+
+const saveInjections = (injections) => {
+  try {
+    fs.mkdirSync(path.dirname(INJECTIONS_FILE), { recursive: true });
+    fs.writeFileSync(INJECTIONS_FILE, JSON.stringify(injections, null, 2));
+  } catch (err) {
+    // ignore
+  }
+};
 
 const toDate = (value) => (value ? new Date(value) : null);
 
@@ -54,6 +84,37 @@ export const registerOperationsRoutes = (ownerRouter) => {
     });
     res.status(201).json(row);
   });
+
+  ownerRouter.get("/expenses/reports", requireFeatureEnabled("expenses"), requireSalonPermission("expenses", "view"), async (req, res) => {
+    const rows = await prisma.expense.findMany({ where: { salonId: req.salonId }, include: { category: true, branch: true }, orderBy: { expenseDate: "desc" } });
+    res.json({
+      total: rows.reduce((sum, row) => sum + Number(row.amount || 0), 0),
+      approved: rows.filter((row) => row.status === "APPROVED" || row.status === "PAID"),
+      rows
+    });
+  });
+
+  ownerRouter.get("/expenses/accounts", requireFeatureEnabled("expenses"), requireSalonPermission("expenses", "view"), async (req, res) => {
+    const injections = getInjections().filter(inj => inj.salonId === req.salonId);
+    res.json({ injections });
+  });
+
+  ownerRouter.post("/expenses/accounts/injections", requireFeatureEnabled("expenses"), requireSalonPermission("expenses", "create"), async (req, res) => {
+    const injections = getInjections();
+    const newInjection = {
+      id: "inj-" + Math.random().toString(36).substr(2, 9),
+      salonId: req.salonId,
+      accountMode: req.body.accountMode,
+      paymentMode: req.body.paymentMode,
+      amount: Number(req.body.amount),
+      note: req.body.note,
+      createdAt: new Date().toISOString()
+    };
+    injections.push(newInjection);
+    saveInjections(injections);
+    res.status(201).json(newInjection);
+  });
+
   ownerRouter.get("/expenses/:id", requireFeatureEnabled("expenses"), requireSalonPermission("expenses", "view"), async (req, res) => {
     const row = await prisma.expense.findFirst({ where: { id: req.params.id, salonId: req.salonId }, include: { branch: true, category: true, vendor: true } });
     if (!row) return res.status(404).json({ message: "Expense not found" });
@@ -93,14 +154,6 @@ export const registerOperationsRoutes = (ownerRouter) => {
     const row = await prisma.expense.findFirst({ where: { id: req.params.id, salonId: req.salonId } });
     if (!row) return res.status(404).json({ message: "Expense not found" });
     res.json(await prisma.expense.update({ where: { id: row.id }, data: { status: "REJECTED", approvalNote: req.body.approvalNote || null, approvedByMembershipId: req.user.membershipId || null } }));
-  });
-  ownerRouter.get("/expenses/reports", requireFeatureEnabled("expenses"), requireSalonPermission("expenses", "view"), async (req, res) => {
-    const rows = await prisma.expense.findMany({ where: { salonId: req.salonId }, include: { category: true, branch: true }, orderBy: { expenseDate: "desc" } });
-    res.json({
-      total: rows.reduce((sum, row) => sum + Number(row.amount || 0), 0),
-      approved: rows.filter((row) => row.status === "APPROVED" || row.status === "PAID"),
-      rows
-    });
   });
 
   ownerRouter.get("/attendance", requireFeatureEnabled("attendance"), requireSalonPermission("attendance", "view"), async (req, res) => {

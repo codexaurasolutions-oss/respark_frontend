@@ -1,4 +1,5 @@
 import { prisma } from "../../../lib/prisma.js";
+import { attemptCustomerTemplateEmail } from "../../../lib/emailNotifications.js";
 import { createAuditLog, createStaffNotification } from "../../../lib/phase4.js";
 import { requireFeatureEnabled, requireSalonPermission } from "../../../middlewares/rbac.js";
 import { schemas, validate } from "../../../middlewares/validate.js";
@@ -16,6 +17,31 @@ export const registerFeedbackRoutes = (ownerRouter) => {
       include: { customer: true, appointment: true, invoice: true, branch: true, service: true, staffUserSalon: { include: { user: true } } },
       orderBy: { createdAt: "desc" }
     }));
+  });
+
+  ownerRouter.get("/feedback/reports", requireFeatureEnabled("feedback"), requireSalonPermission("feedback", "view"), async (req, res) => {
+    const rows = await prisma.customerFeedback.findMany({
+      where: { salonId: req.salonId },
+      include: { branch: true, service: true, staffUserSalon: { include: { user: true } } }
+    });
+    const averageRating = rows.length ? rows.reduce((sum, row) => sum + row.rating, 0) / rows.length : 0;
+    res.json({
+      summary: {
+        total: rows.length,
+        averageRating,
+        negativeCount: rows.filter((row) => row.rating <= 2).length
+      },
+      rows
+    });
+  });
+
+  ownerRouter.get("/feedback/settings", requireFeatureEnabled("feedback"), requireSalonPermission("feedback", "view"), async (req, res) => {
+    const setting = await prisma.salonSetting.findFirst({ where: { salonId: req.salonId, branchId: null } });
+    res.json({
+      whatsappNumber: setting?.whatsappNumber || "",
+      bookingNotes: setting?.bookingNotes || "",
+      cancellationPolicy: setting?.cancellationPolicy || ""
+    });
   });
 
   ownerRouter.get("/feedback/:id", requireFeatureEnabled("feedback"), requireSalonPermission("feedback", "view"), async (req, res) => {
@@ -92,12 +118,24 @@ export const registerFeedbackRoutes = (ownerRouter) => {
   });
 
   ownerRouter.post("/feedback/:id/follow-up", requireFeatureEnabled("feedback"), requireSalonPermission("feedback", "edit"), validate(schemas.feedbackFollowUp), async (req, res) => {
-    const row = await prisma.customerFeedback.findFirst({ where: { id: req.params.id, salonId: req.salonId } });
+    const row = await prisma.customerFeedback.findFirst({
+      where: { id: req.params.id, salonId: req.salonId },
+      include: { customer: true }
+    });
     if (!row) return res.status(404).json({ message: "Feedback not found" });
     const updated = await prisma.customerFeedback.update({
       where: { id: row.id },
       data: {
         internalNotes: [row.internalNotes, req.body.note].filter(Boolean).join("\n")
+      }
+    });
+    await attemptCustomerTemplateEmail({
+      salonId: req.salonId,
+      toEmail: row.customer?.email || "",
+      templateType: "feedback_follow_up",
+      context: {
+        customerId: row.customerId,
+        customer_name: row.customer?.name || "Customer"
       }
     });
     await createAuditLog({
@@ -111,30 +149,5 @@ export const registerFeedbackRoutes = (ownerRouter) => {
       summary: "Feedback follow-up note added"
     });
     res.json(updated);
-  });
-
-  ownerRouter.get("/feedback/reports", requireFeatureEnabled("feedback"), requireSalonPermission("feedback", "view"), async (req, res) => {
-    const rows = await prisma.customerFeedback.findMany({
-      where: { salonId: req.salonId },
-      include: { branch: true, service: true, staffUserSalon: { include: { user: true } } }
-    });
-    const averageRating = rows.length ? rows.reduce((sum, row) => sum + row.rating, 0) / rows.length : 0;
-    res.json({
-      summary: {
-        total: rows.length,
-        averageRating,
-        negativeCount: rows.filter((row) => row.rating <= 2).length
-      },
-      rows
-    });
-  });
-
-  ownerRouter.get("/feedback/settings", requireFeatureEnabled("feedback"), requireSalonPermission("feedback", "view"), async (req, res) => {
-    const setting = await prisma.salonSetting.findFirst({ where: { salonId: req.salonId, branchId: null } });
-    res.json({
-      whatsappNumber: setting?.whatsappNumber || "",
-      bookingNotes: setting?.bookingNotes || "",
-      cancellationPolicy: setting?.cancellationPolicy || ""
-    });
   });
 };

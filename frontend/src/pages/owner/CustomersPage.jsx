@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Filter, Plus, Download, Upload, MoreVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, X, ChevronDown, Trash2, GitMerge, MessageCircle, User, FileText, CreditCard, Gift, Wallet, AlertCircle, Package, Users, UserCog, Tag, Phone, StickyNote, Edit3, CheckCircle, Circle } from "lucide-react";
 import { api } from "../../api/client";
 import IndianPhoneInput from "../../components/IndianPhoneInput";
@@ -6,6 +7,7 @@ import { useSalonSettings } from "../../context/SalonSettingsContext";
 import { formatApiError } from "../../utils/apiError";
 import { downloadFromApi } from "../../utils/download";
 import { normalizeIndianPhoneInputDigits } from "../../utils/phone";
+import PageLoader from "../../components/PageLoader";
 
 
 const EMPTY_ADVANCED_FILTERS = {
@@ -26,6 +28,9 @@ const EMPTY_ADVANCED_FILTERS = {
   packageState: "",
   visitType: "all"
 };
+
+const getNow = () => Date.now();
+
 
 const FILTER_SECTIONS = [
   { key: "gender", label: "Gender" },
@@ -64,8 +69,13 @@ const isWithinDateRange = (value, start, end) => {
 };
 
 export default function CustomersPage() {
+  const navigate = useNavigate();
+  const importFileRef = useRef(null);
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState(new Set());
   const { formatMoney } = useSalonSettings();
   const [rows, setRows] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -85,6 +95,10 @@ export default function CustomersPage() {
   const [detailTab, setDetailTab] = useState("profile");
   const [showAssignMembershipModal, setShowAssignMembershipModal] = useState(false);
   const [membershipPlans, setMembershipPlans] = useState([]);
+  const [services, setServices] = useState([]);
+  const [customServices, setCustomServices] = useState([]);
+  const [pkgServiceSearch, setPkgServiceSearch] = useState("");
+  const [memServiceSearch, setMemServiceSearch] = useState("");
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [membershipForm, setMembershipForm] = useState({ validityDays: "", price: "", staffId: "", online: "", offline: "", purchaseDate: new Date().toISOString().slice(0, 10) });
   const [membershipSearch, setMembershipSearch] = useState("");
@@ -95,6 +109,7 @@ export default function CustomersPage() {
   const [customerGiftCards, setCustomerGiftCards] = useState([]);
   const [customerAdvances, setCustomerAdvances] = useState([]);
   const [updateForm, setUpdateForm] = useState({ name: "", phone: "", email: "", gender: "", dateOfBirth: "", anniversary: "" });
+  const [nowTime] = useState(getNow);
   const [notes, setNotes] = useState("");
   const [showGiftCardModal, setShowGiftCardModal] = useState(false);
   const [giftCardForm, setGiftCardForm] = useState({ code: "", title: "", amount: "", validityDays: 30 });
@@ -108,6 +123,7 @@ export default function CustomersPage() {
   const [familyError, setFamilyError] = useState("");
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
   const [followUpForm, setFollowUpForm] = useState({ date: "", time: "", message: "", type: "call" });
+  const [invoiceSuccessData, setInvoiceSuccessData] = useState(null); // { type, name, invoice }
   const actionMenuRef = useRef(null);
   const [formData, setFormData] = useState({
     phone: "",
@@ -144,27 +160,6 @@ export default function CustomersPage() {
     document.addEventListener("mousedown", handleOutsideClick);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [activeMenuRowId]);
-
-  useEffect(() => {
-    if (!selectedCustomer) return;
-    if (detailTab === "membership" && membershipPlans.length === 0) {
-      fetchMembershipPlans();
-      fetchStaffUsers();
-    }
-    if (detailTab === "giftcard") {
-      fetchCustomerGiftCards(selectedCustomer.id);
-    }
-    if (detailTab === "advance") {
-      fetchCustomerAdvances(selectedCustomer.id);
-    }
-    if (detailTab === "duebalance") {
-      fetchCustomerAdvances(selectedCustomer.id);
-    }
-    if (detailTab === "packages" && packagePlans.length === 0) {
-      fetchPackagePlans();
-      fetchStaffUsers();
-    }
-  }, [detailTab, selectedCustomer]);
 
   const openWhatsAppForCustomer = (row) => {
     const digits = String(row.phone || "").replace(/\D/g, "");
@@ -218,7 +213,7 @@ export default function CustomersPage() {
 
   const fetchMembershipPlans = async () => {
     try {
-      const res = await api.get("/owner/memberships/plans");
+      const res = await api.get("/owner/memberships");
       setMembershipPlans(res.data || []);
     } catch (e) {
       console.error("Failed to load membership plans", e);
@@ -231,6 +226,15 @@ export default function CustomersPage() {
       setStaffUsers(res.data || []);
     } catch (e) {
       console.error("Failed to load staff", e);
+    }
+  };
+
+  const fetchServices = async () => {
+    try {
+      const res = await api.get("/owner/services");
+      setServices(res.data || []);
+    } catch (e) {
+      console.error("Failed to load services", e);
     }
   };
 
@@ -255,7 +259,7 @@ export default function CustomersPage() {
   const handleAssignMembership = async () => {
     if (!selectedPlan || !selectedCustomer) return;
     try {
-      await api.post("/owner/memberships/assign", {
+      const payload = {
         customerId: selectedCustomer.id,
         membershipPlanId: selectedPlan.id,
         validityDays: membershipForm.validityDays ? Number(membershipForm.validityDays) : undefined,
@@ -264,12 +268,21 @@ export default function CustomersPage() {
         online: membershipForm.online ? Number(membershipForm.online) : undefined,
         offline: membershipForm.offline ? Number(membershipForm.offline) : undefined,
         startsAt: membershipForm.purchaseDate || undefined,
-      });
+      };
+      if (selectedPlan.id === "CUSTOM") {
+        payload.isCustom = true;
+        payload.name = selectedPlan.name || "Custom Membership";
+        payload.customServices = customServices.map(s => s.id);
+      }
+      const res = await api.post("/owner/memberships/assign", payload);
       setShowAssignMembershipModal(false);
       setSelectedPlan(null);
       setMembershipForm({ validityDays: "", price: "", staffId: "", online: "", offline: "", purchaseDate: new Date().toISOString().slice(0, 10) });
-      const res = await api.get(`/owner/customers/${selectedCustomer.id}`);
-      setCustomerDetail(res.data);
+      const detail = await api.get(`/owner/customers/${selectedCustomer.id}`);
+      setCustomerDetail(detail.data);
+      const invoice = res.data?.invoice || null;
+      const planName = res.data?.assignment?.membershipPlan?.name || selectedPlan?.name || "Membership";
+      setInvoiceSuccessData({ type: "Membership", name: planName, invoice });
     } catch (e) {
       alert("Failed to assign membership");
       console.error(e);
@@ -338,18 +351,56 @@ export default function CustomersPage() {
     }
   };
 
+  useEffect(() => {
+    if (!selectedCustomer) return;
+    if (detailTab === "membership" && membershipPlans.length === 0) {
+      fetchMembershipPlans();
+      fetchStaffUsers();
+    }
+    if (detailTab === "giftcard") {
+      fetchCustomerGiftCards(selectedCustomer.id);
+    }
+    if (detailTab === "advance") {
+      fetchCustomerAdvances(selectedCustomer.id);
+    }
+    if (detailTab === "duebalance") {
+      fetchCustomerAdvances(selectedCustomer.id);
+    }
+    if (detailTab === "packages" && packagePlans.length === 0) {
+      fetchPackagePlans();
+      fetchStaffUsers();
+    }
+  }, [detailTab, selectedCustomer, membershipPlans.length, packagePlans.length]);
+
+  useEffect(() => {
+    if (selectedPlan?.id === "CUSTOM") {
+      const sum = customServices.reduce((acc, curr) => acc + Number(curr.price || 0), 0);
+      setMembershipForm(prev => ({ ...prev, price: String(sum) }));
+    }
+  }, [customServices, selectedPlan?.id]);
+
+  useEffect(() => {
+    if (selectedPackage?.id === "CUSTOM") {
+      const sum = customServices.reduce((acc, curr) => acc + (Number(curr.price || 0) * (curr.sessions || 1)), 0);
+      setPackageForm(prev => ({ ...prev, price: String(sum) }));
+    }
+  }, [customServices, selectedPackage?.id]);
+
   const handleIssueGiftCard = async () => {
     if (!giftCardForm.code || !giftCardForm.amount || !selectedCustomer) return;
     try {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + (Number(giftCardForm.validityDays) || 365));
+
       await api.post("/owner/gift-cards", {
         customerId: selectedCustomer.id,
         code: giftCardForm.code,
         title: giftCardForm.title || "Gift Card",
         originalAmount: Number(giftCardForm.amount),
-        validityDays: Number(giftCardForm.validityDays) || 30,
+        expiresAt: expiresAt.toISOString().split("T")[0],
       });
       setShowGiftCardModal(false);
-      setGiftCardForm({ code: "", title: "", amount: "", validityDays: 30 });
+      setGiftCardForm({ code: "", title: "", amount: "", validityDays: 365 });
       fetchCustomerGiftCards(selectedCustomer.id);
     } catch (e) {
       alert("Failed to issue gift card");
@@ -360,19 +411,28 @@ export default function CustomersPage() {
   const handleAssignPackage = async () => {
     if (!selectedPackage || !selectedCustomer) return;
     try {
-      await api.post("/owner/packages/assign", {
+      const payload = {
         customerId: selectedCustomer.id,
         packageId: selectedPackage.id,
         validityDays: packageForm.validityDays ? Number(packageForm.validityDays) : undefined,
         price: packageForm.price ? Number(packageForm.price) : undefined,
         staffId: packageForm.staffId || undefined,
         startsAt: packageForm.purchaseDate || undefined,
-      });
+      };
+      if (selectedPackage.id === "CUSTOM") {
+        payload.isCustom = true;
+        payload.name = selectedPackage.name || "Custom Package";
+        payload.customServices = customServices.map(s => ({ serviceId: s.id, sessions: s.sessions }));
+      }
+      const res = await api.post("/owner/packages/assign", payload);
       setShowPackageModal(false);
       setSelectedPackage(null);
       setPackageForm({ validityDays: "", price: "", staffId: "", purchaseDate: new Date().toISOString().slice(0, 10) });
-      const res = await api.get(`/owner/customers/${selectedCustomer.id}`);
-      setCustomerDetail(res.data);
+      const detail = await api.get(`/owner/customers/${selectedCustomer.id}`);
+      setCustomerDetail(detail.data);
+      const invoice = res.data?.invoice || null;
+      const packName = res.data?.assignment?.package?.name || selectedPackage?.name || "Package";
+      setInvoiceSuccessData({ type: "Package", name: packName, invoice });
     } catch (e) {
       alert("Failed to assign package");
       console.error(e);
@@ -439,9 +499,63 @@ export default function CustomersPage() {
     setShowExportMenu(false);
     try {
       await downloadFromApi(`/owner/customers/export?format=${format}`, { fallbackFilename: `Customers.${format}` });
-    } catch (error) {
+    } catch {
       alert("Could not export customers");
     }
+  };
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    setLoading(true);
+    try {
+      const res = await api.post("/owner/customers/import", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
+      });
+      alert(res.data.message || "Import completed successfully!");
+      await load();
+    } catch (error) {
+      alert(formatApiError(error, "Failed to import customers"));
+    } finally {
+      setLoading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleExportSelected = () => {
+    if (selectedCustomerIds.size === 0) return;
+    const selectedCustomers = rows.filter(r => selectedCustomerIds.has(r.id));
+    const headers = ["Name", "Phone", "Email", "Gender", "DateOfBirth", "Anniversary", "TotalOrders", "TotalSpend", "AverageSpend", "Advance", "Balance", "ReferralCode"];
+    const csvContent = [
+      headers.join(","),
+      ...selectedCustomers.map(c => [
+        `"${c.name || ''}"`,
+        `"${c.phone || ''}"`,
+        `"${c.email || ''}"`,
+        `"${c.gender || ''}"`,
+        `"${c.dateOfBirth ? new Date(c.dateOfBirth).toISOString().slice(0, 10) : ''}"`,
+        `"${c.anniversary ? new Date(c.anniversary).toISOString().slice(0, 10) : ''}"`,
+        c.totalOrders || 0,
+        c.totalSpend || 0,
+        c.averageSpend || 0,
+        c.advanceAmount || 0,
+        c.balanceAmount || 0,
+        `"${c.referralCode || ''}"`
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Selected_Customers_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleAddGuest = async (event) => {
@@ -522,7 +636,7 @@ export default function CustomersPage() {
     if (appliedFilters.specialDay === "anniversary" && !isWithinDateRange(row.anniversary, appliedFilters.lastVisitedStart, appliedFilters.lastVisitedEnd)) return false;
     if ((appliedFilters.lastVisitedStart || appliedFilters.lastVisitedEnd) && !isWithinDateRange(row.lastVisitAt, appliedFilters.lastVisitedStart, appliedFilters.lastVisitedEnd)) return false;
     if (appliedFilters.nonReturningDays) {
-      const thresholdTime = Date.now() - (Number(appliedFilters.nonReturningDays) * 24 * 60 * 60 * 1000);
+      const thresholdTime = nowTime - (Number(appliedFilters.nonReturningDays) * 24 * 60 * 60 * 1000);
       const lastVisitTime = row.lastVisitAt ? new Date(row.lastVisitAt).getTime() : 0;
       if (lastVisitTime > thresholdTime) return false;
     }
@@ -547,6 +661,19 @@ export default function CustomersPage() {
     if (appliedFilters.packageState === "no" && packageCount > 0) return false;
     return true;
   });
+
+  const totalPages = Math.ceil(visibleRows.length / pageSize) || 1;
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [visibleRows.length, currentPage, totalPages]);
+
+  const paginatedRows = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return visibleRows.slice(startIndex, startIndex + pageSize);
+  }, [visibleRows, currentPage, pageSize]);
 
   const renderFilterContent = () => {
     switch (activeFilterSection) {
@@ -1006,29 +1133,7 @@ export default function CustomersPage() {
         <div className="crm-actions">
           <button className="crm-btn crm-btn-light" onClick={() => setShowFilters(true)}><Filter size={16} /> Filters</button>
           <button className="crm-btn" onClick={() => setShowAddGuest(true)}><Plus size={16} /> Add Guest</button>
-          <label className="crm-btn" style={{ cursor: "pointer" }}>
-            <Download size={16} /> Import
-            <input
-              type="file"
-              accept=".csv"
-              style={{ display: "none" }}
-              onChange={async (event) => {
-                const file = event.target.files?.[0];
-                if (!file) return;
-                const formData = new FormData();
-                formData.append("file", file);
-                try {
-                  const res = await api.post("/owner/customers/import", formData, {
-                    headers: { "Content-Type": "multipart/form-data" }
-                  });
-                  alert(res.data.message);
-                  await load();
-                } catch (error) {
-                  alert(formatApiError(error, "Could not import customers"));
-                }
-              }}
-            />
-          </label>
+          <button className="crm-btn"><Download size={16} /> Import</button>
           <div className="export-dropdown">
             <button className="crm-btn" onClick={() => setShowExportMenu((current) => !current)}><Upload size={16} /> Export <ChevronDown size={16} /></button>
             {showExportMenu && (
@@ -1070,7 +1175,7 @@ export default function CustomersPage() {
                 </tr>
               </thead>
               <tbody>
-                {visibleRows.map((row) => (
+                {paginatedRows.map((row) => (
                   <tr
                     key={row.id}
                     onClick={(event) => {
@@ -1127,12 +1232,47 @@ export default function CustomersPage() {
             </table>
             <div className="crm-pagination">
               <div style={{ display: "flex", gap: 8 }}>
-                <button><ChevronsLeft size={18} /></button>
-                <button><ChevronLeft size={18} /></button>
-                <button><ChevronRight size={18} /></button>
-                <button><ChevronsRight size={18} /></button>
+                <button 
+                  onClick={() => setCurrentPage(1)} 
+                  disabled={currentPage === 1}
+                  style={{ opacity: currentPage === 1 ? 0.4 : 1, cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
+                >
+                  <ChevronsLeft size={18} />
+                </button>
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                  disabled={currentPage === 1}
+                  style={{ opacity: currentPage === 1 ? 0.4 : 1, cursor: currentPage === 1 ? "not-allowed" : "pointer" }}
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                
+                <span style={{ display: "flex", alignItems: "center", padding: "0 8px", fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
+                  disabled={currentPage === totalPages}
+                  style={{ opacity: currentPage === totalPages ? 0.4 : 1, cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
+                >
+                  <ChevronRight size={18} />
+                </button>
+                <button 
+                  onClick={() => setCurrentPage(totalPages)} 
+                  disabled={currentPage === totalPages}
+                  style={{ opacity: currentPage === totalPages ? 0.4 : 1, cursor: currentPage === totalPages ? "not-allowed" : "pointer" }}
+                >
+                  <ChevronsRight size={18} />
+                </button>
               </div>
-              <div>1-{visibleRows.length || 0} of {visibleRows.length || 0}</div>
+              <div style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 500 }}>
+                {visibleRows.length > 0 ? (
+                  `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, visibleRows.length)} of ${visibleRows.length}`
+                ) : (
+                  "0-0 of 0"
+                )}
+              </div>
             </div>
           </>
         )}
@@ -1333,7 +1473,7 @@ export default function CustomersPage() {
                               );
                             })
                           )}
-                          <button className="cust-assign-btn" onClick={() => { fetchMembershipPlans(); fetchStaffUsers(); setSelectedPlan(null); setMembershipForm({ validityDays: "", price: "", staffId: "", online: "", offline: "", purchaseDate: new Date().toISOString().slice(0, 10) }); setMembershipSearch(""); setShowAssignMembershipModal(true); }}>
+                          <button className="cust-assign-btn" onClick={() => { fetchMembershipPlans(); fetchStaffUsers(); fetchServices(); setSelectedPlan(null); setMembershipForm({ validityDays: "", price: "", staffId: "", online: "", offline: "", purchaseDate: new Date().toISOString().slice(0, 10) }); setMembershipSearch(""); setCustomServices([]); setShowAssignMembershipModal(true); }}>
                             <CreditCard size={16} /> Assign Membership
                           </button>
                         </div>
@@ -1361,7 +1501,15 @@ export default function CustomersPage() {
                               </div>
                             ))
                           )}
-                          <button className="cust-assign-btn" onClick={() => setShowGiftCardModal(true)}>
+                          <button className="cust-assign-btn" onClick={() => {
+                            setGiftCardForm({
+                              code: "GC-" + Math.floor(100000 + Math.random() * 900000),
+                              title: "Gift Card",
+                              amount: "",
+                              validityDays: 365
+                            });
+                            setShowGiftCardModal(true);
+                          }}>
                             <Gift size={16} /> Issue Gift Card
                           </button>
                         </div>
@@ -1466,7 +1614,7 @@ export default function CustomersPage() {
                               );
                             })
                           )}
-                          <button className="cust-assign-btn" onClick={() => { fetchPackagePlans(); fetchStaffUsers(); setSelectedPackage(null); setPackageForm({ validityDays: "", price: "", staffId: "", purchaseDate: new Date().toISOString().slice(0, 10) }); setPackageSearch(""); setShowPackageModal(true); }}>
+                          <button className="cust-assign-btn" onClick={() => { fetchPackagePlans(); fetchStaffUsers(); fetchServices(); setSelectedPackage(null); setPackageForm({ validityDays: "", price: "", staffId: "", purchaseDate: new Date().toISOString().slice(0, 10) }); setPackageSearch(""); setCustomServices([]); setShowPackageModal(true); }}>
                             <Package size={16} /> Assign Package
                           </button>
                         </div>
@@ -1511,7 +1659,7 @@ export default function CustomersPage() {
                             </div>
                             <div className="form-group">
                               <label>Phone</label>
-                              <input type="text" value={updateForm.phone} onChange={(e) => setUpdateForm(prev => ({ ...prev, phone: e.target.value }))} />
+                              <IndianPhoneInput value={updateForm.phone} onChange={(phone) => setUpdateForm(prev => ({ ...prev, phone }))} />
                             </div>
                             <div className="form-group">
                               <label>Email</label>
@@ -1613,77 +1761,195 @@ export default function CustomersPage() {
       )}
 
       {/* Assign Membership Modal */}
+      {/* Assign Membership Modal */}
       {showAssignMembershipModal && (
-        <div className="modal-overlay" onClick={() => setShowAssignMembershipModal(false)}>
-          <div className="modal-content" style={{ width: "min(95vw, 900px)", borderRadius: 16, padding: 0, overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ padding: "18px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}>
-              <div style={{ fontWeight: 700, fontSize: "1.2rem", color: "#0f172a" }}>Assign Membership</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ position: "relative" }}>
-                  <input placeholder="Search For Membership" value={membershipSearch} onChange={(e) => setMembershipSearch(e.target.value)} style={{ padding: "8px 12px", paddingRight: 32, border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", width: 220 }} />
-                  <span style={{ position: "absolute", right: 10, top: 8, color: "#94a3b8" }}>&#128269;</span>
-                </div>
-                <button onClick={() => setShowAssignMembershipModal(false)} style={{ background: "none", border: "none", fontSize: "1.4rem", cursor: "pointer", color: "#94a3b8" }}>&#x2715;</button>
+        <div className="modal-overlay" style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", zIndex: 9999 }}>
+          <div className="modal-content" style={{ width: "min(95vw, 950px)", borderRadius: 20, padding: 0, overflow: "hidden", background: "#fff", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", maxHeight: "85vh", height: "auto" }} onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ padding: "20px 28px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: "1.3rem", color: "#0f172a", letterSpacing: "-0.02em" }}>Assign Membership</div>
+                <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "2px" }}>Assign a membership plan to {selectedCustomer?.name}</div>
               </div>
+              <button onClick={() => setShowAssignMembershipModal(false)} style={{ background: "#f1f5f9", border: "none", width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#e2e8f0"; e.currentTarget.style.color = "#0f172a"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.color = "#64748b"; }}>
+                <X size={18} />
+              </button>
             </div>
-            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 24, flex: 1, maxHeight: "70vh", overflowY: "auto" }}>
-              {membershipPlans.length === 0 ? (
-                <div className="cust-empty-state">No membership plans available</div>
-              ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 16, maxHeight: 300, overflowY: "auto", paddingRight: 8 }}>
-                  {membershipPlans.filter((plan) => plan.name.toLowerCase().includes(membershipSearch.toLowerCase())).map((plan) => {
-                    const isSelected = selectedPlan?.id === plan.id;
-                    return (
-                      <div key={plan.id} onClick={() => {
-                        setSelectedPlan(plan);
-                        setMembershipForm((prev) => ({
-                          ...prev,
-                          validityDays: String(plan.validityDays || ""),
-                          price: String(plan.price || ""),
-                        }));
-                      }} style={{ background: isSelected ? "#eff6ff" : "#f8fafc", border: isSelected ? "2px solid #3b82f6" : "1px solid #e2e8f0", borderRadius: 12, padding: 16, cursor: "pointer", transition: "all 0.2s" }}>
-                        <div style={{ fontSize: "0.95rem", fontWeight: 700, color: isSelected ? "#1e40af" : "#334155", marginBottom: 8, textTransform: "uppercase" }}>{plan.name}</div>
-                        <div style={{ fontSize: "0.85rem", color: "#475569", marginBottom: 4 }}>Fee: {formatMoney(Number(plan.price || 0))}</div>
-                        <div style={{ fontSize: "0.85rem", color: "#475569", marginBottom: 12 }}>Validity: {plan.validityDays} Days</div>
-                        {plan.rewardPointsMultiplier && <div style={{ fontSize: "0.8rem", color: "#059669", fontWeight: 600 }}>Earn {plan.rewardPointsMultiplier}x Points</div>}
-                        {plan.walletAmount > 0 && <div style={{ fontSize: "0.8rem", color: "#059669", fontWeight: 600 }}>Wallet: {formatMoney(plan.walletAmount)}</div>}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
 
-              <div style={{ display: "flex", gap: 16, alignItems: "flex-end", flexWrap: "wrap" }}>
-                <div style={{ flex: 1, minWidth: 150 }}>
-                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Name</label>
-                  <input readOnly value={selectedPlan ? selectedPlan.name : ""} placeholder="Select above" style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", background: "#f8fafc", color: "#94a3b8", boxSizing: "border-box" }} />
+            {/* Body */}
+            <div style={{ padding: "28px", display: "flex", gap: "28px", flex: 1, minHeight: 0, overflow: "hidden" }}>
+              {/* Left Column: Search & Membership Plan Cards */}
+              <div style={{ width: "50%", display: "flex", flexDirection: "column", gap: "18px", borderRight: "1px solid #f1f5f9", paddingRight: "28px", minHeight: 0 }}>
+                <div style={{ position: "relative" }}>
+                  <input 
+                    placeholder="Search membership plans..." 
+                    value={membershipSearch} 
+                    onChange={(e) => setMembershipSearch(e.target.value)} 
+                    style={{ 
+                      width: "100%", 
+                      padding: "12px 14px 12px 40px", 
+                      border: "1px solid #cbd5e1", 
+                      borderRadius: 10, 
+                      fontSize: "0.9rem", 
+                      boxSizing: "border-box",
+                      outline: "none",
+                      transition: "all 0.2s",
+                      fontFamily: "inherit"
+                    }} 
+                    onFocus={(e) => e.target.style.borderColor = "#2563eb"}
+                    onBlur={(e) => e.target.style.borderColor = "#cbd5e1"}
+                  />
+                  <span style={{ position: "absolute", left: 14, top: 13, color: "#94a3b8" }}>
+                    <Search size={16} />
+                  </span>
                 </div>
-                <div style={{ flex: 1, minWidth: 120 }}>
-                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Validity (Days)</label>
-                  <input type="number" placeholder="Enter Validity" value={membershipForm.validityDays} onChange={(e) => setMembershipForm((prev) => ({ ...prev, validityDays: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 120 }}>
-                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Price</label>
-                  <input type="number" placeholder="Enter Price" value={membershipForm.price} onChange={(e) => setMembershipForm((prev) => ({ ...prev, price: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
-                </div>
-                <div style={{ flex: 1.2, minWidth: 150 }}>
-                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Staff</label>
-                  <select value={membershipForm.staffId} onChange={(e) => setMembershipForm((prev) => ({ ...prev, staffId: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }}>
-                    <option value="">Select Staff</option>
-                    {staffUsers.map((s) => (
-                      <option key={s.id} value={s.id}>{s.user?.name || s.name || s.id}</option>
-                    ))}
-                  </select>
-                </div>
-                <div style={{ flex: 1, minWidth: 140 }}>
-                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Purchase date</label>
-                  <input type="date" value={membershipForm.purchaseDate} onChange={(e) => setMembershipForm((prev) => ({ ...prev, purchaseDate: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
+
+                <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "12px", paddingRight: "6px" }}>
+                  {membershipPlans.length === 0 ? null : (
+                    membershipPlans
+                      .filter((plan) => plan.name.toLowerCase().includes(membershipSearch.toLowerCase()))
+                      .map((plan) => {
+                        const isSelected = selectedPlan?.id === plan.id;
+                        return (
+                          <div 
+                            key={plan.id} 
+                            onClick={() => {
+                              setSelectedPlan(plan);
+                              setMembershipForm((prev) => ({
+                                ...prev,
+                                validityDays: String(plan.validityDays || ""),
+                                price: String(plan.price || ""),
+                              }));
+                            }} 
+                            style={{ 
+                              background: isSelected ? "#eff6ff" : "#fff", 
+                              border: isSelected ? "2px solid #2563eb" : "1px solid #e2e8f0", 
+                              borderRadius: 12, 
+                              padding: "16px", 
+                              cursor: "pointer", 
+                              transition: "all 0.2s",
+                              boxShadow: isSelected ? "0 4px 12px rgba(37,99,235,0.08)" : "0 1px 3px rgba(0,0,0,0.02)"
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                              <div style={{ fontSize: "0.95rem", fontWeight: 700, color: isSelected ? "#1e40af" : "#1e293b", textTransform: "uppercase", letterSpacing: "0.02em" }}>{plan.name}</div>
+                              <div style={{ fontSize: "1rem", fontWeight: 800, color: isSelected ? "#2563eb" : "#0f172a" }}>{formatMoney(Number(plan.price || 0))}</div>
+                            </div>
+                            <div style={{ display: "flex", gap: "16px", fontSize: "0.82rem", color: "#64748b" }}>
+                              <div>Validity: <span style={{ fontWeight: 600, color: "#334155" }}>{plan.validityDays} Days</span></div>
+                              {plan.rewardPointsMultiplier && <div>Points: <span style={{ fontWeight: 600, color: "#10b981" }}>{plan.rewardPointsMultiplier}x</span></div>}
+                              {plan.walletAmount > 0 && <div>Wallet: <span style={{ fontWeight: 600, color: "#10b981" }}>{formatMoney(plan.walletAmount)}</span></div>}
+                            </div>
+                          </div>
+                        );
+                      })
+                  )}
                 </div>
               </div>
+
+              {/* Right Column: Configuration & Services */}
+              <div style={{ width: "50%", display: "flex", flexDirection: "column", gap: "20px", overflowY: "auto", paddingRight: "6px" }}>
+                {selectedPlan ? (
+                  <>
+                    {/* Selected Plan Details Header */}
+                    <div>
+                      <div style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "#64748b", fontWeight: 700, letterSpacing: "0.05em", marginBottom: "6px" }}>Selected Plan</div>
+                      <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#0f172a" }}>{selectedPlan.name}</div>
+                    </div>
+
+                    {/* Form Grid */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "4px" }}>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "6px" }}>Validity (Days)</label>
+                        <input 
+                          type="number" 
+                          placeholder="Enter Validity" 
+                          value={membershipForm.validityDays} 
+                          onChange={(e) => setMembershipForm((prev) => ({ ...prev, validityDays: e.target.value }))} 
+                          style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box", outline: "none" }} 
+                        />
+                      </div>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "6px" }}>Price (₹)</label>
+                        <input 
+                          type="number" 
+                          placeholder="Enter Price" 
+                          value={membershipForm.price} 
+                          onChange={(e) => setMembershipForm((prev) => ({ ...prev, price: e.target.value }))} 
+                          style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box", outline: "none" }} 
+                        />
+                      </div>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "6px" }}>Staff</label>
+                        <select 
+                          value={membershipForm.staffId} 
+                          onChange={(e) => setMembershipForm((prev) => ({ ...prev, staffId: e.target.value }))} 
+                          style={{ 
+                            width: "100%", 
+                            padding: "10px 12px", 
+                            border: !membershipForm.staffId ? "1px solid #f59e0b" : "1px solid #cbd5e1", 
+                            borderRadius: 8, 
+                            fontSize: "0.9rem", 
+                            boxSizing: "border-box", 
+                            outline: "none", 
+                            background: !membershipForm.staffId ? "#fffbeb" : "#fff" 
+                          }}
+                        >
+                          <option value="">Select Staff</option>
+                          {staffUsers.map((s) => (
+                            <option key={s.id} value={s.id}>{s.user?.name || s.name || s.id}</option>
+                          ))}
+                        </select>
+                        {!membershipForm.staffId && (
+                          <div style={{ color: "#d97706", fontSize: "0.75rem", fontWeight: 500, marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                            <AlertCircle size={12} /> Staff selection is required
+                          </div>
+                        )}
+                      </div>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "6px" }}>Purchase Date</label>
+                        <input 
+                          type="date" 
+                          value={membershipForm.purchaseDate} 
+                          onChange={(e) => setMembershipForm((prev) => ({ ...prev, purchaseDate: e.target.value }))} 
+                          style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box", outline: "none" }} 
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#94a3b8", gap: "12px", border: "2px dashed #e2e8f0", borderRadius: 16, padding: "32px", background: "#fafafa" }}>
+                    <CreditCard size={48} style={{ opacity: 0.5, color: "#2563eb" }} />
+                    <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#475569" }}>Select a Membership Plan</div>
+                    <div style={{ fontSize: "0.78rem", color: "#94a3b8", textAlign: "center" }}>Choose a plan from the left list to configure pricing, validity and staff assignment details.</div>
+                  </div>
+                )}
+              </div>
             </div>
-            <div style={{ padding: "16px 24px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end", gap: 12 }}>
-              <button onClick={() => setShowAssignMembershipModal(false)} style={{ padding: "10px 24px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", color: "#475569" }}>Cancel</button>
-              <button onClick={handleAssignMembership} disabled={!selectedPlan} style={{ padding: "10px 24px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: selectedPlan ? "pointer" : "not-allowed", opacity: selectedPlan ? 1 : 0.6 }}>Add Membership</button>
+
+            {/* Footer */}
+            <div style={{ padding: "16px 28px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end", gap: 12, background: "#f8fafc" }}>
+              <button onClick={() => setShowAssignMembershipModal(false)} style={{ padding: "10px 20px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", color: "#475569", fontSize: "0.9rem", transition: "all 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.background = "#f1f5f9"} onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}>Cancel</button>
+              <button 
+                onClick={handleAssignMembership} 
+                disabled={!selectedPlan || !membershipForm.staffId} 
+                style={{ 
+                  padding: "10px 24px", 
+                  background: (selectedPlan && membershipForm.staffId) ? "#2563eb" : "#cbd5e1", 
+                  color: "#fff", 
+                  border: "none", 
+                  borderRadius: 8, 
+                  fontWeight: 700, 
+                  cursor: (selectedPlan && membershipForm.staffId) ? "pointer" : "not-allowed", 
+                  fontSize: "0.9rem", 
+                  transition: "all 0.2s", 
+                  boxShadow: (selectedPlan && membershipForm.staffId) ? "0 4px 12px rgba(37,99,235,0.2)" : "none" 
+                }} 
+                onMouseEnter={(e) => { if (selectedPlan && membershipForm.staffId) e.currentTarget.style.background = "#1d4ed8"; }} 
+                onMouseLeave={(e) => { if (selectedPlan && membershipForm.staffId) e.currentTarget.style.background = "#2563eb"; }}
+              >
+                Add Membership
+              </button>
             </div>
           </div>
         </div>
@@ -1786,100 +2052,333 @@ export default function CustomersPage() {
       )}
 
       {/* Assign Package Modal */}
+      {/* Assign Package Modal */}
       {showPackageModal && (
-        <div className="modal-overlay" onClick={() => setShowPackageModal(false)}>
-          <div className="modal-content" style={{ width: "min(95vw, 900px)", borderRadius: 16, padding: 0, overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ padding: "18px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}>
-              <div style={{ fontWeight: 700, fontSize: "1.2rem", color: "#0f172a" }}>Assign Package</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div className="modal-overlay" style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", zIndex: 9999 }}>
+          <div className="modal-content" style={{ width: "min(95vw, 950px)", borderRadius: 20, padding: 0, overflow: "hidden", background: "#fff", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", height: "620px" }} onClick={(e) => e.stopPropagation()}>
+            
+            {/* Header */}
+            <div style={{ padding: "20px 28px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: "1.3rem", color: "#0f172a", letterSpacing: "-0.02em" }}>Assign Package</div>
+                <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "2px" }}>Assign a package plan to {selectedCustomer?.name}</div>
+              </div>
+              <button onClick={() => setShowPackageModal(false)} style={{ background: "#f1f5f9", border: "none", width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#e2e8f0"; e.currentTarget.style.color = "#0f172a"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.color = "#64748b"; }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: "28px", display: "flex", gap: "28px", flex: 1, minHeight: 0, overflow: "hidden" }}>
+              {/* Left Column: Search & Package Plan Cards */}
+              <div style={{ width: "50%", display: "flex", flexDirection: "column", gap: "18px", borderRight: "1px solid #f1f5f9", paddingRight: "28px", minHeight: 0 }}>
                 <div style={{ position: "relative" }}>
-                  <input placeholder="Search For Package" value={packageSearch} onChange={(e) => setPackageSearch(e.target.value)} style={{ padding: "8px 12px", paddingRight: 32, border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", width: 220 }} />
-                  <span style={{ position: "absolute", right: 10, top: 8, color: "#94a3b8" }}>&#128269;</span>
+                  <input 
+                    placeholder="Search package plans..." 
+                    value={packageSearch} 
+                    onChange={(e) => setPackageSearch(e.target.value)} 
+                    style={{ 
+                      width: "100%", 
+                      padding: "12px 14px 12px 40px", 
+                      border: "1px solid #cbd5e1", 
+                      borderRadius: 10, 
+                      fontSize: "0.9rem", 
+                      boxSizing: "border-box",
+                      outline: "none",
+                      transition: "all 0.2s",
+                      fontFamily: "inherit"
+                    }} 
+                    onFocus={(e) => e.target.style.borderColor = "#2563eb"}
+                    onBlur={(e) => e.target.style.borderColor = "#cbd5e1"}
+                  />
+                  <span style={{ position: "absolute", left: 14, top: 13, color: "#94a3b8" }}>
+                    <Search size={16} />
+                  </span>
                 </div>
-                <button onClick={() => setShowPackageModal(false)} style={{ background: "none", border: "none", fontSize: "1.4rem", cursor: "pointer", color: "#94a3b8" }}>&#x2715;</button>
-              </div>
-            </div>
-            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 24, flex: 1, maxHeight: "70vh", overflowY: "auto" }}>
-              {packagePlans.length === 0 ? (
-                <div className="cust-empty-state">No package plans available</div>
-              ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 16, maxHeight: 300, overflowY: "auto", paddingRight: 8 }}>
-                  {packagePlans.filter((pkg) => pkg.name.toLowerCase().includes(packageSearch.toLowerCase())).map((pkg) => {
-                    const isSelected = selectedPackage?.id === pkg.id;
-                    return (
-                      <div key={pkg.id} onClick={() => {
-                        setSelectedPackage(pkg);
-                        setPackageForm((prev) => ({
-                          ...prev,
-                          validityDays: String(pkg.validityDays || ""),
-                          price: String(pkg.price || ""),
-                        }));
-                      }} style={{ background: isSelected ? "#eff6ff" : "#f8fafc", border: isSelected ? "2px solid #3b82f6" : "1px solid #e2e8f0", borderRadius: 12, padding: 16, cursor: "pointer", transition: "all 0.2s" }}>
-                        <div style={{ fontSize: "0.95rem", fontWeight: 700, color: isSelected ? "#1e40af" : "#334155", marginBottom: 8, textTransform: "uppercase" }}>{pkg.name}</div>
-                        <div style={{ fontSize: "0.85rem", color: "#475569", marginBottom: 4 }}>Fee: {formatMoney(Number(pkg.price || 0))}</div>
-                        <div style={{ fontSize: "0.85rem", color: "#475569", marginBottom: 12 }}>Validity: {pkg.validityDays} Days</div>
-                        <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>Services:</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          {(pkg.services || []).map((s, i) => (
-                            <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "#475569" }}>
-                              <span>{s.service?.name || s.name}</span>
-                              <span style={{ fontWeight: 600 }}>{s.sessions || 1}</span>
-                            </div>
-                          ))}
-                          {(pkg.services || []).length === 0 && <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>No services included</span>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
 
-              {selectedPackage && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  <div style={{ fontWeight: 600, color: "#64748b", fontSize: "0.9rem" }}>Selected services</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {(selectedPackage.services || []).map((s, idx) => (
-                      <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
-                        <span style={{ fontSize: "0.9rem", color: "#0f172a", fontWeight: 500 }}>{s.service?.name || s.name}</span>
-                        <span style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 600 }}>Qty: {s.sessions || 1}</span>
-                      </div>
-                    ))}
-                    {(selectedPackage.services || []).length === 0 && <div style={{ padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", color: "#94a3b8", fontSize: "0.9rem" }}>No services included in this package</div>}
+                <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "12px", paddingRight: "6px" }}>
+                  {/* Custom Package Card */}
+                  <div 
+                    onClick={() => {
+                      setSelectedPackage({ id: "CUSTOM", name: "Custom Package Plan", services: [] });
+                      setPackageForm((prev) => ({
+                        ...prev,
+                        validityDays: "",
+                        price: "",
+                      }));
+                      setCustomServices([]);
+                    }} 
+                    style={{ 
+                      background: selectedPackage?.id === "CUSTOM" ? "#eff6ff" : "#fff", 
+                      border: selectedPackage?.id === "CUSTOM" ? "2px solid #2563eb" : "1px solid #cbd5e1", 
+                      borderRadius: 12, 
+                      padding: "16px", 
+                      cursor: "pointer", 
+                      transition: "all 0.2s",
+                      boxShadow: selectedPackage?.id === "CUSTOM" ? "0 4px 12px rgba(37,99,235,0.08)" : "0 1px 3px rgba(0,0,0,0.02)",
+                      borderStyle: "dashed",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px"
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ fontSize: "0.95rem", fontWeight: 700, color: selectedPackage?.id === "CUSTOM" ? "#1e40af" : "#0f172a" }}>🛠️ Build Custom Package</div>
+                      <span style={{ fontSize: "0.75rem", background: "#f1f5f9", padding: "2px 6px", borderRadius: 4, fontWeight: 600, color: "#475569" }}>On the fly</span>
+                    </div>
+                    <div style={{ fontSize: "0.78rem", color: "#64748b" }}>Create a dynamic package with selected services</div>
                   </div>
-                </div>
-              )}
 
-              <div style={{ display: "flex", gap: 16, alignItems: "flex-end", flexWrap: "wrap" }}>
-                <div style={{ flex: 1, minWidth: 150 }}>
-                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Name</label>
-                  <input readOnly value={selectedPackage ? selectedPackage.name : ""} placeholder="Select above" style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", background: "#f8fafc", color: "#94a3b8", boxSizing: "border-box" }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 120 }}>
-                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Validity (Days)</label>
-                  <input type="number" placeholder="Enter Validity" value={packageForm.validityDays} onChange={(e) => setPackageForm((prev) => ({ ...prev, validityDays: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 120 }}>
-                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Price</label>
-                  <input type="number" placeholder="Enter Price" value={packageForm.price} onChange={(e) => setPackageForm((prev) => ({ ...prev, price: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
-                </div>
-                <div style={{ flex: 1.2, minWidth: 150 }}>
-                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Staff</label>
-                  <select value={packageForm.staffId} onChange={(e) => setPackageForm((prev) => ({ ...prev, staffId: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }}>
-                    <option value="">Select Staff</option>
-                    {staffUsers.map((s) => (
-                      <option key={s.id} value={s.id}>{s.user?.name || s.name || s.id}</option>
-                    ))}
-                  </select>
-                </div>
-                <div style={{ flex: 1, minWidth: 140 }}>
-                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Purchase date</label>
-                  <input type="date" value={packageForm.purchaseDate} onChange={(e) => setPackageForm((prev) => ({ ...prev, purchaseDate: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
+                  {packagePlans.length === 0 ? null : (
+                    packagePlans
+                      .filter((pkg) => pkg.name.toLowerCase().includes(packageSearch.toLowerCase()))
+                      .map((pkg) => {
+                        const isSelected = selectedPackage?.id === pkg.id;
+                        return (
+                          <div 
+                            key={pkg.id} 
+                            onClick={() => {
+                              setSelectedPackage(pkg);
+                              setPackageForm((prev) => ({
+                                ...prev,
+                                validityDays: String(pkg.validityDays || ""),
+                                price: String(pkg.price || ""),
+                              }));
+                            }} 
+                            style={{ 
+                              background: isSelected ? "#eff6ff" : "#fff", 
+                              border: isSelected ? "2px solid #2563eb" : "1px solid #e2e8f0", 
+                              borderRadius: 12, 
+                              padding: "16px", 
+                              cursor: "pointer", 
+                              transition: "all 0.2s",
+                              boxShadow: isSelected ? "0 4px 12px rgba(37,99,235,0.08)" : "0 1px 3px rgba(0,0,0,0.02)"
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                              <div style={{ fontSize: "0.95rem", fontWeight: 700, color: isSelected ? "#1e40af" : "#1e293b", textTransform: "uppercase", letterSpacing: "0.02em" }}>{pkg.name}</div>
+                              <div style={{ fontSize: "1rem", fontWeight: 800, color: isSelected ? "#2563eb" : "#0f172a" }}>{formatMoney(Number(pkg.price || 0))}</div>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "#64748b" }}>
+                              <div>Validity: <span style={{ fontWeight: 600, color: "#334155" }}>{pkg.validityDays} Days</span></div>
+                              <div>Services: <span style={{ fontWeight: 700, color: "#0f172a" }}>{(pkg.services || []).length}</span></div>
+                            </div>
+                          </div>
+                        );
+                      })
+                  )}
                 </div>
               </div>
+
+              {/* Right Column: Configuration & Services */}
+              <div style={{ width: "50%", display: "flex", flexDirection: "column", gap: "20px", overflowY: "auto", paddingRight: "6px" }}>
+                {selectedPackage ? (
+                  <>
+                    {/* Selected Package Details Header */}
+                    <div>
+                      <div style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "#64748b", fontWeight: 700, letterSpacing: "0.05em", marginBottom: "6px" }}>Selected Package</div>
+                      {selectedPackage.id === "CUSTOM" ? (
+                        <input 
+                          type="text" 
+                          placeholder="Custom Package Name"
+                          value={selectedPackage.name}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSelectedPackage(prev => ({ ...prev, name: val }));
+                          }}
+                          style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "1.1rem", fontWeight: 800, color: "#0f172a", boxSizing: "border-box", outline: "none" }}
+                        />
+                      ) : (
+                        <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#0f172a" }}>{selectedPackage.name}</div>
+                      )}
+                    </div>
+
+                    {/* Included Services */}
+                    <div>
+                      <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <CheckCircle size={15} color="#2563eb" /> {selectedPackage.id === "CUSTOM" ? "Services & sessions in this package" : "Included Services & Sessions"}
+                      </div>
+                      
+                      {selectedPackage.id === "CUSTOM" && (
+                        <div style={{ position: "relative", marginBottom: "12px" }}>
+                          <input 
+                            placeholder="Search & add services..." 
+                            value={pkgServiceSearch}
+                            onChange={(e) => setPkgServiceSearch(e.target.value)}
+                            style={{ width: "100%", padding: "10px 12px 10px 36px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.85rem", boxSizing: "border-box", outline: "none" }}
+                          />
+                          <span style={{ position: "absolute", left: 12, top: 12, color: "#94a3b8" }}>
+                            <Search size={14} />
+                          </span>
+                          
+                          {pkgServiceSearch.trim() !== "" && (
+                            <div style={{ position: "absolute", left: 0, right: 0, top: "100%", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", zIndex: 10, maxHeight: "150px", overflowY: "auto", marginTop: "4px" }}>
+                              {services
+                                .filter(s => s.name.toLowerCase().includes(pkgServiceSearch.toLowerCase()))
+                                .map(s => {
+                                  const alreadyAdded = customServices.some(added => added.id === s.id);
+                                  return (
+                                    <div 
+                                      key={s.id} 
+                                      onClick={() => {
+                                        if (!alreadyAdded) {
+                                          setCustomServices(prev => [...prev, { ...s, sessions: 1 }]);
+                                        }
+                                        setPkgServiceSearch("");
+                                      }}
+                                      style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", fontSize: "0.85rem", cursor: "pointer", borderBottom: "1px solid #f1f5f9", background: alreadyAdded ? "#f8fafc" : "#fff" }}
+                                    >
+                                      <span style={{ fontWeight: 600, color: "#334155" }}>{s.name}</span>
+                                      <span style={{ color: "#64748b" }}>{formatMoney(Number(s.price || 0))}</span>
+                                    </div>
+                                  );
+                                })}
+                              {services.filter(s => s.name.toLowerCase().includes(pkgServiceSearch.toLowerCase())).length === 0 && (
+                                <div style={{ padding: "12px", textAlign: "center", color: "#94a3b8", fontSize: "0.85rem" }}>No matching services</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", background: "#f8fafc", borderRadius: 12, padding: "12px", border: "1px solid #e2e8f0", maxHeight: "180px", overflowY: "auto" }}>
+                        {selectedPackage.id === "CUSTOM" ? (
+                          customServices.map((s, idx) => (
+                            <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
+                              <div style={{ display: "flex", flexDirection: "column" }}>
+                                <span style={{ fontSize: "0.85rem", color: "#334155", fontWeight: 600 }}>{s.name}</span>
+                                <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Base: {formatMoney(Number(s.price || 0))}</span>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <div style={{ display: "flex", alignItems: "center", border: "1px solid #e2e8f0", borderRadius: 6, overflow: "hidden", background: "#f8fafc" }}>
+                                  <button 
+                                    onClick={() => setCustomServices(prev => prev.map((item, i) => i === idx ? { ...item, sessions: Math.max(1, item.sessions - 1) } : item))}
+                                    style={{ padding: "2px 8px", background: "none", border: "none", cursor: "pointer", fontSize: "0.85rem", fontWeight: "bold" }}
+                                  >-</button>
+                                  <span style={{ padding: "2px 6px", fontSize: "0.8rem", fontWeight: 700, color: "#334155" }}>{s.sessions}</span>
+                                  <button 
+                                    onClick={() => setCustomServices(prev => prev.map((item, i) => i === idx ? { ...item, sessions: item.sessions + 1 } : item))}
+                                    style={{ padding: "2px 8px", background: "none", border: "none", cursor: "pointer", fontSize: "0.85rem", fontWeight: "bold" }}
+                                  >+</button>
+                                </div>
+                                <button 
+                                  onClick={() => setCustomServices(prev => prev.filter((_, i) => i !== idx))}
+                                  style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px" }}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          (selectedPackage.services || []).map((s, idx) => (
+                            <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
+                              <span style={{ fontSize: "0.85rem", color: "#334155", fontWeight: 600 }}>{s.service?.name || s.name || "Service"}</span>
+                              <span style={{ fontSize: "0.8rem", color: "#475569", fontWeight: 700, background: "#e2e8f0", padding: "2px 8px", borderRadius: "12px" }}>Qty: {s.sessions || 1}</span>
+                            </div>
+                          ))
+                        )}
+                        {((selectedPackage.id === "CUSTOM" ? customServices : (selectedPackage.services || [])).length === 0) && (
+                          <div style={{ padding: "16px", textAlign: "center", color: "#94a3b8", fontSize: "0.85rem" }}>
+                            No services included in this package
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Form Grid */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "4px" }}>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "6px" }}>Validity (Days)</label>
+                        <input 
+                          type="number" 
+                          placeholder="Enter Validity" 
+                          value={packageForm.validityDays} 
+                          onChange={(e) => setPackageForm((prev) => ({ ...prev, validityDays: e.target.value }))} 
+                          style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box", outline: "none" }} 
+                        />
+                      </div>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "6px" }}>Price (₹)</label>
+                        <input 
+                          type="number" 
+                          placeholder="Enter Price" 
+                          value={packageForm.price} 
+                          onChange={(e) => setPackageForm((prev) => ({ ...prev, price: e.target.value }))} 
+                          style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box", outline: "none" }} 
+                        />
+                      </div>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "6px" }}>Staff</label>
+                        <select 
+                          value={packageForm.staffId} 
+                          onChange={(e) => setPackageForm((prev) => ({ ...prev, staffId: e.target.value }))} 
+                          style={{ 
+                            width: "100%", 
+                            padding: "10px 12px", 
+                            border: !packageForm.staffId ? "1px solid #f59e0b" : "1px solid #cbd5e1", 
+                            borderRadius: 8, 
+                            fontSize: "0.9rem", 
+                            boxSizing: "border-box", 
+                            outline: "none", 
+                            background: !packageForm.staffId ? "#fffbeb" : "#fff" 
+                          }}
+                        >
+                          <option value="">Select Staff</option>
+                          {staffUsers.map((s) => (
+                            <option key={s.id} value={s.id}>{s.user?.name || s.name || s.id}</option>
+                          ))}
+                        </select>
+                        {!packageForm.staffId && (
+                          <div style={{ color: "#d97706", fontSize: "0.75rem", fontWeight: 500, marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                            <AlertCircle size={12} /> Staff selection is required
+                          </div>
+                        )}
+                      </div>
+                      <div className="form-group" style={{ margin: 0 }}>
+                        <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "6px" }}>Purchase Date</label>
+                        <input 
+                          type="date" 
+                          value={packageForm.purchaseDate} 
+                          onChange={(e) => setPackageForm((prev) => ({ ...prev, purchaseDate: e.target.value }))} 
+                          style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box", outline: "none" }} 
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#94a3b8", gap: "12px", border: "2px dashed #e2e8f0", borderRadius: 16, padding: "32px", background: "#fafafa" }}>
+                    <Package size={48} style={{ opacity: 0.5, color: "#2563eb" }} />
+                    <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#475569" }}>Select a Package Plan</div>
+                    <div style={{ fontSize: "0.78rem", color: "#94a3b8", textAlign: "center" }}>Choose a package from the left list to configure pricing, validity and staff assignment details.</div>
+                  </div>
+                )}
+              </div>
             </div>
-            <div style={{ padding: "16px 24px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end", gap: 12 }}>
-              <button onClick={() => setShowPackageModal(false)} style={{ padding: "10px 24px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", color: "#475569" }}>Cancel</button>
-              <button onClick={handleAssignPackage} disabled={!selectedPackage} style={{ padding: "10px 24px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: selectedPackage ? "pointer" : "not-allowed", opacity: selectedPackage ? 1 : 0.6 }}>Assign Package</button>
+
+            {/* Footer */}
+            <div style={{ padding: "16px 28px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end", gap: 12, background: "#f8fafc" }}>
+              <button onClick={() => setShowPackageModal(false)} style={{ padding: "10px 20px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", color: "#475569", fontSize: "0.9rem", transition: "all 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.background = "#f1f5f9"} onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}>Cancel</button>
+              <button 
+                onClick={handleAssignPackage} 
+                disabled={!selectedPackage || !packageForm.staffId} 
+                style={{ 
+                  padding: "10px 24px", 
+                  background: (selectedPackage && packageForm.staffId) ? "#2563eb" : "#cbd5e1", 
+                  color: "#fff", 
+                  border: "none", 
+                  borderRadius: 8, 
+                  fontWeight: 700, 
+                  cursor: (selectedPackage && packageForm.staffId) ? "pointer" : "not-allowed", 
+                  fontSize: "0.9rem", 
+                  transition: "all 0.2s", 
+                  boxShadow: (selectedPackage && packageForm.staffId) ? "0 4px 12px rgba(37,99,235,0.2)" : "none" 
+                }} 
+                onMouseEnter={(e) => { if (selectedPackage && packageForm.staffId) e.currentTarget.style.background = "#1d4ed8"; }} 
+                onMouseLeave={(e) => { if (selectedPackage && packageForm.staffId) e.currentTarget.style.background = "#2563eb"; }}
+              >
+                Assign Package
+              </button>
             </div>
           </div>
         </div>
@@ -1990,6 +2489,70 @@ export default function CustomersPage() {
             <div className="modal-footer">
               <button className="crm-btn" onClick={() => setShowFollowUpModal(false)}>Cancel</button>
               <button className="crm-btn" onClick={handleAddFollowUp} disabled={!followUpForm.date || !followUpForm.message}>Schedule</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invoice Success Modal */}
+      {invoiceSuccessData && (
+        <div className="modal-overlay" onClick={() => setInvoiceSuccessData(null)} style={{ zIndex: 4000 }}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "#fff", borderRadius: "20px", width: "min(92vw, 440px)", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", overflow: "hidden", animation: "modalPop .3s cubic-bezier(.34,1.56,.64,1)" }}
+          >
+            <style>{`@keyframes modalPop { from { transform:scale(.92); opacity:0; } to { transform:scale(1); opacity:1; } }`}</style>
+            <div style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)", padding: "30px 24px 24px", textAlign: "center", position: "relative" }}>
+              <div style={{ width: 60, height: 60, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: "1.8rem" }}>✅</div>
+              <div style={{ color: "#fff", fontSize: "1.25rem", fontWeight: 800, letterSpacing: "-0.01em" }}>{invoiceSuccessData.type} Assigned!</div>
+              <div style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.85rem", marginTop: 6, fontWeight: 500 }}>{invoiceSuccessData.name}</div>
+              <button onClick={() => setInvoiceSuccessData(null)} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", color: "rgba(255,255,255,0.8)", fontSize: "1.5rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: "50%", transition: "background 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.15)"} onMouseLeave={(e) => e.currentTarget.style.background = "none"}>×</button>
+            </div>
+            <div style={{ padding: "24px" }}>
+              {invoiceSuccessData.invoice ? (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 12, padding: "14px 16px", marginBottom: 20 }}>
+                    <span style={{ fontSize: "1.4rem" }}>🧾</span>
+                    <div>
+                      <div style={{ fontWeight: 750, fontSize: "0.9rem", color: "#0369a1" }}>Invoice Generated</div>
+                      <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: 2 }}>{invoiceSuccessData.invoice.invoiceNumber} · ₹{Number(invoiceSuccessData.invoice.total || 0).toLocaleString("en-IN")}</div>
+                    </div>
+                    <div style={{ marginLeft: "auto", fontWeight: 700, fontSize: "0.75rem", padding: "4px 10px", borderRadius: 8, background: invoiceSuccessData.invoice.status === "PAID" ? "#e0f2fe" : "#fef9c3", color: invoiceSuccessData.invoice.status === "PAID" ? "#0369a1" : "#92400e" }}>{invoiceSuccessData.invoice.status}</div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <button
+                      onClick={() => {
+                        const authData = localStorage.getItem("respark_auth");
+                        const token = authData ? JSON.parse(authData).accessToken : "";
+                        const base = api.defaults.baseURL?.replace(/\/api\/v1$/, "") || "";
+                        window.open(`${base}/api/v1/owner/invoices/${invoiceSuccessData.invoice.id}/receipt?token=${token}`, "_blank", "noopener,noreferrer");
+                      }}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "linear-gradient(135deg, #0ea5e9, #0284c7)", color: "#fff", border: "none", borderRadius: 12, padding: "14px", fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s", boxShadow: "0 4px 12px rgba(14,165,233,0.2)" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(14,165,233,0.3)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(14,165,233,0.2)"; }}
+                    >
+                      👁️ View Invoice
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try { await downloadFromApi(`/owner/invoices/${invoiceSuccessData.invoice.id}/pdf`, { fallbackFilename: `Invoice-${invoiceSuccessData.invoice.invoiceNumber}.pdf` }); }
+                        catch { alert("Could not download PDF"); }
+                      }}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#f8fafc", color: "#0f172a", border: "1px solid #e2e8f0", borderRadius: 12, padding: "14px", fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", transition: "background 0.2s, transform 0.15s" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "#f8fafc"; e.currentTarget.style.transform = "none"; }}
+                    >
+                      ⬇️ Download PDF
+                    </button>
+                    <button onClick={() => setInvoiceSuccessData(null)} style={{ background: "transparent", color: "#64748b", border: "none", borderRadius: 12, padding: "12px", fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", transition: "color 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.color = "#0f172a"} onMouseLeave={(e) => e.currentTarget.style.color = "#64748b"}>Close</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ textAlign: "center", color: "#64748b", fontSize: "0.9rem", marginBottom: 20 }}>Assignment successful! Invoice could not be auto-generated — create one from POS.</div>
+                  <button onClick={() => setInvoiceSuccessData(null)} style={{ width: "100%", padding: "14px", background: "linear-gradient(135deg, #0ea5e9, #0284c7)", color: "#fff", border: "none", borderRadius: 12, fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", boxShadow: "0 4px 12px rgba(14,165,233,0.2)", transition: "transform 0.15s, box-shadow 0.15s" }} onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(14,165,233,0.3)"; }} onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(14,165,233,0.2)"; }}>Done</button>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Search, X, ArrowLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, X, ArrowLeft, CheckCircle2, Calendar, XCircle, PlusCircle, Trash2, User, Edit3, FileText, CreditCard, Gift, Wallet, AlertCircle, Package, Users, UserCog, Tag, Phone, StickyNote } from "lucide-react";
 import { api } from "../../api/client";
 import { useSalonSettings } from "../../context/SalonSettingsContext";
 import { formatApiError } from "../../utils/apiError";
@@ -18,7 +18,7 @@ for (let h = APPOINTMENT_START_HOUR; h <= APPOINTMENT_END_HOUR; h++) {
   const hour12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
   const hourText = String(hour12).padStart(2, "0");
   [0, 15, 30, 45].forEach((minutes) => {
-    if (h === APPOINTMENT_END_HOUR && minutes > 45) return;
+    if (h === APPOINTMENT_END_HOUR && minutes > 0) return;
     TIME_SLOTS.push(`${hourText}:${String(minutes).padStart(2, "0")} ${ampm}`);
   });
 }
@@ -94,14 +94,84 @@ const getStaffIdsForAppointment = (row) => {
   return Array.from(staffIds);
 };
 
+const formatCompactDate = (value, withYear = true) => {
+  if (!value) return "-";
+  return new Date(value).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    ...(withYear ? { year: "numeric" } : {})
+  }).replace(/ /g, "-");
+};
+
 export default function AppointmentsPage() {
   const navigate = useNavigate();
   const { formatMoney } = useSalonSettings();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [salonSettings, setSalonSettings] = useState(null);
+
+  // Dynamic start and end hours based on roster management settings
+  const { APPOINTMENT_START_HOUR, APPOINTMENT_END_HOUR } = useMemo(() => {
+    let start = 9;
+    let end = 21;
+
+    const rosterRows = salonSettings?.advancedSettings?.rosterManagement?.rows;
+    if (Array.isArray(rosterRows) && rosterRows.length > 0) {
+      const workingRows = rosterRows.filter(row => row.isWorking);
+      if (workingRows.length > 0) {
+        let minHour = 24;
+        let maxHour = 0;
+
+        workingRows.forEach(row => {
+          if (row.fromTime) {
+            const h = parseInt(row.fromTime.split(":")[0], 10);
+            if (!isNaN(h) && h < minHour) {
+              minHour = h;
+            }
+          }
+          if (row.toTime) {
+            const h = parseInt(row.toTime.split(":")[0], 10);
+            if (!isNaN(h) && h > maxHour) {
+              maxHour = h;
+            }
+          }
+        });
+
+        if (minHour < 24) start = minHour;
+        if (maxHour > 0) end = maxHour;
+      }
+    }
+    return { APPOINTMENT_START_HOUR: start, APPOINTMENT_END_HOUR: end };
+  }, [salonSettings]);
+
+  const TIME_SLOTS = useMemo(() => {
+    const slots = [];
+    for (let h = APPOINTMENT_START_HOUR; h <= APPOINTMENT_END_HOUR; h++) {
+      const ampm = h >= 12 ? "PM" : "AM";
+      const hour12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+      const hourText = String(hour12).padStart(2, "0");
+      [0, 15, 30, 45].forEach((minutes) => {
+        if (h === APPOINTMENT_END_HOUR && minutes > 0) return;
+        slots.push(`${hourText}:${String(minutes).padStart(2, "0")} ${ampm}`);
+      });
+    }
+    return slots;
+  }, [APPOINTMENT_START_HOUR, APPOINTMENT_END_HOUR]);
+
+  const TIME_SLOT_INDEX = useMemo(() => {
+    return new Map(TIME_SLOTS.map((slot, index) => [slot, index]));
+  }, [TIME_SLOTS]);
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingAppointmentId, setEditingAppointmentId] = useState(null);
   const [checkoutAppointment, setCheckoutAppointment] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [customerDetail, setCustomerDetail] = useState(null);
+  const [customerDetailLoading, setCustomerDetailLoading] = useState(false);
+  const [detailTab, setDetailTab] = useState("profile");
+  const [customerGiftCards, setCustomerGiftCards] = useState([]);
+  const [customerAdvances, setCustomerAdvances] = useState([]);
+  const [notes, setNotes] = useState("");
   const [rows, setRows] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [services, setServices] = useState([]);
@@ -131,6 +201,7 @@ export default function AppointmentsPage() {
   });
 
   const spBodyRef = useRef(null);
+  const [contextMenu, setContextMenu] = useState(null);
 
   useEffect(() => {
     if (status.error && spBodyRef.current) {
@@ -138,9 +209,145 @@ export default function AppointmentsPage() {
     }
   }, [status.error]);
 
+  const handleCheckInAction = async (apptId) => {
+    try {
+      await api.patch(`/owner/appointments/${apptId}/status`, { status: "CHECKED_IN" });
+      setStatus({ error: "", success: "Appointment checked in." });
+      await loadAppointments();
+    } catch (error) {
+      setStatus({ error: formatApiError(error, "Could not check in appointment"), success: "" });
+    }
+    setContextMenu(null);
+  };
+
+  const handleRescheduleAction = (appt) => {
+    handleAppointmentClick({ stopPropagation: () => {} }, appt);
+    setContextMenu(null);
+  };
+
+  const handleCancelAction = async (apptId) => {
+    try {
+      await api.patch(`/owner/appointments/${apptId}/status`, { status: "CANCELLED", note: "Cancelled from context menu" });
+      setStatus({ error: "", success: "Appointment cancelled." });
+      await loadAppointments();
+    } catch (error) {
+      setStatus({ error: formatApiError(error, "Could not cancel appointment"), success: "" });
+    }
+    setContextMenu(null);
+  };
+
+  const handleNewBookingAction = (staffId, slot) => {
+    handleCellClick(staffId, slot);
+    setContextMenu(null);
+  };
+
+  const handleDeleteAction = async (apptId) => {
+    if (window.confirm("Are you sure you want to delete this appointment?")) {
+      try {
+        await api.delete(`/owner/appointments/${apptId}`);
+        setStatus({ error: "", success: "Appointment deleted successfully." });
+        await loadAppointments();
+      } catch (error) {
+        setStatus({ error: formatApiError(error, "Could not delete appointment"), success: "" });
+      }
+    }
+    setContextMenu(null);
+  };
+
+  const handleViewProfileAction = async (customerId) => {
+    setContextMenu(null);
+    if (!customerId) return;
+
+    setSelectedCustomer({ id: customerId });
+    setDetailTab("profile");
+    setCustomerDetail(null);
+    setCustomerDetailLoading(true);
+    setNotes("");
+    setCustomerGiftCards([]);
+    setCustomerAdvances([]);
+    try {
+      const res = await api.get(`/owner/customers/${customerId}`);
+      const row = res.data;
+      setSelectedCustomer(row);
+      setCustomerDetail(row);
+      setNotes(row.notes || "");
+      
+      // Fetch sub-resource details
+      const [gcRes, advRes] = await Promise.allSettled([
+        api.get(`/owner/customers/${customerId}/gift-cards`),
+        api.get(`/owner/customers/${customerId}/advance-payments`)
+      ]);
+      if (gcRes.status === "fulfilled") {
+        setCustomerGiftCards(gcRes.value.data || []);
+      }
+      if (advRes.status === "fulfilled") {
+        setCustomerAdvances(advRes.value.data || []);
+      }
+    } catch (e) {
+      console.error("Failed to load customer profile details", e);
+    } finally {
+      setCustomerDetailLoading(false);
+    }
+  };
+
+  const closeCustomerDetail = () => {
+    setSelectedCustomer(null);
+    setCustomerDetail(null);
+    setDetailTab("profile");
+  };
+
+  const handleSaveNotes = async () => {
+    if (!selectedCustomer) return;
+    try {
+      await api.patch(`/owner/customers/${selectedCustomer.id}`, { notes });
+      const res = await api.get(`/owner/customers/${selectedCustomer.id}`);
+      setCustomerDetail(res.data);
+      alert("Notes saved successfully!");
+    } catch (e) {
+      alert("Failed to save notes");
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedCustomer) return;
+    if (detailTab === "giftcard") {
+      api.get(`/owner/customers/${selectedCustomer.id}/gift-cards`)
+        .then(res => setCustomerGiftCards(res.data || []))
+        .catch(e => console.error(e));
+    }
+    if (detailTab === "advance") {
+      api.get(`/owner/customers/${selectedCustomer.id}/advance-payments`)
+        .then(res => setCustomerAdvances(res.data || []))
+        .catch(e => console.error(e));
+    }
+  }, [detailTab, selectedCustomer]);
+
+  const handleContextMenuOpen = (event, appt, staffId, slot) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const menuWidth = 220;
+    const menuHeight = 250;
+    let x = event.clientX;
+    let y = event.clientY;
+    
+    if (x + menuWidth > window.innerWidth) {
+      x = window.innerWidth - menuWidth - 10;
+    }
+    if (y + menuHeight > window.innerHeight) {
+      y = window.innerHeight - menuHeight - 10;
+    }
+    
+    setContextMenu({ x, y, appt, staffId, slot });
+  };
+
   const loadContext = async () => {
     try {
-      const contextResponse = await api.get("/owner/pos/context");
+      const [contextResponse, settingsResponse] = await Promise.all([
+        api.get("/owner/pos/context"),
+        api.get("/owner/settings")
+      ]);
       setCustomers(contextResponse.data.customers || []);
       setServices(contextResponse.data.services || []);
       const staff = contextResponse.data.staffUsers || [];
@@ -152,6 +359,7 @@ export default function AppointmentsPage() {
         ...current,
         branchId: current.branchId || defaultBranch?.id || ""
       }));
+      setSalonSettings(settingsResponse.data || null);
     } catch (error) {
       console.error(error);
     }
@@ -179,7 +387,7 @@ export default function AppointmentsPage() {
             const h = new Date(row.startAt).getHours();
             if (h < earliestHour) earliestHour = h;
           });
-          if (earliestHour >= 9 && earliestHour <= 20) {
+          if (earliestHour >= APPOINTMENT_START_HOUR && earliestHour < APPOINTMENT_END_HOUR) {
             const calendarBody = document.querySelector('.sp-calendar-body');
             if (calendarBody) {
               const rowIndex = (earliestHour - APPOINTMENT_START_HOUR) * (60 / APPOINTMENT_SLOT_MINUTES);
@@ -719,7 +927,6 @@ export default function AppointmentsPage() {
           width: 100%;
           border-collapse: collapse;
           table-layout: fixed;
-          min-width: 900px;
         }
         .calendar-th {
           position: sticky;
@@ -1038,6 +1245,145 @@ export default function AppointmentsPage() {
         .gender-chip:hover {
           transform: translateY(-1px);
         }
+        .context-menu-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 999;
+          background: transparent;
+        }
+        .context-menu {
+          position: fixed;
+          background: white;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+          z-index: 1000;
+          width: 220px;
+          max-height: 240px;
+          overflow-y: auto;
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .context-menu::-webkit-scrollbar {
+          width: 5px;
+        }
+        .context-menu::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .context-menu::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 99px;
+        }
+        .context-menu-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 10px;
+          color: #334155;
+          font-size: 0.85rem;
+          font-weight: 500;
+          cursor: pointer;
+          border-radius: 8px;
+          transition: all 150ms ease;
+          border: 1px solid transparent;
+        }
+        .context-menu-item:hover {
+          background: #f8fafc;
+          border-color: #cbd5e1;
+          color: #0f172a;
+        }
+        .context-menu-icon-wrapper {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: #eff6ff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #3b82f6;
+          flex-shrink: 0;
+        }
+        .context-menu-item.danger .context-menu-icon-wrapper {
+          background: #fee2e2;
+          color: #ef4444;
+        }
+        .context-menu-item.danger:hover {
+          background: #fef2f2;
+          border-color: #fca5a5;
+          color: #991b1b;
+        }
+
+        /* Customer Detail Slide-out Panel – Two-column layout */
+        .cust-detail-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.25); backdrop-filter:blur(2px); z-index:2000; }
+        .cust-detail-panel { position:fixed; top:0; right:0; bottom:0; width:min(95vw,900px); background:#fff; color:#0f172a; display:flex; flex-direction:column; z-index:2001; box-shadow:-8px 0 30px rgba(0,0,0,0.12); animation:slideInRight 0.25s ease-out; }
+        @keyframes slideInRight { from { transform:translateX(100%); } to { transform:translateX(0); } }
+        .cust-detail-layout { display:flex; height:100%; overflow:hidden; }
+        .cust-detail-sidebar { width:35%; background:#1e293b; color:#fff; display:flex; flex-direction:column; overflow-y:auto; flex-shrink:0; }
+        .cust-detail-sidebar::-webkit-scrollbar { width:4px; }
+        .cust-detail-sidebar::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:4px; }
+        .cust-detail-sidebar-info { padding:20px 16px; border-bottom:1px solid rgba(255,255,255,0.1); }
+        .cust-detail-sidebar-info-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+        .cust-detail-avatar { width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,#3b82f6,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:1.2rem; font-weight:700; color:#fff; flex-shrink:0; }
+        .cust-detail-name { font-size:1rem; font-weight:700; color:#fff; }
+        .cust-detail-phone { font-size:0.8rem; color:#94a3b8; }
+        .cust-detail-edit-btn { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:#94a3b8; border-radius:6px; padding:5px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; margin-left:auto; flex-shrink:0; }
+        .cust-detail-edit-btn:hover { background:rgba(255,255,255,0.15); color:#e2e8f0; }
+        .cust-detail-sidebar-fields { display:flex; flex-direction:column; gap:6px; }
+        .cust-detail-field { display:flex; flex-direction:column; gap:1px; }
+        .cust-detail-field-label { font-size:0.6rem; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; font-weight:600; }
+        .cust-detail-field-val { font-size:0.8rem; color:#cbd5e1; font-weight:500; }
+        .cust-detail-sidebar-nav { display:flex; flex-direction:column; gap:2px; padding:8px; }
+        .cust-detail-nav-btn { display:flex; align-items:center; gap:10px; padding:12px 16px; border:none; background:transparent; color:#94a3b8; font-size:0.82rem; font-weight:600; cursor:pointer; border-radius:8px; transition:all .15s; text-align:left; width:100%; }
+        .cust-detail-nav-btn:hover { background:rgba(255,255,255,0.05); color:#e2e8f0; }
+        .cust-detail-nav-btn.active { background:rgba(59,130,246,0.2); color:#60a5fa; }
+        .cust-detail-content { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+        .cust-detail-content-header { padding:16px 20px; border-bottom:1px solid #e2e8f0; font-size:1.1rem; font-weight:700; color:#0f172a; display:flex; justify-content:space-between; align-items:center; background:#fff; flex-shrink:0; }
+        .cust-detail-close { background:none; border:none; color:#94a3b8; cursor:pointer; padding:6px; border-radius:6px; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+        .cust-detail-close:hover { color:#dc2626; background:#fee2e2; }
+        .cust-detail-content-body { flex:1; overflow-y:auto; padding:16px 20px; background:#fff; }
+        .cust-detail-content-body::-webkit-scrollbar { width:4px; }
+        .cust-detail-content-body::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:4px; }
+        .cust-detail-section { margin-bottom:20px; }
+        .cust-detail-section-title { font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px; font-weight:700; }
+        .cust-profile-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:0.82rem; }
+        .cust-profile-row:last-child { border-bottom:none; }
+        .cust-profile-label { color:#64748b; font-weight:500; }
+        .cust-profile-val { color:#0f172a; font-weight:600; text-align:right; max-width:55%; word-break:break-all; }
+        .cust-order-card { background:#f8fafc; border-radius:10px; padding:14px; margin-bottom:10px; border:1px solid #e2e8f0; transition:box-shadow .15s; }
+        .cust-order-card:hover { box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+        .cust-order-card-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+        .cust-order-invoice { font-size:0.82rem; font-weight:700; color:#2563eb; }
+        .cust-order-date { font-size:0.72rem; color:#94a3b8; }
+        .cust-order-amount { font-size:0.9rem; font-weight:700; color:#16a34a; }
+        .cust-order-status { font-size:0.65rem; padding:2px 8px; border-radius:999px; font-weight:700; }
+        .cust-order-status.PAID { background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
+        .cust-order-status.UNPAID { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+        .cust-order-status.PARTIAL { background:#fffbeb; color:#d97706; border:1px solid #fde68a; }
+        .cust-order-status.CANCELLED { background:#f8fafc; color:#64748b; border:1px solid #e2e8f0; }
+        .cust-order-items { display:flex; flex-direction:column; gap:4px; }
+        .cust-order-item { display:flex; justify-content:space-between; font-size:0.75rem; color:#475569; padding:3px 0; border-bottom:1px solid #f1f5f9; }
+        .cust-order-item:last-child { border-bottom:none; }
+        .cust-order-item-staff { font-size:0.65rem; color:#94a3b8; }
+        .cust-membership-card { background:#f8fafc; border-radius:10px; padding:14px; margin-bottom:10px; border:1px solid #e2e8f0; }
+        .cust-mem-name { font-size:0.9rem; font-weight:700; color:#0f172a; }
+        .cust-mem-status { font-size:0.65rem; padding:2px 8px; border-radius:999px; font-weight:700; display:inline-flex; }
+        .cust-mem-status.ACTIVE { background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
+        .cust-mem-status.EXPIRED { background:#f8fafc; color:#64748b; border:1px solid #e2e8f0; }
+        .cust-mem-meta { font-size:0.75rem; color:#64748b; margin-top:4px; }
+        .cust-pkg-card { background:#f8fafc; border-radius:10px; padding:14px; margin-bottom:10px; border:1px solid #e2e8f0; }
+        .cust-pkg-name { font-size:0.9rem; font-weight:700; color:#0f172a; }
+        .cust-pkg-sessions { font-size:0.8rem; color:#d97706; font-weight:600; margin-top:4px; }
+        .cust-pkg-meta { font-size:0.75rem; color:#64748b; margin-top:4px; }
+        .cust-gift-card { background:linear-gradient(135deg,#f0fdf4,#ecfdf5); border-radius:10px; padding:14px; margin-bottom:10px; border:1px solid #bbf7d0; }
+        .cust-gift-card.expired { background:#f8fafc; border-color:#e2e8f0; opacity:0.7; }
+        .cust-gift-balance { font-size:1.1rem; font-weight:700; color:#16a34a; margin-top:6px; }
+        .cust-advance-card { background:#f8fafc; border-radius:10px; padding:14px; margin-bottom:10px; border:1px solid #e2e8f0; }
+        .cust-due-card { background:#fef2f2; border-radius:10px; padding:14px; margin-bottom:10px; border:1px solid #fecaca; }
+        .cust-empty-state { color:#64748b; font-size:0.85rem; text-align:center; padding:40px 20px; }
+        .cust-assign-btn { background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; padding:10px 20px; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer; margin-top:12px; display:inline-flex; align-items:center; gap:6px; transition:all .15s; }
+        .cust-assign-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(37,99,235,0.3); }
       `}</style>
 
       <div className="calendar-toolbar">
@@ -1059,7 +1405,7 @@ export default function AppointmentsPage() {
 
       <div className="calendar-grid-wrapper">
         {loading && <div style={{ position: "absolute", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}><PageLoader title="Loading schedule..." /></div>}
-        <table className="calendar-table">
+        <table className="calendar-table" style={{ minWidth: Math.max(900, filteredStaffUsers.length * 120 + 60) + "px" }}>
           <thead>
             <tr>
               <th className="calendar-th time-col-header"><Search size={18} /></th>
@@ -1085,6 +1431,7 @@ export default function AppointmentsPage() {
                           key={`${slot}-${staff.id}`}
                           className="calendar-cell"
                           onClick={() => handleCellClick(staff.id, slot)}
+                          onContextMenu={(event) => handleContextMenuOpen(event, null, staff.id, slot)}
                         />
                       );
                     }
@@ -1138,6 +1485,7 @@ export default function AppointmentsPage() {
                                   event.stopPropagation();
                                   handleAppointmentClick(event, appt);
                                 }}
+                                onContextMenu={(event) => handleContextMenuOpen(event, appt, staff.id, slot)}
                                 title={`${appt.customer?.name || "Walk-in"} • ${serviceName} • ${totalDurationMin} min`}
                               >
                                 <div style={{ fontWeight: 600 }}>{appt.customer?.name || "Walk-in"}</div>
@@ -1375,11 +1723,11 @@ export default function AppointmentsPage() {
                   <div className="sp-footer-checks">
                     <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: "0.8rem", fontWeight: 500, color: "#334155", cursor: "pointer" }}>
                       <input type="checkbox" className="styled-checkbox" checked={form.smsToGuest} onChange={(event) => setForm({ ...form, smsToGuest: event.target.checked })} />
-                      Confirmation Sms
+                      Confirmation Email
                     </label>
                     <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: "0.8rem", fontWeight: 500, color: "#334155", cursor: "pointer" }}>
                       <input type="checkbox" className="styled-checkbox" checked={form.smsToOwner} onChange={(event) => setForm({ ...form, smsToOwner: event.target.checked })} />
-                      Sms To Owner
+                      Email To Owner
                     </label>
                   </div>
                 )}
@@ -1430,6 +1778,439 @@ export default function AppointmentsPage() {
             // navigate(`/admin/pos-dashboard/${invoiceId}?from=/admin/appointments`);
           }}
         />
+      )}
+
+      {contextMenu && (
+        <>
+          <div className="context-menu-backdrop" onClick={() => setContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }} />
+          <div 
+            className="context-menu" 
+            style={{ 
+              left: contextMenu.x, 
+              top: contextMenu.y 
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {contextMenu.appt ? (
+              <>
+                {contextMenu.appt.status !== "CHECKED_IN" && contextMenu.appt.status !== "COMPLETED" && (
+                  <div className="context-menu-item" onClick={() => handleCheckInAction(contextMenu.appt.id)}>
+                    <div className="context-menu-icon-wrapper">
+                      <CheckCircle2 size={16} />
+                    </div>
+                    <span>Check In</span>
+                  </div>
+                )}
+                
+                <div className="context-menu-item" onClick={() => handleRescheduleAction(contextMenu.appt)}>
+                  <div className="context-menu-icon-wrapper">
+                    <Calendar size={16} />
+                  </div>
+                  <span>Reschedule Booking</span>
+                </div>
+
+                {contextMenu.appt.status !== "CANCELLED" && (
+                  <div className="context-menu-item" onClick={() => handleCancelAction(contextMenu.appt.id)}>
+                    <div className="context-menu-icon-wrapper">
+                      <XCircle size={16} />
+                    </div>
+                    <span>Cancel Booking</span>
+                  </div>
+                )}
+
+                <div className="context-menu-item" onClick={() => handleNewBookingAction(contextMenu.staffId, contextMenu.slot)}>
+                  <div className="context-menu-icon-wrapper">
+                    <PlusCircle size={16} />
+                  </div>
+                  <span>New Booking</span>
+                </div>
+
+                <div className="context-menu-item danger" onClick={() => handleDeleteAction(contextMenu.appt.id)}>
+                  <div className="context-menu-icon-wrapper">
+                    <Trash2 size={16} />
+                  </div>
+                  <span>Delete Service</span>
+                </div>
+
+                {contextMenu.appt.customerId && (
+                  <div className="context-menu-item" onClick={() => handleViewProfileAction(contextMenu.appt.customerId)}>
+                    <div className="context-menu-icon-wrapper">
+                      <User size={16} />
+                    </div>
+                    <span>View Profile</span>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="context-menu-item" onClick={() => handleNewBookingAction(contextMenu.staffId, contextMenu.slot)}>
+                <div className="context-menu-icon-wrapper">
+                  <PlusCircle size={16} />
+                </div>
+                <span>New Booking</span>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+      {/* Customer Detail Slide-out Panel – Two-Column Layout */}
+      {selectedCustomer && (
+        <>
+          <div className="cust-detail-overlay" onClick={closeCustomerDetail} />
+          <div className="cust-detail-panel">
+            <div className="cust-detail-layout">
+              {/* Left Sidebar */}
+              <div className="cust-detail-sidebar">
+                <div className="cust-detail-sidebar-info">
+                  <div className="cust-detail-sidebar-info-header">
+                    <div className="cust-detail-avatar">{(selectedCustomer.name || "?")[0].toUpperCase()}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="cust-detail-name">{selectedCustomer.name || "-"}</div>
+                      <div className="cust-detail-phone">{selectedCustomer.phone}</div>
+                    </div>
+                  </div>
+                  <div className="cust-detail-sidebar-fields">
+                    {customerDetail && [
+                      { label: "Email", val: customerDetail.email || "Not given" },
+                      { label: "GSTIN", val: customerDetail.gst || "-" },
+                      { label: "Gender", val: customerDetail.gender ? customerDetail.gender.charAt(0).toUpperCase() + customerDetail.gender.slice(1) : "-" },
+                      { label: "Birth Date", val: customerDetail.dateOfBirth ? formatCompactDate(customerDetail.dateOfBirth) : "Not given" },
+                      { label: "Anniversary", val: customerDetail.anniversary ? formatCompactDate(customerDetail.anniversary) : "Not given" },
+                      { label: "Last Visited", val: customerDetail.lastVisitAt ? formatCompactDate(customerDetail.lastVisitAt) : "Not visited" },
+                      { label: "Lifetime Visits", val: Number(customerDetail.totalOrders || 0) },
+                      { label: "Loyalty Points", val: Number(customerDetail.loyaltyPoints || customerDetail.loyalty || 0) },
+                      { label: "Referral Code", val: customerDetail.referralCode || "-" },
+                    ].map(({ label, val }) => (
+                      <div key={label} className="cust-detail-field">
+                        <span className="cust-detail-field-label">{label}</span>
+                        <span className="cust-detail-field-val">{val}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <nav className="cust-detail-sidebar-nav">
+                  {[
+                    { key: "profile", icon: User, label: "Profile Info" },
+                    { key: "orders", icon: FileText, label: "Orders" },
+                    { key: "membership", icon: CreditCard, label: "Membership" },
+                    { key: "giftcard", icon: Gift, label: "Gift Card" },
+                    { key: "advance", icon: Wallet, label: "Advance" },
+                    { key: "duebalance", icon: AlertCircle, label: "Due Balances" },
+                    { key: "packages", icon: Package, label: "Packages" },
+                    { key: "family", icon: Users, label: "Family Members" },
+                    { key: "notes", icon: StickyNote, label: "Notes" },
+                  ].map(({ key, icon: Icon, label }) => (
+                    <button key={key} className={`cust-detail-nav-btn${detailTab === key ? " active" : ""}`} onClick={() => setDetailTab(key)}>
+                      <Icon size={18} />
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+
+              {/* Right Content Panel */}
+              <div className="cust-detail-content">
+                <div className="cust-detail-content-header">
+                  <span>
+                    {[
+                      { key: "profile", label: "Profile Info" },
+                      { key: "orders", label: "Orders" },
+                      { key: "membership", label: "Membership" },
+                      { key: "giftcard", label: "Gift Card" },
+                      { key: "advance", label: "Advance" },
+                      { key: "duebalance", label: "Due Balances" },
+                      { key: "packages", label: "Packages" },
+                      { key: "family", label: "Family Members" },
+                      { key: "notes", label: "Notes" },
+                    ].find(t => t.key === detailTab)?.label || "Details"}
+                  </span>
+                  <button className="cust-detail-close" onClick={closeCustomerDetail}>
+                    <X size={20} />
+                  </button>
+                </div>
+                <div className="cust-detail-content-body">
+                  {customerDetailLoading ? (
+                    <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Loading...</div>
+                  ) : !customerDetail ? (
+                    <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>Could not load data</div>
+                  ) : (
+                    <>
+                      {/* Profile Info Tab */}
+                      {detailTab === "profile" && (
+                        <div className="cust-detail-section">
+                          {[
+                            { label: "Name", val: customerDetail.name || "-" },
+                            { label: "Phone", val: customerDetail.phone || "-" },
+                            { label: "Email", val: customerDetail.email || "Not given yet!" },
+                            { label: "GSTIN", val: customerDetail.gst || "-" },
+                            { label: "Gender", val: customerDetail.gender ? customerDetail.gender.charAt(0).toUpperCase() + customerDetail.gender.slice(1) : "-" },
+                            { label: "Birth Date", val: customerDetail.dateOfBirth ? formatCompactDate(customerDetail.dateOfBirth) : "Not given yet!" },
+                            { label: "Anniversary", val: customerDetail.anniversary ? formatCompactDate(customerDetail.anniversary) : "Not given yet!" },
+                            { label: "Last Visited", val: customerDetail.lastVisitAt ? formatCompactDate(customerDetail.lastVisitAt) : "Not visited yet!" },
+                            { label: "Lifetime Visit Count", val: Number(customerDetail.totalOrders || 0) },
+                            { label: "Loyalty Points", val: Number(customerDetail.loyaltyPoints || 0) },
+                            { label: "Referral Code", val: customerDetail.referralCode || "-" },
+                          ].map(({ label, val }) => (
+                            <div key={label} className="cust-profile-row">
+                              <span className="cust-profile-label">{label}</span>
+                              <span className="cust-profile-val">{val}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Orders Tab */}
+                      {detailTab === "orders" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Order History ({(customerDetail.invoices || []).length})</div>
+                          {(customerDetail.invoices || []).length === 0 ? (
+                            <div className="cust-empty-state">No orders yet</div>
+                          ) : (
+                            (customerDetail.invoices || []).map(inv => (
+                              <div key={inv.id} className="cust-order-card">
+                                <div className="cust-order-card-head">
+                                  <div>
+                                    <div className="cust-order-invoice">Invoice #{inv.invoiceNumber}</div>
+                                    <div className="cust-order-date">{new Date(inv.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</div>
+                                  </div>
+                                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
+                                    <div className="cust-order-amount">{formatMoney(inv.total)}</div>
+                                    <span className={`cust-order-status ${inv.status}`}>{inv.status}</span>
+                                  </div>
+                                </div>
+                                {(inv.items || []).length > 0 && (
+                                  <div className="cust-order-items">
+                                    {inv.items.map((item, i) => (
+                                      <div key={i} className="cust-order-item">
+                                        <div>
+                                          <div>{item.serviceName || item.productName || "Item"}</div>
+                                          {item.staffName && <div className="cust-order-item-staff">Staff: {item.staffName}</div>}
+                                        </div>
+                                        <div>{formatMoney(item.lineTotal)}</div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                {inv.discountAmount > 0 && (
+                                  <div style={{ marginTop: "6px", fontSize: "0.72rem", color: "#94a3b8" }}>
+                                    Discount: {formatMoney(inv.discountAmount)}
+                                  </div>
+                                )}
+                                {inv.paymode && (
+                                  <div style={{ marginTop: "4px", fontSize: "0.72rem", color: "#94a3b8" }}>
+                                    Paymode: {inv.paymode}
+                                  </div>
+                                )}
+                                {Number(inv.balanceAmount || 0) > 0 && (
+                                  <div style={{ marginTop: "8px", padding: "4px 8px", background: "#7f1d1d", borderRadius: "6px", fontSize: "0.72rem", color: "#fca5a5" }}>
+                                    Balance Due: {formatMoney(inv.balanceAmount)}
+                                  </div>
+                                )}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+
+                      {/* Membership Tab */}
+                      {detailTab === "membership" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Active Memberships</div>
+                          {(customerDetail.memberships || []).length === 0 ? (
+                            <div className="cust-empty-state">No active memberships</div>
+                          ) : (
+                            (customerDetail.memberships || []).map(m => {
+                              const isActive = m.status === "ACTIVE" && new Date(m.endsAt) > new Date();
+                              return (
+                                <div key={m.id} className="cust-membership-card">
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                    <div className="cust-mem-name">{m.membershipPlan?.name || "Membership"}</div>
+                                    <span className={`cust-mem-status ${isActive ? "ACTIVE" : "EXPIRED"}`}>{isActive ? "ACTIVE" : m.status}</span>
+                                  </div>
+                                  <div className="cust-mem-meta">
+                                    Valid: {new Date(m.startsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })} → {new Date(m.endsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })}
+                                  </div>
+                                  {m.remainingWalletValue != null && (
+                                    <div style={{ marginTop: "6px", fontSize: "0.78rem", color: "#10b981", fontWeight: 600 }}>
+                                      Wallet Balance: {formatMoney(m.remainingWalletValue)}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+
+                      {/* Gift Card Tab */}
+                      {detailTab === "giftcard" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Gift Cards</div>
+                          {customerGiftCards.length === 0 ? (
+                            <div className="cust-empty-state">No gift cards found</div>
+                          ) : (
+                            customerGiftCards.map((gc) => (
+                              <div key={gc.id} className={`cust-gift-card${gc.status !== "ACTIVE" ? " expired" : ""}`}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                  <div>
+                                    <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#0f172a" }}>{gc.code || "Gift Card"}</div>
+                                    <div style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: "2px" }}>
+                                      {gc.expiresAt ? `Expires: ${formatCompactDate(gc.expiresAt)}` : "No expiry"}
+                                    </div>
+                                  </div>
+                                  <span className={`cust-mem-status ${gc.status === "ACTIVE" ? "ACTIVE" : "EXPIRED"}`}>{gc.status || "UNKNOWN"}</span>
+                                </div>
+                                <div className="cust-gift-balance">Balance: {formatMoney(gc.balance || 0)}</div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+
+                      {/* Advance Tab */}
+                      {detailTab === "advance" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Advance Balance</div>
+                          <div className="cust-advance-card">
+                            <div style={{ fontSize: "0.78rem", color: "#64748b" }}>Current Advance</div>
+                            <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#16a34a", marginTop: "4px" }}>
+                              {formatMoney(customerDetail.advanceAmount || 0)}
+                            </div>
+                          </div>
+                          {customerAdvances.length > 0 && (
+                            <>
+                              <div className="cust-detail-section-title" style={{ marginTop: "16px" }}>Transaction History</div>
+                              {customerAdvances.map((adv) => (
+                                <div key={adv.id} className="cust-order-card">
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                    <div>
+                                      <div style={{ fontSize: "0.82rem", fontWeight: 700 }}>{formatMoney(adv.amount)}</div>
+                                      <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>{formatCompactDate(adv.createdAt)}</div>
+                                    </div>
+                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                                      <span className={`cust-order-status ${adv.type === "add" ? "PAID" : "UNPAID"}`}>
+                                        {adv.type === "add" ? "ADDED" : "DEBITED"}
+                                      </span>
+                                      {adv.remark && <div style={{ fontSize: "0.68rem", color: "#64748b", marginTop: "2px" }}>{adv.remark}</div>}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Due Balances Tab */}
+                      {detailTab === "duebalance" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Due Balances</div>
+                          {(() => {
+                            const unpaidInvoices = (customerDetail.invoices || []).filter(inv => Number(inv.balanceAmount || 0) > 0);
+                            if (unpaidInvoices.length === 0) {
+                              return <div className="cust-empty-state">No outstanding balances</div>;
+                            }
+                            return unpaidInvoices.map(inv => (
+                              <div key={inv.id} className="cust-due-card">
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                  <div>
+                                    <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#dc2626" }}>Invoice #{inv.invoiceNumber}</div>
+                                    <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>{formatCompactDate(inv.createdAt)}</div>
+                                  </div>
+                                  <div style={{ fontSize: "1rem", fontWeight: 800, color: "#dc2626" }}>{formatMoney(inv.balanceAmount)}</div>
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      )}
+
+                      {/* Packages Tab */}
+                      {detailTab === "packages" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Packages ({(customerDetail.packages || []).length})</div>
+                          {(customerDetail.packages || []).length === 0 ? (
+                            <div className="cust-empty-state">No packages</div>
+                          ) : (
+                            (customerDetail.packages || []).map(p => {
+                              const isActive = String(p.status) === "ACTIVE" && new Date(p.endsAt) > new Date();
+                              return (
+                                <div key={p.id} className="cust-pkg-card">
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                    <div className="cust-pkg-name">{p.package?.name || "Package"}</div>
+                                    <span className={`cust-mem-status ${isActive ? "ACTIVE" : "EXPIRED"}`}>{isActive ? "ACTIVE" : p.status}</span>
+                                  </div>
+                                  <div className="cust-pkg-sessions">Sessions Remaining: {p.remainingSessions ?? "-"}</div>
+                                  <div className="cust-pkg-meta">
+                                    Valid: {new Date(p.startsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })} → {new Date(p.endsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })}
+                                  </div>
+                                  {(p.package?.services || []).length > 0 && (
+                                    <div style={{ marginTop: "10px" }}>
+                                      <div style={{ fontSize: "0.7rem", color: "#64748b", marginBottom: "6px", fontWeight: 600, textTransform: "uppercase" }}>Services</div>
+                                      {p.package.services.map((svc, i) => (
+                                        <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "#94a3b8", padding: "3px 0", borderBottom: "1px solid #e2e8f0" }}>
+                                          <span>{svc.service?.name || "-"}</span>
+                                          <span>{svc.sessions || 1} session{svc.sessions > 1 ? "s" : ""}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+
+                      {/* Family Members Tab */}
+                      {detailTab === "family" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Family Members</div>
+                          {(customerDetail.familyMembers || []).length === 0 ? (
+                            <div className="cust-empty-state">
+                              <Users size={40} color="#cbd5e1" style={{ marginBottom: "12px" }} />
+                              <div>No family members linked yet</div>
+                            </div>
+                          ) : (
+                            (customerDetail.familyMembers || []).map((fm) => (
+                              <div key={fm.id} className="cust-membership-card">
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <div>
+                                    <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#0f172a" }}>{fm.name}</div>
+                                    <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>{fm.phone}</div>
+                                  </div>
+                                  <span className="cust-mem-status ACTIVE">Linked</span>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+
+                      {/* Notes Tab */}
+                      {detailTab === "notes" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Notes</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                            <textarea
+                              value={notes}
+                              onChange={(e) => setNotes(e.target.value)}
+                              placeholder="Add notes about this customer..."
+                              rows={6}
+                              style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "0.82rem", resize: "vertical", fontFamily: "inherit", width: "100%", boxSizing: "border-box" }}
+                            />
+                            <button className="cust-assign-btn" onClick={handleSaveNotes}>
+                              <CheckCircle2 size={16} /> Save Notes
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
