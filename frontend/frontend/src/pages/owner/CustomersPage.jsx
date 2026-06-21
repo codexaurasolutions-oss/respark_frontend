@@ -7,6 +7,8 @@ import { formatApiError } from "../../utils/apiError";
 import { downloadFromApi } from "../../utils/download";
 import { normalizeIndianPhoneInputDigits } from "../../utils/phone";
 import PageLoader from "../../components/PageLoader";
+import { useAuth } from "../../context/AuthContext";
+import PosReceipt from "../../components/PosReceipt";
 
 
 const EMPTY_ADVANCED_FILTERS = {
@@ -68,7 +70,9 @@ const isWithinDateRange = (value, start, end) => {
 };
 
 export default function CustomersPage() {
-  const { formatMoney } = useSalonSettings();
+  const { formatMoney, currencyCode } = useSalonSettings();
+  const { auth } = useAuth();
+  const [selectedBillInvoice, setSelectedBillInvoice] = useState(null);
   const [rows, setRows] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
@@ -1422,45 +1426,85 @@ export default function CustomersPage() {
                             <div className="cust-empty-state">No orders yet</div>
                           ) : (
                             (customerDetail.invoices || []).map(inv => (
-                              <div key={inv.id} className="cust-order-card">
-                                <div className="cust-order-card-head">
+                              <div key={inv.id} className="cust-order-card" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px", marginBottom: "12px", transition: "box-shadow 0.15s" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px", borderBottom: "1px dashed #cbd5e1", paddingBottom: "8px" }}>
                                   <div>
-                                    <div className="cust-order-invoice">Invoice #{inv.invoiceNumber}</div>
-                                    <div className="cust-order-date">{new Date(inv.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</div>
+                                    <div style={{ fontWeight: "700", fontSize: "0.95rem", color: "#0f172a" }}>Invoice No: {inv.invoiceNumber}</div>
+                                    <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "2px" }}>{new Date(inv.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).replace(/ /g, "-")}</div>
                                   </div>
-                                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
-                                    <div className="cust-order-amount">{formatMoney(inv.total)}</div>
-                                    <span className={`cust-order-status ${inv.status}`}>{inv.status}</span>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                    <button 
+                                      type="button" 
+                                      onClick={() => setSelectedBillInvoice(inv)} 
+                                      style={{ background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "8px", cursor: "pointer", color: "#475569", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+                                      title="View Bill Invoice"
+                                      onMouseEnter={(e) => { e.currentTarget.style.background = "#e2e8f0"; }}
+                                      onMouseLeave={(e) => { e.currentTarget.style.background = "#f1f5f9"; }}
+                                    >
+                                      <FileText size={16} />
+                                    </button>
+                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                                      <div style={{ fontWeight: "800", fontSize: "0.95rem", color: "#1e293b" }}>{formatMoney(inv.total)}</div>
+                                      <span className={`cust-order-status ${inv.status}`} style={{ fontSize: "0.65rem", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>{inv.status}</span>
+                                    </div>
                                   </div>
                                 </div>
+
+                                <div style={{ fontSize: "0.75rem", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: "700", marginBottom: "6px" }}>Services</div>
+                                
                                 {(inv.items || []).length > 0 && (
-                                  <div className="cust-order-items">
-                                    {inv.items.map((item, i) => (
-                                      <div key={i} className="cust-order-item">
-                                        <div>
-                                          <div>{item.serviceName || item.productName || "Item"}</div>
-                                          {item.staffName && <div className="cust-order-item-staff">Staff: {item.staffName}</div>}
+                                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px", background: "white", padding: "10px", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
+                                    {inv.items.map((item, i) => {
+                                      const itemDiscountPct = Number(item.discountPct || 0);
+                                      return (
+                                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", fontSize: "0.8rem", borderBottom: i < inv.items.length - 1 ? "1px solid #f1f5f9" : "none", paddingBottom: i < inv.items.length - 1 ? "6px" : "0" }}>
+                                          <div style={{ flex: 1 }}>
+                                            <div style={{ color: "#1e293b", fontWeight: "600" }}>{item.serviceName || item.productName || "Item"}</div>
+                                            {itemDiscountPct > 0 && (
+                                              <div style={{ fontSize: "0.72rem", color: "#16a34a", fontWeight: "500", marginTop: "2px" }}>Discount applied of {itemDiscountPct}%</div>
+                                            )}
+                                          </div>
+                                          {item.staffName && (
+                                            <div style={{ width: "120px", color: "#475569", fontSize: "0.78rem" }}>{item.staffName}</div>
+                                          )}
+                                          <div style={{ width: "80px", textAlign: "right", color: "#0f172a", fontWeight: "700" }}>{formatMoney(item.lineTotal || 0)}</div>
                                         </div>
-                                        <div>{formatMoney(item.lineTotal)}</div>
-                                      </div>
-                                    ))}
+                                      );
+                                    })}
                                   </div>
                                 )}
-                                {inv.discountAmount > 0 && (
-                                  <div style={{ marginTop: "6px", fontSize: "0.72rem", color: "#94a3b8" }}>
-                                    Discount: {formatMoney(inv.discountAmount)}
-                                  </div>
-                                )}
-                                {inv.paymode && (
-                                  <div style={{ marginTop: "4px", fontSize: "0.72rem", color: "#94a3b8" }}>
-                                    Paymode: {inv.paymode}
-                                  </div>
-                                )}
-                                {Number(inv.balanceAmount || 0) > 0 && (
-                                  <div style={{ marginTop: "8px", padding: "4px 8px", background: "#7f1d1d", borderRadius: "6px", fontSize: "0.72rem", color: "#fca5a5" }}>
-                                    Balance Due: {formatMoney(inv.balanceAmount)}
-                                  </div>
-                                )}
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "0.78rem", borderTop: "1px solid #f1f5f9", paddingTop: "8px" }}>
+                                  {inv.discountAmount > 0 && (
+                                    <div style={{ color: "#16a34a", fontWeight: "600" }}>
+                                      Discount applied Amount {formatMoney(inv.discountAmount)}
+                                    </div>
+                                  )}
+
+                                  {inv.paymode && (
+                                    <div style={{ color: "#475569" }}>
+                                      Paymode: {inv.paymode} {inv.paidAmount ? `(${formatMoney(inv.paidAmount)})` : ""},
+                                    </div>
+                                  )}
+
+                                  {inv.discountAmount > 0 && (
+                                    <div style={{ color: "#475569" }}>
+                                      Total Discount: {inv.discountAmount} ₹.
+                                    </div>
+                                  )}
+
+                                  {inv.notes && (
+                                    <div style={{ color: "#d97706", fontWeight: "500", marginTop: "4px", background: "#fffbeb", padding: "6px 10px", borderRadius: "6px", border: "1px solid #fef3c7" }}>
+                                      Instruction: {inv.notes}
+                                    </div>
+                                  )}
+
+                                  {Number(inv.balanceAmount || 0) > 0 && (
+                                    <div style={{ marginTop: "4px", padding: "6px 10px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "6px", color: "#991b1b", fontWeight: "600" }}>
+                                      Balance Due: {formatMoney(inv.balanceAmount)}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             ))
                           )}
@@ -2683,6 +2727,23 @@ export default function CustomersPage() {
             </div>
           </div>
         </div>
+      )}
+      {selectedBillInvoice && (
+        <PosReceipt
+          invoice={selectedBillInvoice}
+          salonName={auth?.membership?.salon?.name || auth?.membership?.salonName || "Skillify Salon"}
+          salonAddress={auth?.membership?.salon?.address || selectedBillInvoice?.branch?.address || selectedBillInvoice?.branch?.name || "Main branch"}
+          salonPhone={auth?.membership?.salon?.phone || selectedBillInvoice?.branch?.phone || ""}
+          currencyCode={currencyCode}
+          onClose={() => setSelectedBillInvoice(null)}
+          onPrint={() => window.print()}
+          onDownload={async () => {
+            if (!selectedBillInvoice?.id) return;
+            await downloadFromApi(`/owner/invoices/${selectedBillInvoice.id}/pdf`, {
+              fallbackFilename: `invoice-${selectedBillInvoice.invoiceNumber}.pdf`
+            });
+          }}
+        />
       )}
     </div>
   );

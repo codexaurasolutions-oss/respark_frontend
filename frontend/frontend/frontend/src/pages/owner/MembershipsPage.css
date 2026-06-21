@@ -1,0 +1,232 @@
+/* ════════════════════════════════════
+   Memberships & Packages — Clean UI
+════════════════════════════════════ */
+
+.mem-page {
+  background: #f8fafc;
+  min-height: 100%;
+}
+
+.mem-page .page-shell {
+  padding: 0;
+  animation: none;
+}
+
+/* Module tabs */
+.mem-page .module-tabs-shell {
+  padding: 10px 20px 0;
+  margin-bottom: 0;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* ─── FORCE PROPER 2-COLUMN LAYOUT ─── */
+.mem-page .settings-section-grid {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 0 !important;
+  min-height: calc(100vh - 155px);
+}
+
+/* Every direct child of grid */
+.mem-page .settings-section-grid > * {
+  min-height: calc(100vh - 155px);
+  overflow-y: auto;
+}
+
+/* First child = form column (left) */
+.mem-page .settings-section-grid > *:first-child {
+  width: 380px !important;
+  min-width: 380px !important;
+  max-width: 380px !important;
+  flex-shrink: 0;
+  background: #fff !important;
+  border: none !important;
+  border-right: 1px solid #e2e8f0 !important;
+  padding: 16px !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+/* Second child = list column (right) */
+.mem-page .settings-section-grid > *:nth-child(2) {
+  flex: 1;
+  background: #f8fafc !important;
+  padding: 16px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Third child if exists (assign panel) */
+.mem-page .settings-section-grid > *:nth-child(3) {
+  display: none; /* hide overflow panels */
+}
+
+/* panel-card inside right column */
+.mem-page .panel-card {
+  background: #fff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 14px 16px !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+
+.mem-page .panel-card:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.mem-page .panel-card h3 {
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  margin: 0 0 12px 0 !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+/* ─── FORM ELEMENTS ─── */
+.mem-page label {
+  font-size: 0.78rem;
+  gap: 4px;
+}
+
+.mem-page label span.muted {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.mem-page input[type="text"],
+.mem-page input[type="number"],
+.mem-page input[type="date"],
+.mem-page select,
+.mem-page textarea {
+  padding: 6px 10px !important;
+  font-size: 0.78rem !important;
+  border-radius: 6px !important;
+  border: 1px solid #e2e8f0 !important;
+  min-height: unset !important;
+  background: #fff !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.mem-page input:focus,
+.mem-page select:focus,
+.mem-page textarea:focus {
+  border-color: #3b82f6 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* ─── BUTTONS ─── */
+.mem-page button {
+  padding: 5px 12px !important;
+  font-size: 0.75rem !important;
+  border-radius: 6px !important;
+  min-height: unset !important;
+  box-shadow: none !important;
+}
+
+/* ─── LIST ITEMS ─── */
+.mem-page .list-stack {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.mem-page .list-item {
+  padding: 10px 12px !important;
+  border-radius: 7px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #fff !important;
+  transition: background 140ms !important;
+}
+
+.mem-page .list-item:hover {
+  background: #f8fafc !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.mem-page .item-head {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.mem-page .item-head strong {
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+
+.mem-page .item-meta {
+  font-size: 0.7rem !important;
+  color: #64748b !important;
+  margin-top: 2px !important;
+}
+
+.mem-page .badge {
+  font-size: 0.68rem !important;
+  padding: 2px 8px !important;
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border-radius: 20px !important;
+  border: 1px solid #e2e8f0 !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+/* Edit link */
+.mem-page .inline-actions {
+  margin-top: 6px !important;
+}
+
+.mem-page .cta-secondary,
+.mem-page a.cta-secondary {
+  padding: 3px 10px !important;
+  font-size: 0.7rem !important;
+  border-radius: 5px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #fff !important;
+  color: #475569 !important;
+  cursor: pointer !important;
+  min-height: unset !important;
+  box-shadow: none !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.mem-page .cta-secondary:hover,
+.mem-page a.cta-secondary:hover {
+  background: #eff6ff !important;
+  color: #2563eb !important;
+  border-color: #bfdbfe !important;
+  transform: none !important;
+}
+
+@media (max-width: 900px) {
+  .mem-page .settings-section-grid {
+    flex-direction: column !important;
+  }
+  .mem-page .settings-section-grid > *:first-child {
+    width: 100% !important;
+    min-width: unset !important;
+    max-width: unset !important;
+    min-height: auto !important;
+    border-right: none !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+  .mem-page .settings-section-grid > *:nth-child(2) {
+    min-height: auto !important;
+  }
+}
