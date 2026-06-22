@@ -713,7 +713,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
                   value={form.notes}
                   onChange={e => setForm({...form, notes: e.target.value})}
                 />
-                <button onClick={applyInvoiceDiscount} style={{ padding: "6px 10px", borderRadius: "20px", border: "1px solid #3b82f6", background: "white", color: "#3b82f6", fontWeight: 600, fontSize: "0.7rem", whiteSpace: "nowrap" }}>Apply Discount</button>
+                <button onClick={applyInvoiceDiscount} style={{ padding: "6px 10px", borderRadius: "20px", border: "1px solid var(--accent, #3b82f6)", background: "white", color: "var(--accent, #3b82f6)", fontWeight: 600, fontSize: "0.7rem", whiteSpace: "nowrap" }}>Apply Discount</button>
               </div>
               <div style={{ fontSize: "0.75rem", color: "#475569", fontWeight: 600 }}>
                 Invoice Discount: <span style={{ color: "#0f172a" }}>{formatMoney(toAmount(invoiceDiscount, 0))}</span>
@@ -853,7 +853,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
                     <span style={{ fontSize: "0.75rem", color: "#475569", fontWeight: 600 }}>Balance</span>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px", border: "1px solid #cbd5e1", borderRadius: "6px", width: "120px", background: "white" }}>
                       <span>💰</span>
-                      <input type="text" readOnly value={Math.max(0, toAmount(gcDraft.price, 0) - (toAmount(gcDraft.online, 0) + toAmount(gcDraft.offline, 0))).toFixed(2)} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.8rem", borderBottom: "1px solid #e2e8f0", color: "#3b82f6", fontWeight: 600 }} />
+                      <input type="text" readOnly value={Math.max(0, toAmount(gcDraft.price, 0) - (toAmount(gcDraft.online, 0) + toAmount(gcDraft.offline, 0))).toFixed(2)} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.8rem", borderBottom: "1px solid #e2e8f0", color: "var(--accent, #3b82f6)", fontWeight: 600 }} />
                     </div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -973,7 +973,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
                     <span style={{ fontSize: "0.75rem", color: "#475569", fontWeight: 600 }}>Balance</span>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px", border: "1px solid #cbd5e1", borderRadius: "6px", width: "120px", background: "white" }}>
                       <span>💰</span>
-                      <input type="text" readOnly value={Math.max(0, toAmount(membershipDraft.price, 0) - (toAmount(membershipDraft.online, 0) + toAmount(membershipDraft.offline, 0))).toFixed(2)} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.8rem", borderBottom: "1px solid #e2e8f0", color: "#3b82f6", fontWeight: 600 }} />
+                      <input type="text" readOnly value={Math.max(0, toAmount(membershipDraft.price, 0) - (toAmount(membershipDraft.online, 0) + toAmount(membershipDraft.offline, 0))).toFixed(2)} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.8rem", borderBottom: "1px solid #e2e8f0", color: "var(--accent, #3b82f6)", fontWeight: 600 }} />
                     </div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -1062,7 +1062,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
                   );
                 })}
                 <div style={{ flexShrink: 0, width: "200px", minHeight: "150px", padding: "16px", borderRadius: "8px", background: "#eff6ff", border: "1px solid #bfdbfe", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }} onClick={() => setSelectedPackage(null)}>
-                  <span style={{ fontWeight: 700, color: "#3b82f6", fontSize: "0.85rem" }}>CUSTOM PACKAGE</span>
+                  <span style={{ fontWeight: 700, color: "var(--accent, #3b82f6)", fontSize: "0.85rem" }}>CUSTOM PACKAGE</span>
                 </div>
               </div>
 
@@ -1182,7 +1182,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
                     <span style={{ fontSize: "0.75rem", color: "#475569", fontWeight: 600 }}>Balance</span>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px", border: "1px solid #cbd5e1", borderRadius: "6px", width: "120px", background: "white" }}>
                       <span>💰</span>
-                      <input type="text" readOnly value={Math.max(0, toAmount(packageDraft.price, 0) - (toAmount(packageDraft.online, 0) + toAmount(packageDraft.offline, 0))).toFixed(2)} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.8rem", borderBottom: "1px solid #e2e8f0", color: "#3b82f6", fontWeight: 600 }} />
+                      <input type="text" readOnly value={Math.max(0, toAmount(packageDraft.price, 0) - (toAmount(packageDraft.online, 0) + toAmount(packageDraft.offline, 0))).toFixed(2)} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.8rem", borderBottom: "1px solid #e2e8f0", color: "var(--accent, #3b82f6)", fontWeight: 600 }} />
                     </div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>

@@ -12,7 +12,7 @@ const emptyForm = {
   title: "",
   tier: "FREE",
   category: "",
-  backgroundColor: "#0f766e",
+  backgroundColor: "var(--button-bg-solid, #0f766e)",
   textColor: "#ffffff",
   offerText: "",
   logoUrl: "",

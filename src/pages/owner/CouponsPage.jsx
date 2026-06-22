@@ -277,7 +277,7 @@ export default function CouponsPage() {
                 marginTop: 16, 
                 width: "100%", 
                 padding: "12px", 
-                background: "#3b82f6", 
+                background: "var(--button-bg-solid, #3b82f6)", 
                 color: "white", 
                 border: "none", 
                 borderRadius: 8, 
@@ -506,7 +506,7 @@ export default function CouponsPage() {
                   type="submit" 
                   style={{ 
                     padding: "10px 22px", 
-                    background: "#3b82f6", 
+                    background: "var(--button-bg-solid, #3b82f6)", 
                     color: "white", 
                     border: "none", 
                     borderRadius: 6, 

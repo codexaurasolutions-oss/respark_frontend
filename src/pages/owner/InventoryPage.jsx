@@ -495,9 +495,10 @@ export default function InventoryPage() {
     if (!selectedOrder) return;
     try {
       setLoading(true);
-      await api.patch(`/owner/purchases/orders/${selectedOrder.id}/approve`);
+      await api.patch(`/owner/purchases/orders/${selectedOrder.id}/approve`, { notes: commentText });
       setStatus({ success: "Purchase order approved successfully!", error: "" });
       setSelectedPoId(null);
+      setCommentText("");
       loadAll();
     } catch (err) {
       setStatus({ error: formatApiError(err), success: "" });
@@ -510,9 +511,10 @@ export default function InventoryPage() {
     if (!selectedOrder) return;
     try {
       setLoading(true);
-      await api.patch(`/owner/purchases/orders/${selectedOrder.id}/reject`);
+      await api.patch(`/owner/purchases/orders/${selectedOrder.id}/reject`, { notes: commentText });
       setStatus({ success: "Purchase order rejected.", error: "" });
       setSelectedPoId(null);
+      setCommentText("");
       loadAll();
     } catch (err) {
       setStatus({ error: formatApiError(err), success: "" });
@@ -796,7 +798,7 @@ export default function InventoryPage() {
                     cursor: "pointer"
                   }}
                 >
-                  New <Plus size={16} style={{ color: "#3b82f6" }} />
+                  New <Plus size={16} style={{ color: "var(--accent, #3b82f6)" }} />
                 </button>
               </div>
             </div>
@@ -934,7 +936,7 @@ export default function InventoryPage() {
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                       <span style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 500 }}>Total Value :</span>
-                      <span style={{ fontSize: "0.95rem", color: "#3b82f6", fontWeight: 700 }}>
+                      <span style={{ fontSize: "0.95rem", color: "var(--accent, #3b82f6)", fontWeight: 700 }}>
                         {formatMoney(tempPoItems.reduce((acc, item) => acc + (Number(item.quantityOrdered) * Number(item.unitCost)), 0))}
                       </span>
                     </div>
@@ -1028,7 +1030,7 @@ export default function InventoryPage() {
                           padding: "10px 24px",
                           border: "none",
                           borderRadius: 8,
-                          background: "#3b82f6",
+                          background: "var(--button-bg-solid, #3b82f6)",
                           color: "white",
                           fontWeight: 600,
                           fontSize: "0.9rem",
@@ -1129,7 +1131,7 @@ export default function InventoryPage() {
                     gap: 8,
                     padding: "8px 16px",
                     borderRadius: 8,
-                    background: "#3b82f6",
+                    background: "var(--button-bg-solid, #3b82f6)",
                     color: "white",
                     fontWeight: 600,
                     fontSize: "0.9rem",
@@ -1148,7 +1150,7 @@ export default function InventoryPage() {
                     gap: 8,
                     padding: "8px 16px",
                     borderRadius: 8,
-                    background: "#3b82f6",
+                    background: "var(--button-bg-solid, #3b82f6)",
                     color: "white",
                     fontWeight: 600,
                     fontSize: "0.9rem",
@@ -1315,7 +1317,7 @@ export default function InventoryPage() {
                 style={{
                   padding: "10px 24px",
                   borderRadius: 8,
-                  background: "#3b82f6",
+                  background: "var(--button-bg-solid, #3b82f6)",
                   border: "none",
                   color: "white",
                   fontWeight: 600,

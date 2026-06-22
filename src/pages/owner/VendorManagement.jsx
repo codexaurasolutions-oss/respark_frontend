@@ -329,7 +329,7 @@ export default function VendorManagement({ branches = [], formatMoney }) {
           </div>
           <button
             onClick={handleCreate}
-            style={{ width: "100%", padding: "10px 12px", background: "#3b82f6", color: "white", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+            style={{ width: "100%", padding: "10px 12px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
           >
             <Plus size={16} /> Create
           </button>
@@ -372,7 +372,7 @@ export default function VendorManagement({ branches = [], formatMoney }) {
         {(mode === "create" || mode === "edit") && (
           <div style={{ maxWidth: 900, margin: "0 auto", background: "white", borderRadius: 12, border: "1px solid #e2e8f0", overflow: "hidden" }}>
             <div style={{ padding: "18px 24px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2 style={{ margin: 0, fontSize: "1.3rem", color: "#3b82f6", fontWeight: 600 }}>{mode === "create" ? "Create Vendor" : "Update Vendor"}</h2>
+              <h2 style={{ margin: 0, fontSize: "1.3rem", color: "var(--accent, #3b82f6)", fontWeight: 600 }}>{mode === "create" ? "Create Vendor" : "Update Vendor"}</h2>
               <Toggle
                 checked={form.isActive}
                 onChange={() => setForm(f => ({ ...f, isActive: !f.isActive }))}
@@ -427,14 +427,14 @@ export default function VendorManagement({ branches = [], formatMoney }) {
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, borderTop: "1px solid #e2e8f0", paddingTop: 20 }}>
                 {mode === "edit" && (
-                  <button type="button" onClick={() => handleOpenItems(selectedVendor)} style={{ padding: "12px 24px", background: "white", border: "1px solid #3b82f6", color: "#3b82f6", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
+                  <button type="button" onClick={() => handleOpenItems(selectedVendor)} style={{ padding: "12px 24px", background: "white", border: "1px solid var(--accent, #3b82f6)", color: "var(--accent, #3b82f6)", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
                     Vendor Items
                   </button>
                 )}
                 <button type="button" onClick={() => setMode("list")} style={{ padding: "12px 24px", background: "white", border: "1px solid #cbd5e1", color: "#475569", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
                   Cancel
                 </button>
-                <button type="submit" disabled={loading} style={{ padding: "12px 32px", background: "#3b82f6", color: "white", border: "none", borderRadius: 8, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+                <button type="submit" disabled={loading} style={{ padding: "12px 32px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
                   {mode === "create" ? "Create" : "Update"}
                 </button>
               </div>
@@ -448,7 +448,7 @@ export default function VendorManagement({ branches = [], formatMoney }) {
               <button onClick={() => setMode("edit")} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }}>
                 <ChevronLeft size={20} />
               </button>
-              <h2 style={{ margin: 0, fontSize: "1.3rem", color: "#3b82f6", fontWeight: 600 }}>Update Vendor Items</h2>
+              <h2 style={{ margin: 0, fontSize: "1.3rem", color: "var(--accent, #3b82f6)", fontWeight: 600 }}>Update Vendor Items</h2>
             </div>
 
             <div style={{ padding: 24 }}>
@@ -482,7 +482,7 @@ export default function VendorManagement({ branches = [], formatMoney }) {
                 <button
                   onClick={handleAddItem}
                   disabled={!selectedProduct}
-                  style={{ padding: "12px 24px", background: "#3b82f6", color: "white", border: "none", borderRadius: 8, fontWeight: 600, cursor: selectedProduct ? "pointer" : "not-allowed", opacity: selectedProduct ? 1 : 0.6 }}
+                  style={{ padding: "12px 24px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 600, cursor: selectedProduct ? "pointer" : "not-allowed", opacity: selectedProduct ? 1 : 0.6 }}
                 >
                   Add
                 </button>
@@ -528,7 +528,7 @@ export default function VendorManagement({ branches = [], formatMoney }) {
                         />
                       </td>
                       <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                        <button onClick={() => handleUpdateItem(item)} style={{ background: "none", border: "none", cursor: "pointer", color: "#3b82f6", marginRight: 8 }}>
+                        <button onClick={() => handleUpdateItem(item)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--accent, #3b82f6)", marginRight: 8 }}>
                           <Save size={18} />
                         </button>
                         <button onClick={() => handleDeleteItem(item)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444" }}>
@@ -549,7 +549,7 @@ export default function VendorManagement({ branches = [], formatMoney }) {
                 <button onClick={() => setMode("edit")} style={{ padding: "12px 24px", background: "white", border: "1px solid #cbd5e1", color: "#475569", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
                   Back
                 </button>
-                <button onClick={() => setMode("edit")} style={{ padding: "12px 32px", background: "#3b82f6", color: "white", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
+                <button onClick={() => setMode("edit")} style={{ padding: "12px 32px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
                   Update
                 </button>
               </div>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from "react";
-import { Search, Filter, Plus, Download, Upload, MoreVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, X, ChevronDown, Trash2, GitMerge, MessageCircle, User, FileText, CreditCard, Gift, Wallet, AlertCircle, Package, Users, UserCog, Tag, Phone, StickyNote, Edit3, CheckCircle, Circle, Eye } from "lucide-react";
+import { Search, Filter, Plus, Download, Upload, MoreVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, X, ChevronDown, Trash2, GitMerge, MessageCircle, User, FileText, CreditCard, Gift, Wallet, AlertCircle, Package, Users, UserCog, Tag, Phone, StickyNote, Edit3, CheckCircle, Circle, Eye, Monitor } from "lucide-react";
 import { api } from "../../api/client";
 import IndianPhoneInput from "../../components/IndianPhoneInput";
 import { useSalonSettings } from "../../context/SalonSettingsContext";
@@ -70,13 +70,15 @@ const isWithinDateRange = (value, start, end) => {
 };
 
 export default function CustomersPage() {
-  const { formatMoney, currencyCode } = useSalonSettings();
+  const { formatMoney, currencyCode, settings } = useSalonSettings();
   const { auth } = useAuth();
   const [selectedBillInvoice, setSelectedBillInvoice] = useState(null);
   const [rows, setRows] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savingMessage, setSavingMessage] = useState("Saving changes...");
   const [query, setQuery] = useState("");
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -96,7 +98,10 @@ export default function CustomersPage() {
   const [showAssignMembershipModal, setShowAssignMembershipModal] = useState(false);
   const [membershipPlans, setMembershipPlans] = useState([]);
   const [services, setServices] = useState([]);
+  const [products, setProducts] = useState([]);
   const [customServices, setCustomServices] = useState([]);
+  const [customProducts, setCustomProducts] = useState([]);
+  const [pkgProductSearch, setPkgProductSearch] = useState("");
   const [pkgServiceSearch, setPkgServiceSearch] = useState("");
   const [memServiceSearch, setMemServiceSearch] = useState("");
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -114,11 +119,14 @@ export default function CustomersPage() {
   const [notes, setNotes] = useState("");
   const [showGiftCardModal, setShowGiftCardModal] = useState(false);
   const [giftCardForm, setGiftCardForm] = useState({ code: "", title: "", amount: "", validityDays: 30 });
+  const [giftCardSearch, setGiftCardSearch] = useState("");
+  const [showGiftCardDropdown, setShowGiftCardDropdown] = useState(false);
   const [showPackageModal, setShowPackageModal] = useState(false);
   const [packagePlans, setPackagePlans] = useState([]);
   const [selectedPackage, setSelectedPackage] = useState(null);
-  const [packageForm, setPackageForm] = useState({ validityDays: "", price: "", staffId: "", purchaseDate: new Date().toISOString().slice(0, 10) });
+  const [packageForm, setPackageForm] = useState({ validityDays: "", price: "", staffId: "", purchaseDate: new Date().toISOString().slice(0, 10), online: "", offline: "", balance: "", remark: "" });
   const [packageSearch, setPackageSearch] = useState("");
+  const [showPackageDropdown, setShowPackageDropdown] = useState(false);
   const [showFamilyModal, setShowFamilyModal] = useState(false);
   const [familyForm, setFamilyForm] = useState({ name: "", phone: "", relation: "" });
   const [familyError, setFamilyError] = useState("");
@@ -130,6 +138,8 @@ export default function CustomersPage() {
   const [followUpForm, setFollowUpForm] = useState({ date: "", time: "", message: "", type: "email", staffUserId: "" });
   const [invoiceSuccessData, setInvoiceSuccessData] = useState(null); // { type, name, invoice }
   const [membershipError, setMembershipError] = useState("");
+  const [packageError, setPackageError] = useState("");
+  const [giftCardError, setGiftCardError] = useState("");
   const actionMenuRef = useRef(null);
   const [formData, setFormData] = useState({
     phone: "",
@@ -244,10 +254,28 @@ export default function CustomersPage() {
     }
   };
 
+  const fetchProducts = async () => {
+    try {
+      const res = await api.get("/owner/inventory/products");
+      setProducts(res.data || []);
+    } catch (e) {
+      console.error("Failed to load products", e);
+    }
+  };
+
   const fetchCustomerGiftCards = async (customerId) => {
     try {
       const res = await api.get(`/owner/customers/${customerId}/gift-cards`);
       setCustomerGiftCards(res.data || []);
+    } catch (e) {
+      console.error("Failed to load gift cards", e);
+    }
+  };
+
+  const fetchGiftCards = async () => {
+    try {
+      const res = await api.get("/owner/gift-cards");
+      setGiftCards(res.data || []);
     } catch (e) {
       console.error("Failed to load gift cards", e);
     }
@@ -281,6 +309,8 @@ export default function CustomersPage() {
       setMembershipError("Total payment amount cannot exceed the membership price.");
       return;
     }
+    setSavingMessage("Assigning Membership...");
+    setSaving(true);
     try {
       const payload = {
         customerId: selectedCustomer.id,
@@ -312,11 +342,15 @@ export default function CustomersPage() {
     } catch (e) {
       alert("Failed to assign membership");
       console.error(e);
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleAddAdvance = async () => {
     if (!advanceForm.amount || !selectedCustomer) return;
+    setSavingMessage("Adding Advance Payment...");
+    setSaving(true);
     try {
       await api.post("/owner/advance-payments", {
         customerId: selectedCustomer.id,
@@ -332,11 +366,15 @@ export default function CustomersPage() {
     } catch (e) {
       alert("Failed to add advance");
       console.error(e);
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleUpdateProfile = async () => {
     if (!selectedCustomer) return;
+    setSavingMessage("Updating Profile...");
+    setSaving(true);
     try {
       await api.patch(`/owner/customers/${selectedCustomer.id}`, {
         name: updateForm.name,
@@ -353,11 +391,15 @@ export default function CustomersPage() {
     } catch (e) {
       alert("Failed to update profile");
       console.error(e);
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleSaveNotes = async () => {
     if (!selectedCustomer) return;
+    setSavingMessage("Saving Notes...");
+    setSaving(true);
     try {
       await api.patch(`/owner/customers/${selectedCustomer.id}`, { notes });
       const res = await api.get(`/owner/customers/${selectedCustomer.id}`);
@@ -365,6 +407,8 @@ export default function CustomersPage() {
     } catch (e) {
       alert("Failed to save notes");
       console.error(e);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -385,6 +429,8 @@ export default function CustomersPage() {
     }
     if (detailTab === "giftcard") {
       fetchCustomerGiftCards(selectedCustomer.id);
+      fetchGiftCards();
+      fetchStaffUsers();
     }
     if (detailTab === "advance") {
       fetchCustomerAdvances(selectedCustomer.id);
@@ -413,55 +459,121 @@ export default function CustomersPage() {
   }, [customServices, selectedPackage?.id]);
 
   const handleIssueGiftCard = async () => {
-    if (!giftCardForm.code || !giftCardForm.amount || !selectedCustomer) return;
+    setGiftCardError("");
     try {
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + (Number(giftCardForm.validityDays) || 365));
+      if (!selectedCustomer) return;
 
+      if (!giftCardForm.staffId) {
+        setGiftCardError("Please select a staff member.");
+        return;
+      }
+
+      const amountVal = Number(giftCardForm.amount || 0);
+      if (amountVal <= 0) {
+        setGiftCardError("Please enter a valid gift card amount greater than 0.");
+        return;
+      }
+
+      const onlineVal = Number(giftCardForm.online || 0);
+      const offlineVal = Number(giftCardForm.offline || 0);
+      const balanceVal = Number(giftCardForm.balance || 0);
+      const totalPayment = onlineVal + offlineVal + balanceVal;
+
+      if (totalPayment !== amountVal) {
+        setGiftCardError(`Total payments (Online: ₹${onlineVal} + Offline: ₹${offlineVal} + Balance: ₹${balanceVal} = ₹${totalPayment}) must be equal to the gift card amount (₹${amountVal}).`);
+        return;
+      }
+
+      const activationDate = giftCardForm.activationDate ? new Date(giftCardForm.activationDate) : new Date();
+      const expiresAt = new Date(activationDate);
+      expiresAt.setDate(expiresAt.getDate() + (Number(giftCardForm.validityDays) || 30));
+
+      const payloadCode = giftCardForm.code || "GC-" + Math.floor(100000 + Math.random() * 900000);
+
+      setSavingMessage("Issuing Gift Card...");
+      setSaving(true);
       await api.post("/owner/gift-cards", {
         customerId: selectedCustomer.id,
-        code: giftCardForm.code,
+        code: payloadCode,
         title: giftCardForm.title || "Gift Card",
-        originalAmount: Number(giftCardForm.amount),
+        originalAmount: amountVal,
         expiresAt: expiresAt.toISOString().split("T")[0],
       });
       setShowGiftCardModal(false);
-      setGiftCardForm({ code: "", title: "", amount: "", validityDays: 365 });
+      setGiftCardForm({ code: "", title: "", amount: "", validityDays: 30, activationDate: new Date().toISOString().slice(0, 10), staffId: "", online: "", offline: "", balance: "" });
       fetchCustomerGiftCards(selectedCustomer.id);
     } catch (e) {
-      alert("Failed to issue gift card");
+      const errorMsg = e.response?.data?.message || e.response?.data?.errors?.[0]?.message || "Failed to issue gift card";
+      setGiftCardError(errorMsg);
       console.error(e);
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleAssignPackage = async () => {
-    if (!selectedPackage || !selectedCustomer) return;
+    setPackageError("");
     try {
+      if (!selectedCustomer) return;
+
+      if (!packageForm.staffId) {
+        setPackageError("Please select a staff member.");
+        return;
+      }
+
+      const priceVal = Number(packageForm.price || 0);
+      if (priceVal <= 0) {
+        setPackageError("Please enter a valid package price greater than 0.");
+        return;
+      }
+
+      const onlineVal = Number(packageForm.online || 0);
+      const offlineVal = Number(packageForm.offline || 0);
+      const balanceVal = Number(packageForm.balance || 0);
+      const totalPayment = onlineVal + offlineVal + balanceVal;
+
+      if (totalPayment !== priceVal) {
+        setPackageError(`Total payments (Online: ₹${onlineVal} + Offline: ₹${offlineVal} + Balance: ₹${balanceVal} = ₹${totalPayment}) must be equal to the package price (₹${priceVal}).`);
+        return;
+      }
+
       const payload = {
         customerId: selectedCustomer.id,
-        packageId: selectedPackage.id,
+        packageId: selectedPackage ? selectedPackage.id : "CUSTOM",
         validityDays: packageForm.validityDays ? Number(packageForm.validityDays) : undefined,
-        price: packageForm.price ? Number(packageForm.price) : undefined,
+        price: priceVal,
         staffId: packageForm.staffId || undefined,
         startsAt: packageForm.purchaseDate || undefined,
+        online: onlineVal,
+        offline: offlineVal,
+        balance: balanceVal,
+        remark: packageForm.remark || undefined,
       };
-      if (selectedPackage.id === "CUSTOM") {
+      if (!selectedPackage || selectedPackage.id === "CUSTOM") {
         payload.isCustom = true;
-        payload.name = selectedPackage.name || "Custom Package";
+        payload.name = (selectedPackage && selectedPackage.name) || "Custom Package";
         payload.customServices = customServices.map(s => ({ serviceId: s.id, sessions: s.sessions }));
+        if (customProducts.length > 0) {
+          payload.remark = `${payload.remark ? payload.remark + '\n' : ''}Included Products: ${customProducts.map(p => p.name).join(', ')}`;
+        }
       }
+      setSavingMessage("Assigning Package...");
+      setSaving(true);
       const res = await api.post("/owner/packages/assign", payload);
       setShowPackageModal(false);
       setSelectedPackage(null);
-      setPackageForm({ validityDays: "", price: "", staffId: "", purchaseDate: new Date().toISOString().slice(0, 10) });
+      setPackageForm({ validityDays: "", price: "", staffId: "", purchaseDate: new Date().toISOString().slice(0, 10), online: "", offline: "", balance: "", remark: "" });
       const detail = await api.get(`/owner/customers/${selectedCustomer.id}`);
       setCustomerDetail(detail.data);
       const invoice = res.data?.invoice || null;
       const packName = res.data?.assignment?.package?.name || selectedPackage?.name || "Package";
       setInvoiceSuccessData({ type: "Package", name: packName, invoice });
     } catch (e) {
-      alert("Failed to assign package");
+      const errorMsg = e.response?.data?.message || e.response?.data?.errors?.[0]?.message || "Failed to assign package";
+      setPackageError(errorMsg);
       console.error(e);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -509,6 +621,8 @@ export default function CustomersPage() {
       return;
     }
 
+    setSavingMessage("Linking Family Member...");
+    setSaving(true);
     try {
       const existingNotes = selectedFamilyGuest.notes || "";
       const familyTag = `familyMemberOf:${selectedCustomer.id} relation:${familyForm.relation.trim().toLowerCase()}`;
@@ -534,18 +648,22 @@ export default function CustomersPage() {
       setFamilySearchQuery("");
       setFamilySearchResults([]);
       setFamilyForm({ name: "", phone: "", relation: "" });
-      setFamilyError("");
+      familyError && setFamilyError("");
       
       const res = await api.get(`/owner/customers/${selectedCustomer.id}`);
       setCustomerDetail(res.data);
     } catch (e) {
       setFamilyError(formatApiError(e, "Failed to add family member"));
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleRemoveFamilyMember = async (fm) => {
     if (!selectedCustomer) return;
     if (!window.confirm(`Are you sure you want to unlink ${fm.name} from family members?`)) return;
+    setSavingMessage("Unlinking Family Member...");
+    setSaving(true);
     try {
       const existingNotes = fm.notes || "";
       const regex = new RegExp(`familyMemberOf:${selectedCustomer.id}\\s+relation:\\S+`, 'g');
@@ -560,11 +678,15 @@ export default function CustomersPage() {
     } catch (e) {
       alert("Failed to remove family member");
       console.error(e);
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleAddFollowUp = async () => {
     if (!followUpForm.date || !followUpForm.message || !followUpForm.staffUserId || !selectedCustomer) return;
+    setSavingMessage("Adding Follow Up...");
+    setSaving(true);
     try {
       await api.post("/owner/follow-ups", {
         customerId: selectedCustomer.id,
@@ -581,6 +703,8 @@ export default function CustomersPage() {
     } catch (e) {
       alert("Failed to add follow-up");
       console.error(e);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -603,6 +727,8 @@ export default function CustomersPage() {
 
   const handleAddGuest = async (event) => {
     event.preventDefault();
+    setSavingMessage("Creating Customer Profile...");
+    setSaving(true);
     try {
       await api.post("/owner/customers", formData);
       setShowAddGuest(false);
@@ -619,12 +745,16 @@ export default function CustomersPage() {
       await load();
     } catch (error) {
       alert(formatApiError(error, "Failed to add guest"));
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDeleteCustomer = async (row) => {
     if (!window.confirm(`Delete ${row.name || "this customer"}? If linked history exists, the system will block deletion.`)) return;
     setActionBusy(row.id);
+    setSavingMessage("Deleting Customer...");
+    setSaving(true);
     try {
       await api.delete(`/owner/customers/${row.id}`);
       setRows((current) => current.filter((entry) => entry.id !== row.id));
@@ -633,6 +763,7 @@ export default function CustomersPage() {
       alert(formatApiError(error, "Could not delete customer"));
     } finally {
       setActionBusy("");
+      setSaving(false);
     }
   };
 
@@ -642,6 +773,8 @@ export default function CustomersPage() {
       return;
     }
     setActionBusy(mergeSourceRow.id);
+    setSavingMessage("Merging Customer Profiles...");
+    setSaving(true);
     try {
       await api.post("/owner/customers/merge", {
         sourceCustomerId: mergeSourceRow.id,
@@ -655,6 +788,7 @@ export default function CustomersPage() {
       alert(formatApiError(error, "Could not merge customers"));
     } finally {
       setActionBusy("");
+      setSaving(false);
     }
   };
 
@@ -1444,69 +1578,71 @@ export default function CustomersPage() {
                             <div className="cust-empty-state">No orders yet</div>
                           ) : (
                             (customerDetail.invoices || []).map(inv => (
-                              <div key={inv.id} className="cust-order-card" style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px", marginBottom: "12px", transition: "box-shadow 0.15s" }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px", borderBottom: "1px dashed #cbd5e1", paddingBottom: "8px" }}>
+                              <div key={inv.id} className="cust-order-card" style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "16px", marginBottom: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", transition: "box-shadow 0.15s" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
                                   <div>
                                     <div style={{ fontWeight: "700", fontSize: "0.95rem", color: "#0f172a" }}>Invoice No: {inv.invoiceNumber}</div>
-                                    <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "2px" }}>{new Date(inv.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).replace(/ /g, "-")}</div>
+                                    <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>{new Date(inv.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).replace(/ /g, "-")}</div>
                                   </div>
                                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                                     <button 
                                       type="button" 
                                       onClick={() => setSelectedBillInvoice(inv)} 
-                                      style={{ background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "8px", cursor: "pointer", color: "#475569", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+                                      style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "6px", cursor: "pointer", color: "#475569", width: "36px", height: "36px", minWidth: "36px", minHeight: "36px", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
                                       title="View Bill Invoice"
                                       onMouseEnter={(e) => { e.currentTarget.style.background = "#e2e8f0"; }}
-                                      onMouseLeave={(e) => { e.currentTarget.style.background = "#f1f5f9"; }}
+                                      onMouseLeave={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
                                     >
-                                      <FileText size={16} />
+                                      <FileText size={20} />
                                     </button>
-                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                                      <div style={{ fontWeight: "800", fontSize: "0.95rem", color: "#1e293b" }}>{formatMoney(inv.total)}</div>
-                                      <span className={`cust-order-status ${inv.status}`} style={{ fontSize: "0.65rem", padding: "2px 8px", borderRadius: "999px", fontWeight: "700" }}>{inv.status}</span>
-                                    </div>
+                                    <div style={{ fontWeight: "600", fontSize: "0.95rem", color: "#475569" }}>{formatMoney(inv.total)}</div>
                                   </div>
                                 </div>
 
-                                <div style={{ fontSize: "0.75rem", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: "700", marginBottom: "6px" }}>Services</div>
+                                <div style={{ fontSize: "0.85rem", color: "#0f172a", fontWeight: "700", marginBottom: "8px" }}>Services</div>
                                 
                                 {(inv.items || []).length > 0 && (
-                                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px", background: "white", padding: "10px", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
+                                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "16px" }}>
                                     {inv.items.map((item, i) => {
                                       const itemDiscountPct = Number(item.discountPct || 0);
+                                      const itemDiscountAmt = Number(item.discountValue || 0) || (item.price && item.qty ? (item.price * item.qty * itemDiscountPct / 100) : 0);
                                       return (
-                                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", fontSize: "0.8rem", borderBottom: i < inv.items.length - 1 ? "1px solid #f1f5f9" : "none", paddingBottom: i < inv.items.length - 1 ? "6px" : "0" }}>
-                                          <div style={{ flex: 1 }}>
-                                            <div style={{ color: "#1e293b", fontWeight: "600" }}>{item.serviceName || item.productName || "Item"}</div>
-                                            {itemDiscountPct > 0 && (
-                                              <div style={{ fontSize: "0.72rem", color: "#16a34a", fontWeight: "500", marginTop: "2px" }}>Discount applied of {itemDiscountPct}%</div>
+                                        <div key={i} style={{ display: "flex", flexDirection: "column", fontSize: "0.8rem", borderBottom: i < inv.items.length - 1 ? "1px solid #f1f5f9" : "none", paddingBottom: i < inv.items.length - 1 ? "12px" : "0" }}>
+                                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                            <div style={{ color: "#1e293b", fontWeight: "600", flex: 1 }}>{item.serviceName || item.productName || "Item"}</div>
+                                            {item.staffName && (
+                                              <div style={{ color: "#475569", fontSize: "0.78rem", paddingRight: "16px" }}>{item.staffName}</div>
                                             )}
+                                            <div style={{ color: "#475569", fontWeight: "500", minWidth: "60px", textAlign: "right" }}>{formatMoney(item.lineTotal || 0)}</div>
                                           </div>
-                                          {item.staffName && (
-                                            <div style={{ width: "120px", color: "#475569", fontSize: "0.78rem" }}>{item.staffName}</div>
+                                          {item.categoryName && (
+                                            <div style={{ color: "#64748b", fontSize: "0.75rem", marginTop: "2px" }}>{item.categoryName}</div>
                                           )}
-                                          <div style={{ width: "80px", textAlign: "right", color: "#0f172a", fontWeight: "700" }}>{formatMoney(item.lineTotal || 0)}</div>
+                                          {itemDiscountPct > 0 && (
+                                            <div style={{ fontSize: "0.75rem", color: "#16a34a", fontWeight: "500", marginTop: "4px" }}>
+                                              Discount applied of {Number(itemDiscountPct).toFixed(2)}%
+                                            </div>
+                                          )}
+                                          {itemDiscountAmt > 0 && (
+                                            <div style={{ fontSize: "0.75rem", color: "#16a34a", fontWeight: "500", marginTop: "2px" }}>
+                                              Discount applied Amount {formatMoney(itemDiscountAmt)}
+                                            </div>
+                                          )}
                                         </div>
                                       );
                                     })}
                                   </div>
                                 )}
 
-                                <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "0.78rem", borderTop: "1px solid #f1f5f9", paddingTop: "8px" }}>
-                                  {inv.discountAmount > 0 && (
-                                    <div style={{ color: "#16a34a", fontWeight: "600" }}>
-                                      Discount applied Amount {formatMoney(inv.discountAmount)}
-                                    </div>
-                                  )}
-
+                                <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "0.78rem", borderTop: "1px solid #e2e8f0", paddingTop: "12px", color: "#64748b" }}>
                                   {inv.paymode && (
-                                    <div style={{ color: "#475569" }}>
-                                      Paymode: {inv.paymode} {inv.paidAmount ? `(${formatMoney(inv.paidAmount)})` : ""},
+                                    <div>
+                                      Paymode: {inv.paymode} ({inv.total}),
                                     </div>
                                   )}
 
                                   {inv.discountAmount > 0 && (
-                                    <div style={{ color: "#475569" }}>
+                                    <div>
                                       Total Discount: {inv.discountAmount} ₹.
                                     </div>
                                   )}
@@ -1594,8 +1730,14 @@ export default function CustomersPage() {
                               code: "GC-" + Math.floor(100000 + Math.random() * 900000),
                               title: "Gift Card",
                               amount: "",
-                              validityDays: 365
+                              validityDays: 30,
+                              activationDate: new Date().toISOString().slice(0, 10),
+                              staffId: "",
+                              online: "",
+                              offline: "",
+                              balance: ""
                             });
+                            setGiftCardError("");
                             setShowGiftCardModal(true);
                           }}>
                             <Gift size={16} /> Issue Gift Card
@@ -1702,7 +1844,7 @@ export default function CustomersPage() {
                               );
                             })
                           )}
-                          <button className="cust-assign-btn" onClick={() => { fetchPackagePlans(); fetchStaffUsers(); fetchServices(); setSelectedPackage(null); setPackageForm({ validityDays: "", price: "", staffId: "", purchaseDate: new Date().toISOString().slice(0, 10) }); setPackageSearch(""); setCustomServices([]); setShowPackageModal(true); }}>
+                          <button className="cust-assign-btn" onClick={() => { fetchPackagePlans(); fetchStaffUsers(); fetchServices(); fetchProducts(); setSelectedPackage(null); setPackageForm({ validityDays: "30", price: "", staffId: "", purchaseDate: new Date().toISOString().slice(0, 10), online: "", offline: "", balance: "", remark: "" }); setPackageSearch(""); setCustomServices([]); setCustomProducts([]); setPackageError(""); setShowPackageModal(true); }}>
                             <Package size={16} /> Assign Package
                           </button>
                         </div>
@@ -1998,12 +2140,13 @@ export default function CustomersPage() {
                             fontSize: "0.9rem", 
                             boxSizing: "border-box", 
                             outline: "none", 
-                            background: !membershipForm.staffId ? "#fffbeb" : "#fff" 
+                            background: !membershipForm.staffId ? "#fffbeb" : "#fff",
+                            color: "#0f172a"
                           }}
                         >
-                          <option value="">Select Staff</option>
+                          <option value="" style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>Select Staff</option>
                           {staffUsers.map((s) => (
-                            <option key={s.id} value={s.id}>{s.user?.name || s.name || s.id}</option>
+                            <option key={s.id} value={s.id} style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>{s.user?.name || s.name || s.id}</option>
                           ))}
                         </select>
                         {!membershipForm.staffId && (
@@ -2218,375 +2361,453 @@ export default function CustomersPage() {
 
       {/* Issue Gift Card Modal */}
       {showGiftCardModal && (
-        <div className="modal-overlay" onClick={() => setShowGiftCardModal(false)}>
-          <div className="modal-content" style={{ width: "min(90vw, 480px)" }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div>
-                <h3>Issue Gift Card</h3>
-                <div style={{ fontSize: "0.78rem", color: "#64748b", marginTop: "2px" }}>Issue gift card to {selectedCustomer?.name}</div>
+        <div className="modal-overlay" style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", zIndex: 9999 }}>
+          <div className="modal-content" style={{ width: "min(95vw, 850px)", borderRadius: 12, padding: "24px", overflow: "hidden", background: "#fff", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }} onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <div style={{ fontWeight: 800, fontSize: "1.2rem", color: "#0f172a" }}>Add Gift Card</div>
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                <div style={{ position: "relative" }}>
+                  <input 
+                    type="text" 
+                    placeholder="Search For Card" 
+                    value={giftCardSearch}
+                    onChange={(e) => {
+                      setGiftCardSearch(e.target.value);
+                      setShowGiftCardDropdown(true);
+                    }}
+                    onFocus={() => setShowGiftCardDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowGiftCardDropdown(false), 200)}
+                    style={{ padding: "8px 12px", paddingRight: "32px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.85rem", width: "200px", outline: "none", color: "#0f172a", backgroundColor: "#ffffff" }} 
+                  />
+                  <Search size={14} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
+                  {showGiftCardDropdown && (
+                    <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #cbd5e1", borderRadius: 6, marginTop: "4px", maxHeight: "220px", overflowY: "auto", zIndex: 99999, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", width: "200px" }}>
+                      {giftCards
+                        .filter(gc => gc.title && gc.title.toLowerCase().includes(giftCardSearch.toLowerCase()))
+                        .map(gc => (
+                          <div 
+                            key={gc.id} 
+                            style={{ padding: "10px 12px", fontSize: "0.85rem", cursor: "pointer", borderBottom: "1px solid #f1f5f9", color: "#0f172a" }}
+                            onMouseDown={() => {
+                              setGiftCardForm(prev => ({
+                                ...prev,
+                                title: gc.title,
+                                amount: String(gc.originalAmount),
+                                validityDays: gc.expiresAt ? Math.max(1, Math.round((new Date(gc.expiresAt) - new Date()) / (1000 * 60 * 60 * 24))) : 30,
+                              }));
+                              setGiftCardSearch("");
+                            }}
+                          >
+                            <div style={{ fontWeight: "bold", color: "#1e293b" }}>{gc.title}</div>
+                            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>₹{gc.originalAmount}</div>
+                          </div>
+                        ))}
+                      {giftCards.filter(gc => gc.title && gc.title.toLowerCase().includes(giftCardSearch.toLowerCase())).length === 0 && (
+                        <div style={{ padding: "10px 12px", fontSize: "0.85rem", color: "#94a3b8", textAlign: "center" }}>No cards found</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <button onClick={() => setShowGiftCardModal(false)} style={{ background: "#0f172a", color: "white", border: "none", width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <X size={16} />
+                </button>
               </div>
-              <button className="modal-close" onClick={() => setShowGiftCardModal(false)}><X size={20} /></button>
             </div>
-            <div className="modal-body">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div className="form-group">
-                  <label>Card Code *</label>
-                  <input type="text" value={giftCardForm.code} onChange={(e) => setGiftCardForm(prev => ({ ...prev, code: e.target.value }))} placeholder="e.g. GC-001" />
+
+            {/* Preview Card */}
+            <div style={{ background: "#fdf4ff", border: "1px solid #fbcfe8", borderRadius: 8, padding: "16px", marginBottom: "24px", width: "300px" }}>
+              <div style={{ color: "var(--accent, #3b82f6)", fontWeight: 800, fontSize: "0.85rem", marginBottom: "8px", textTransform: "uppercase" }}>
+                {giftCardForm.title || `${settings?.salonName || "SALON"} - GIFT CARD`}
+              </div>
+              <div style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: "4px" }}>Fee: ₹ {giftCardForm.amount || "1000"}</div>
+              <div style={{ fontSize: "0.85rem", color: "#64748b" }}>Validity: {giftCardForm.validityDays || 30} Days</div>
+            </div>
+
+            {/* Inputs Row */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "16px", marginBottom: "24px" }}>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", marginBottom: "6px", display: "block" }}>Name</label>
+                <input type="text" placeholder="Enter Name" value={giftCardForm.title || ""} onChange={(e) => setGiftCardForm(prev => ({...prev, title: e.target.value}))} style={{ width: "100%", padding: "10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.85rem", boxSizing: "border-box", color: "#0f172a", backgroundColor: "#ffffff" }} />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", marginBottom: "6px", display: "block" }}>Validity</label>
+                <input type="number" placeholder="Enter Validity" value={giftCardForm.validityDays || ""} onChange={(e) => setGiftCardForm(prev => ({...prev, validityDays: e.target.value}))} style={{ width: "100%", padding: "10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.85rem", boxSizing: "border-box", color: "#0f172a", backgroundColor: "#ffffff" }} />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", marginBottom: "6px", display: "block" }}>Card Activated From</label>
+                <input type="date" value={giftCardForm.activationDate || ""} onChange={(e) => setGiftCardForm(prev => ({...prev, activationDate: e.target.value}))} style={{ width: "100%", padding: "10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.85rem", boxSizing: "border-box", color: "#0f172a", backgroundColor: "#ffffff" }} />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", marginBottom: "6px", display: "block" }}>Purchase Amount</label>
+                <input type="number" placeholder="Enter Price" value={giftCardForm.amount || ""} onChange={(e) => setGiftCardForm(prev => ({...prev, amount: e.target.value}))} style={{ width: "100%", padding: "10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.85rem", boxSizing: "border-box", color: "#0f172a", backgroundColor: "#ffffff" }} />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", marginBottom: "6px", display: "block" }}>Staff</label>
+                <select value={giftCardForm.staffId || ""} onChange={(e) => setGiftCardForm(prev => ({...prev, staffId: e.target.value}))} style={{ width: "100%", padding: "10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.85rem", boxSizing: "border-box", color: "#0f172a", backgroundColor: "#ffffff" }}>
+                  <option value="" style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>Select Staff</option>
+                  {staffUsers.map(s => (
+                    <option key={s.id} value={s.id} style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>
+                      {s.user?.name || s.name || s.id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Payment Details */}
+            <div style={{ border: "1px solid #cbd5e1", borderRadius: 8, padding: "16px", marginBottom: "24px" }}>
+              <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1e293b", marginBottom: "16px" }}>Payment Details:</div>
+              <div style={{ display: "flex", gap: "24px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "6px", display: "block" }}>Online</label>
+                  <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px" }}>
+                    <Monitor size={18} color="#10b981" style={{ marginRight: "8px" }} />
+                    <input type="number" placeholder="0.0" value={giftCardForm.online || ""} onChange={(e) => setGiftCardForm(prev => ({...prev, online: e.target.value}))} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem", color: "#0f172a", backgroundColor: "#ffffff" }} />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Title</label>
-                  <input type="text" value={giftCardForm.title} onChange={(e) => setGiftCardForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Gift Card" />
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "6px", display: "block" }}>Offline</label>
+                  <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px" }}>
+                    <input type="number" placeholder="0.0" value={giftCardForm.offline || ""} onChange={(e) => setGiftCardForm(prev => ({...prev, offline: e.target.value}))} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem", color: "#0f172a", backgroundColor: "#ffffff" }} />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Amount *</label>
-                  <input type="number" value={giftCardForm.amount} onChange={(e) => setGiftCardForm(prev => ({ ...prev, amount: e.target.value }))} placeholder="1000" />
-                </div>
-                <div className="form-group">
-                  <label>Validity (Days)</label>
-                  <input type="number" value={giftCardForm.validityDays} onChange={(e) => setGiftCardForm(prev => ({ ...prev, validityDays: e.target.value }))} />
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "6px", display: "block" }}>Balance</label>
+                  <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px" }}>
+                    <Wallet size={18} color="#10b981" style={{ marginRight: "8px" }} />
+                    <input type="number" placeholder="0.0" value={giftCardForm.balance || ""} onChange={(e) => setGiftCardForm(prev => ({...prev, balance: e.target.value}))} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem", color: "#0f172a", backgroundColor: "#ffffff" }} />
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
-              <button className="crm-btn" onClick={() => setShowGiftCardModal(false)}>Cancel</button>
-              <button className="crm-btn" onClick={handleIssueGiftCard} disabled={!giftCardForm.code || !giftCardForm.amount}>Issue Card</button>
+
+            {giftCardError && (
+              <div style={{ color: "#ef4444", fontSize: "0.82rem", fontWeight: 600, marginBottom: "16px", background: "#fef2f2", padding: "8px 12px", borderRadius: 8, border: "1px solid #fca5a5", display: "flex", alignItems: "center", gap: "6px" }}>
+                <AlertCircle size={14} /> {giftCardError}
+              </div>
+            )}
+
+            {/* Footer */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "20px" }}>
+              <button onClick={() => setShowGiftCardModal(false)} style={{ padding: "10px 24px", border: "1px solid #cbd5e1", background: "white", borderRadius: 6, cursor: "pointer", fontWeight: 600, color: "#475569" }}>Cancel</button>
+              <button onClick={handleIssueGiftCard} disabled={!giftCardForm.amount || !giftCardForm.title} style={{ padding: "10px 24px", border: "none", background: "var(--button-bg-solid, #3b82f6)", borderRadius: 6, cursor: "pointer", fontWeight: 600, color: "white" }}>Add Gift Card</button>
             </div>
           </div>
         </div>
       )}
 
       {/* Assign Package Modal */}
-      {/* Assign Package Modal */}
       {showPackageModal && (
         <div className="modal-overlay" style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", zIndex: 9999 }}>
-          <div className="modal-content" style={{ width: "min(95vw, 950px)", borderRadius: 20, padding: 0, overflow: "hidden", background: "#fff", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", height: "620px" }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={{ width: "min(95vw, 650px)", borderRadius: 12, padding: 0, overflow: "hidden", background: "#fff", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", maxHeight: "90vh" }} onClick={(e) => e.stopPropagation()}>
             
             {/* Header */}
-            <div style={{ padding: "20px 28px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: "1.3rem", color: "#0f172a", letterSpacing: "-0.02em" }}>Assign Package</div>
-                <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "2px" }}>Assign a package plan to {selectedCustomer?.name}</div>
+            <div style={{ padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ fontWeight: 800, fontSize: "1.2rem", color: "#0f172a" }}>Add packages</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ position: "relative", width: "200px" }}>
+                  <input 
+                    placeholder="Search For Package" 
+                    value={packageSearch} 
+                    onChange={(e) => {
+                      setPackageSearch(e.target.value);
+                      setShowPackageDropdown(true);
+                    }} 
+                    onFocus={() => setShowPackageDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowPackageDropdown(false), 200)}
+                    style={{ width: "100%", padding: "8px 32px 8px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.85rem", boxSizing: "border-box", outline: "none" }}
+                  />
+                  <Search size={14} style={{ position: "absolute", right: 10, top: 10, color: "#94a3b8" }} />
+                  {showPackageDropdown && (
+                    <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #cbd5e1", borderRadius: 6, marginTop: "4px", maxHeight: "220px", overflowY: "auto", zIndex: 99999, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}>
+                      <div 
+                        style={{ padding: "10px 12px", fontSize: "0.85rem", cursor: "pointer", borderBottom: "1px solid #f1f5f9", background: "#f8fafc", color: "#2563eb", fontWeight: "bold" }}
+                        onMouseDown={() => {
+                          setSelectedPackage({ id: "CUSTOM", name: "Custom Package" });
+                          setPackageForm(prev => ({ ...prev, price: "", validityDays: "30" }));
+                          setCustomServices([]);
+                          setPackageSearch("");
+                        }}
+                      >
+                        🛠️ Build Custom Package (On the fly)
+                      </div>
+                      {packagePlans
+                        .filter(p => p.name.toLowerCase().includes(packageSearch.toLowerCase()))
+                        .map(p => (
+                          <div 
+                            key={p.id} 
+                            style={{ padding: "10px 12px", fontSize: "0.85rem", cursor: "pointer", borderBottom: "1px solid #f1f5f9" }}
+                            onMouseDown={() => {
+                              setSelectedPackage(p);
+                              setPackageSearch("");
+                              setPackageForm(prev => ({ ...prev, price: p.price, validityDays: p.validityDays }));
+                              
+                              const mapped = (p.services || []).map(s => {
+                                const svcObj = services.find(x => x.id === s.serviceId) || {};
+                                return {
+                                  id: s.serviceId,
+                                  name: svcObj.name || s.service?.name || "Predefined Service",
+                                  price: svcObj.price || s.service?.price || 0,
+                                  sessions: s.sessions || 1
+                                };
+                              });
+                              setCustomServices(mapped);
+                            }}
+                          >
+                            <div style={{ fontWeight: "bold", color: "#1e293b" }}>{p.name}</div>
+                            <div style={{ fontSize: "0.75rem", color: "#64748b" }}>₹{p.price} | {p.validityDays} Days</div>
+                          </div>
+                        ))}
+                      {packagePlans.filter(p => p.name.toLowerCase().includes(packageSearch.toLowerCase())).length === 0 && (
+                        <div style={{ padding: "12px", textAlign: "center", color: "#94a3b8", fontSize: "0.85rem" }}>No packages found</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <button onClick={() => setShowPackageModal(false)} style={{ background: "#0f172a", border: "none", width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}>
+                  <X size={14} />
+                </button>
               </div>
-              <button onClick={() => setShowPackageModal(false)} style={{ background: "#f1f5f9", border: "none", width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#64748b", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#e2e8f0"; e.currentTarget.style.color = "#0f172a"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.color = "#64748b"; }}>
-                <X size={18} />
-              </button>
             </div>
 
             {/* Body */}
-            <div style={{ padding: "28px", display: "flex", gap: "28px", flex: 1, minHeight: 0, overflow: "hidden" }}>
-              {/* Left Column: Search & Package Plan Cards */}
-              <div style={{ width: "50%", display: "flex", flexDirection: "column", gap: "18px", borderRight: "1px solid #f1f5f9", paddingRight: "28px", minHeight: 0 }}>
-                <div style={{ position: "relative" }}>
-                  <input 
-                    placeholder="Search package plans..." 
-                    value={packageSearch} 
-                    onChange={(e) => setPackageSearch(e.target.value)} 
-                    style={{ 
-                      width: "100%", 
-                      padding: "12px 14px 12px 40px", 
-                      border: "1px solid #cbd5e1", 
-                      borderRadius: 10, 
-                      fontSize: "0.9rem", 
-                      boxSizing: "border-box",
-                      outline: "none",
-                      transition: "all 0.2s",
-                      fontFamily: "inherit"
-                    }} 
-                    onFocus={(e) => e.target.style.borderColor = "#2563eb"}
-                    onBlur={(e) => e.target.style.borderColor = "#cbd5e1"}
-                  />
-                  <span style={{ position: "absolute", left: 14, top: 13, color: "#94a3b8" }}>
-                    <Search size={16} />
-                  </span>
-                </div>
-
-                <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "12px", paddingRight: "6px" }}>
-                  {/* Custom Package Card */}
-                  <div 
-                    onClick={() => {
-                      setSelectedPackage({ id: "CUSTOM", name: "Custom Package Plan", services: [] });
-                      setPackageForm((prev) => ({
-                        ...prev,
-                        validityDays: "",
-                        price: "",
-                      }));
-                      setCustomServices([]);
-                    }} 
-                    style={{ 
-                      background: selectedPackage?.id === "CUSTOM" ? "#eff6ff" : "#fff", 
-                      border: selectedPackage?.id === "CUSTOM" ? "2px solid #2563eb" : "1px solid #cbd5e1", 
-                      borderRadius: 12, 
-                      padding: "16px", 
-                      cursor: "pointer", 
-                      transition: "all 0.2s",
-                      boxShadow: selectedPackage?.id === "CUSTOM" ? "0 4px 12px rgba(37,99,235,0.08)" : "0 1px 3px rgba(0,0,0,0.02)",
-                      borderStyle: "dashed",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "4px"
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ fontSize: "0.95rem", fontWeight: 700, color: selectedPackage?.id === "CUSTOM" ? "#1e40af" : "#0f172a" }}>🛠️ Build Custom Package</div>
-                      <span style={{ fontSize: "0.75rem", background: "#f1f5f9", padding: "2px 6px", borderRadius: 4, fontWeight: 600, color: "#475569" }}>On the fly</span>
-                    </div>
-                    <div style={{ fontSize: "0.78rem", color: "#64748b" }}>Create a dynamic package with selected services</div>
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px", overflowY: "auto" }}>
+              
+              {/* Selected Package Display if user selected a predefined one */}
+              {selectedPackage && selectedPackage.id !== "CUSTOM" && (
+                <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: "#1e3a8a", fontSize: "0.95rem" }}>{selectedPackage.name}</div>
+                    <div style={{ fontSize: "0.8rem", color: "#3b82f6" }}>Validity: {selectedPackage.validityDays} Days</div>
                   </div>
+                  <button onClick={() => setSelectedPackage({ id: "CUSTOM", name: "Custom Package" })} style={{ fontSize: "0.8rem", color: "#ef4444", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>Clear</button>
+                </div>
+              )}
 
-                  {packagePlans.length === 0 ? null : (
-                    packagePlans
-                      .filter((pkg) => pkg.name.toLowerCase().includes(packageSearch.toLowerCase()))
-                      .map((pkg) => {
-                        const isSelected = selectedPackage?.id === pkg.id;
-                        return (
-                          <div 
-                            key={pkg.id} 
-                            onClick={() => {
-                              setSelectedPackage(pkg);
-                              setPackageForm((prev) => ({
-                                ...prev,
-                                validityDays: String(pkg.validityDays || ""),
-                                price: String(pkg.price || ""),
-                              }));
-                            }} 
-                            style={{ 
-                              background: isSelected ? "#eff6ff" : "#fff", 
-                              border: isSelected ? "2px solid #2563eb" : "1px solid #e2e8f0", 
-                              borderRadius: 12, 
-                              padding: "16px", 
-                              cursor: "pointer", 
-                              transition: "all 0.2s",
-                              boxShadow: isSelected ? "0 4px 12px rgba(37,99,235,0.08)" : "0 1px 3px rgba(0,0,0,0.02)"
-                            }}
-                          >
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                              <div style={{ fontSize: "0.95rem", fontWeight: 700, color: isSelected ? "#1e40af" : "#1e293b", textTransform: "uppercase", letterSpacing: "0.02em" }}>{pkg.name}</div>
-                              <div style={{ fontSize: "1rem", fontWeight: 800, color: isSelected ? "#2563eb" : "#0f172a" }}>{formatMoney(Number(pkg.price || 0))}</div>
-                            </div>
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "#64748b" }}>
-                              <div>Validity: <span style={{ fontWeight: 600, color: "#334155" }}>{pkg.validityDays} Days</span></div>
-                              <div>Services: <span style={{ fontWeight: 700, color: "#0f172a" }}>{(pkg.services || []).length}</span></div>
-                            </div>
-                          </div>
-                        );
-                      })
+              {/* Select from Packages Horizontal Scroll */}
+              <div style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: "16px" }}>
+                <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "#0f172a", marginBottom: "12px" }}>Select from Predefined Packages</div>
+                <div style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "8px", scrollbarWidth: "thin" }}>
+                  {packagePlans.map(p => {
+                    const isSelected = selectedPackage?.id === p.id;
+                    return (
+                      <div 
+                        key={p.id}
+                        onClick={() => {
+                          setSelectedPackage(p);
+                          setPackageForm(prev => ({ ...prev, price: p.price, validityDays: p.validityDays }));
+                          
+                          const mapped = (p.services || []).map(s => {
+                            const svcObj = services.find(x => x.id === s.serviceId) || {};
+                            return {
+                              id: s.serviceId,
+                              name: svcObj.name || s.service?.name || "Predefined Service",
+                              price: svcObj.price || s.service?.price || 0,
+                              sessions: s.sessions || 1
+                            };
+                          });
+                          setCustomServices(mapped);
+                        }}
+                        style={{
+                          minWidth: "150px",
+                          maxWidth: "150px",
+                          background: isSelected ? "#eff6ff" : "#ffffff",
+                          border: isSelected ? "2px solid #2563eb" : "1px solid #cbd5e1",
+                          borderRadius: "8px",
+                          padding: "12px",
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                          flexShrink: 0,
+                          boxShadow: isSelected ? "0 4px 6px -1px rgba(37, 99, 235, 0.1)" : "none"
+                        }}
+                      >
+                        <div style={{ fontWeight: 700, fontSize: "0.82rem", color: isSelected ? "#1e3a8a" : "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={p.name}>
+                          {p.name}
+                        </div>
+                        <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#2563eb", marginTop: "6px" }}>₹{p.price}</div>
+                        <div style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "2px" }}>{p.validityDays} Days Validity</div>
+                      </div>
+                    );
+                  })}
+                  {packagePlans.length === 0 && (
+                    <div style={{ fontSize: "0.82rem", color: "#94a3b8", padding: "10px 0" }}>No packages configured</div>
                   )}
                 </div>
               </div>
 
-              {/* Right Column: Configuration & Services */}
-              <div style={{ width: "50%", display: "flex", flexDirection: "column", gap: "20px", overflowY: "auto", paddingRight: "6px" }}>
-                {selectedPackage ? (
-                  <>
-                    {/* Selected Package Details Header */}
-                    <div>
-                      <div style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "#64748b", fontWeight: 700, letterSpacing: "0.05em", marginBottom: "6px" }}>Selected Package</div>
-                      {selectedPackage.id === "CUSTOM" ? (
-                        <input 
-                          type="text" 
-                          placeholder="Custom Package Name"
-                          value={selectedPackage.name}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setSelectedPackage(prev => ({ ...prev, name: val }));
-                          }}
-                          style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "1.1rem", fontWeight: 800, color: "#0f172a", boxSizing: "border-box", outline: "none" }}
-                        />
-                      ) : (
-                        <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#0f172a" }}>{selectedPackage.name}</div>
-                      )}
-                    </div>
-
-                    {/* Included Services */}
-                    <div>
-                      <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
-                        <CheckCircle size={15} color="#2563eb" /> {selectedPackage.id === "CUSTOM" ? "Services & sessions in this package" : "Included Services & Sessions"}
-                      </div>
-                      
-                      {selectedPackage.id === "CUSTOM" && (
-                        <div style={{ position: "relative", marginBottom: "12px" }}>
-                          <input 
-                            placeholder="Search & add services..." 
-                            value={pkgServiceSearch}
-                            onChange={(e) => setPkgServiceSearch(e.target.value)}
-                            style={{ width: "100%", padding: "10px 12px 10px 36px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.85rem", boxSizing: "border-box", outline: "none" }}
-                          />
-                          <span style={{ position: "absolute", left: 12, top: 12, color: "#94a3b8" }}>
-                            <Search size={14} />
-                          </span>
-                          
-                          {pkgServiceSearch.trim() !== "" && (
-                            <div style={{ position: "absolute", left: 0, right: 0, top: "100%", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)", zIndex: 10, maxHeight: "150px", overflowY: "auto", marginTop: "4px" }}>
-                              {services
-                                .filter(s => s.name.toLowerCase().includes(pkgServiceSearch.toLowerCase()))
-                                .map(s => {
-                                  const alreadyAdded = customServices.some(added => added.id === s.id);
-                                  return (
-                                    <div 
-                                      key={s.id} 
-                                      onClick={() => {
-                                        if (!alreadyAdded) {
-                                          setCustomServices(prev => [...prev, { ...s, sessions: 1 }]);
-                                        }
-                                        setPkgServiceSearch("");
-                                      }}
-                                      style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", fontSize: "0.85rem", cursor: "pointer", borderBottom: "1px solid #f1f5f9", background: alreadyAdded ? "#f8fafc" : "#fff" }}
-                                    >
-                                      <span style={{ fontWeight: 600, color: "#334155" }}>{s.name}</span>
-                                      <span style={{ color: "#64748b" }}>{formatMoney(Number(s.price || 0))}</span>
-                                    </div>
-                                  );
-                                })}
-                              {services.filter(s => s.name.toLowerCase().includes(pkgServiceSearch.toLowerCase())).length === 0 && (
-                                <div style={{ padding: "12px", textAlign: "center", color: "#94a3b8", fontSize: "0.85rem" }}>No matching services</div>
-                              )}
+              {/* Add Services Section */}
+              <div style={{ display: "flex", gap: "16px" }}>
+                <div style={{ width: "120px", fontWeight: 700, fontSize: "0.9rem", color: "#0f172a", paddingTop: "10px" }}>Add services</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ position: "relative" }}>
+                    <input 
+                      placeholder="Search Service By Category Or Name" 
+                      value={pkgServiceSearch}
+                      onChange={(e) => setPkgServiceSearch(e.target.value)}
+                      style={{ width: "100%", padding: "10px 32px 10px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.9rem", boxSizing: "border-box", outline: "none" }}
+                    />
+                    <Search size={16} style={{ position: "absolute", right: 12, top: 12, color: "#94a3b8" }} />
+                    {pkgServiceSearch.trim() !== "" && (
+                      <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #cbd5e1", borderRadius: 6, marginTop: "4px", maxHeight: "150px", overflowY: "auto", zIndex: 10, boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
+                        {services.filter(s => s.name.toLowerCase().includes(pkgServiceSearch.toLowerCase())).map(s => {
+                          const alreadyAdded = customServices.some(added => added.id === s.id);
+                          return (
+                            <div 
+                              key={s.id} 
+                              onClick={() => {
+                                if (!alreadyAdded) setCustomServices(prev => [...prev, { ...s, sessions: 1 }]);
+                                setPkgServiceSearch("");
+                                setSelectedPackage({ id: "CUSTOM", name: "Custom Package" });
+                              }}
+                              style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", fontSize: "0.85rem", cursor: "pointer", borderBottom: "1px solid #f1f5f9", background: alreadyAdded ? "#f8fafc" : "#fff" }}
+                            >
+                              <span style={{ fontWeight: 600, color: "#334155" }}>{s.name}</span>
+                              <span style={{ color: "#64748b" }}>{s.price}</span>
                             </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", background: "#f8fafc", borderRadius: 12, padding: "12px", border: "1px solid #e2e8f0", maxHeight: "180px", overflowY: "auto" }}>
-                        {selectedPackage.id === "CUSTOM" ? (
-                          customServices.map((s, idx) => (
-                            <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
-                              <div style={{ display: "flex", flexDirection: "column" }}>
-                                <span style={{ fontSize: "0.85rem", color: "#334155", fontWeight: 600 }}>{s.name}</span>
-                                <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Base: {formatMoney(Number(s.price || 0))}</span>
-                              </div>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                <div style={{ display: "flex", alignItems: "center", border: "1px solid #e2e8f0", borderRadius: 6, overflow: "hidden", background: "#f8fafc" }}>
-                                  <button 
-                                    onClick={() => setCustomServices(prev => prev.map((item, i) => i === idx ? { ...item, sessions: Math.max(1, item.sessions - 1) } : item))}
-                                    style={{ padding: "2px 8px", background: "none", border: "none", cursor: "pointer", fontSize: "0.85rem", fontWeight: "bold" }}
-                                  >-</button>
-                                  <span style={{ padding: "2px 6px", fontSize: "0.8rem", fontWeight: 700, color: "#334155" }}>{s.sessions}</span>
-                                  <button 
-                                    onClick={() => setCustomServices(prev => prev.map((item, i) => i === idx ? { ...item, sessions: item.sessions + 1 } : item))}
-                                    style={{ padding: "2px 8px", background: "none", border: "none", cursor: "pointer", fontSize: "0.85rem", fontWeight: "bold" }}
-                                  >+</button>
-                                </div>
-                                <button 
-                                  onClick={() => setCustomServices(prev => prev.filter((_, i) => i !== idx))}
-                                  style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "4px" }}
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          (selectedPackage.services || []).map((s, idx) => (
-                            <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
-                              <span style={{ fontSize: "0.85rem", color: "#334155", fontWeight: 600 }}>{s.service?.name || s.name || "Service"}</span>
-                              <span style={{ fontSize: "0.8rem", color: "#475569", fontWeight: 700, background: "#e2e8f0", padding: "2px 8px", borderRadius: "12px" }}>Qty: {s.sessions || 1}</span>
-                            </div>
-                          ))
-                        )}
-                        {((selectedPackage.id === "CUSTOM" ? customServices : (selectedPackage.services || [])).length === 0) && (
-                          <div style={{ padding: "16px", textAlign: "center", color: "#94a3b8", fontSize: "0.85rem" }}>
-                            No services included in this package
-                          </div>
-                        )}
+                          );
+                        })}
                       </div>
-                    </div>
-
-                    {/* Form Grid */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "4px" }}>
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "6px" }}>Validity (Days)</label>
-                        <input 
-                          type="number" 
-                          placeholder="Enter Validity" 
-                          value={packageForm.validityDays} 
-                          onChange={(e) => setPackageForm((prev) => ({ ...prev, validityDays: e.target.value }))} 
-                          style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box", outline: "none" }} 
-                        />
-                      </div>
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "6px" }}>Price (₹)</label>
-                        <input 
-                          type="number" 
-                          placeholder="Enter Price" 
-                          value={packageForm.price} 
-                          onChange={(e) => setPackageForm((prev) => ({ ...prev, price: e.target.value }))} 
-                          style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box", outline: "none" }} 
-                        />
-                      </div>
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "6px" }}>Staff</label>
-                        <select 
-                          value={packageForm.staffId} 
-                          onChange={(e) => setPackageForm((prev) => ({ ...prev, staffId: e.target.value }))} 
-                          style={{ 
-                            width: "100%", 
-                            padding: "10px 12px", 
-                            border: !packageForm.staffId ? "1px solid #f59e0b" : "1px solid #cbd5e1", 
-                            borderRadius: 8, 
-                            fontSize: "0.9rem", 
-                            boxSizing: "border-box", 
-                            outline: "none", 
-                            background: !packageForm.staffId ? "#fffbeb" : "#fff" 
-                          }}
-                        >
-                          <option value="">Select Staff</option>
-                          {staffUsers.map((s) => (
-                            <option key={s.id} value={s.id}>{s.user?.name || s.name || s.id}</option>
-                          ))}
-                        </select>
-                        {!packageForm.staffId && (
-                          <div style={{ color: "#d97706", fontSize: "0.75rem", fontWeight: 500, marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-                            <AlertCircle size={12} /> Staff selection is required
-                          </div>
-                        )}
-                      </div>
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: "6px" }}>Purchase Date</label>
-                        <input 
-                          type="date" 
-                          value={packageForm.purchaseDate} 
-                          onChange={(e) => setPackageForm((prev) => ({ ...prev, purchaseDate: e.target.value }))} 
-                          style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box", outline: "none" }} 
-                        />
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#94a3b8", gap: "12px", border: "2px dashed #e2e8f0", borderRadius: 16, padding: "32px", background: "#fafafa" }}>
-                    <Package size={48} style={{ opacity: 0.5, color: "#2563eb" }} />
-                    <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#475569" }}>Select a Package Plan</div>
-                    <div style={{ fontSize: "0.78rem", color: "#94a3b8", textAlign: "center" }}>Choose a package from the left list to configure pricing, validity and staff assignment details.</div>
+                    )}
                   </div>
-                )}
+                  <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "8px" }}>({customServices.length} Items Selected)</div>
+                  
+                  {/* Selected Services Tags */}
+                  {customServices.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "8px" }}>
+                      {customServices.map((s, idx) => (
+                        <div key={idx} style={{ background: "#f1f5f9", padding: "4px 8px", borderRadius: 4, display: "flex", alignItems: "center", gap: "6px", fontSize: "0.8rem", color: "#334155" }}>
+                          <span>{s.name}</span>
+                          <span style={{ fontWeight: 700, background: "#e2e8f0", padding: "2px 6px", borderRadius: 4 }}>x{s.sessions}</span>
+                          <button onClick={() => setCustomServices(prev => prev.filter((_, i) => i !== idx))} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 0, display: "flex" }}><X size={12} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Add Products Section */}
+              <div style={{ display: "flex", gap: "16px" }}>
+                <div style={{ width: "120px", fontWeight: 700, fontSize: "0.9rem", color: "#0f172a", paddingTop: "10px" }}>Add products</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ position: "relative" }}>
+                    <input 
+                      placeholder="Search Product By Category Or Name" 
+                      value={pkgProductSearch}
+                      onChange={(e) => setPkgProductSearch(e.target.value)}
+                      style={{ width: "100%", padding: "10px 32px 10px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.9rem", boxSizing: "border-box", outline: "none" }}
+                    />
+                    <Search size={16} style={{ position: "absolute", right: 12, top: 12, color: "#94a3b8" }} />
+                    {pkgProductSearch.trim() !== "" && (
+                      <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #cbd5e1", borderRadius: 6, marginTop: "4px", maxHeight: "150px", overflowY: "auto", zIndex: 10, boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
+                        {products.filter(p => p.name.toLowerCase().includes(pkgProductSearch.toLowerCase())).map(p => {
+                          const alreadyAdded = customProducts.some(added => added.id === p.id);
+                          return (
+                            <div 
+                              key={p.id} 
+                              onClick={() => {
+                                if (!alreadyAdded) setCustomProducts(prev => [...prev, { ...p }]);
+                                setPkgProductSearch("");
+                                setSelectedPackage({ id: "CUSTOM", name: "Custom Package" });
+                              }}
+                              style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", fontSize: "0.85rem", cursor: "pointer", borderBottom: "1px solid #f1f5f9", background: alreadyAdded ? "#f8fafc" : "#fff" }}
+                            >
+                              <span style={{ fontWeight: 600, color: "#334155" }}>{p.name}</span>
+                              <span style={{ color: "#64748b" }}>{p.sellingPrice}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  {customProducts.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "8px" }}>
+                      {customProducts.map((p, idx) => (
+                        <div key={idx} style={{ background: "#f1f5f9", padding: "4px 8px", borderRadius: 4, display: "flex", alignItems: "center", gap: "6px", fontSize: "0.8rem", color: "#334155" }}>
+                          <span>{p.name}</span>
+                          <button onClick={() => setCustomProducts(prev => prev.filter((_, i) => i !== idx))} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 0, display: "flex" }}><X size={12} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Payment Details */}
+              <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "16px" }}>
+                <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#334155", marginBottom: "16px" }}>Payment Details:</div>
+                <div style={{ display: "flex", gap: "24px" }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: "0.8rem", color: "#0f172a", marginBottom: "6px", display: "block" }}>Balance</label>
+                    <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px" }}>
+                      <Wallet size={18} color="#10b981" style={{ marginRight: "8px" }} />
+                      <input type="number" placeholder="0.0" value={packageForm.balance} onChange={(e) => setPackageForm(prev => ({...prev, balance: e.target.value}))} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem" }} />
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: "0.8rem", color: "#0f172a", marginBottom: "6px", display: "block" }}>Online</label>
+                    <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px" }}>
+                      <Monitor size={18} color="#10b981" style={{ marginRight: "8px" }} />
+                      <input type="number" placeholder="0.0" value={packageForm.online} onChange={(e) => setPackageForm(prev => ({...prev, online: e.target.value}))} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem" }} />
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: "0.8rem", color: "#0f172a", marginBottom: "6px", display: "block" }}>Offline</label>
+                    <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px" }}>
+                      <input type="number" placeholder="0.0" value={packageForm.offline} onChange={(e) => setPackageForm(prev => ({...prev, offline: e.target.value}))} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem" }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Required Details (Price, Validity) that were missing in the screenshot but necessary for backend */}
+              <div style={{ display: "flex", gap: "16px" }}>
+                 <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: "0.8rem", color: "#0f172a", marginBottom: "6px", display: "block", fontWeight: 700 }}>Total Price</label>
+                    <input type="number" placeholder="0.0" value={packageForm.price} onChange={(e) => setPackageForm(prev => ({...prev, price: e.target.value}))} style={{ border: "1px solid #cbd5e1", borderRadius: 6, outline: "none", width: "100%", padding: "10px", fontSize: "0.9rem", boxSizing: "border-box" }} />
+                 </div>
+                 <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: "0.8rem", color: "#0f172a", marginBottom: "6px", display: "block", fontWeight: 700 }}>Validity (Days)</label>
+                    <input type="number" placeholder="30" value={packageForm.validityDays} onChange={(e) => setPackageForm(prev => ({...prev, validityDays: e.target.value}))} style={{ border: "1px solid #cbd5e1", borderRadius: 6, outline: "none", width: "100%", padding: "10px", fontSize: "0.9rem", boxSizing: "border-box" }} />
+                 </div>
+                 <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: "0.8rem", color: "#0f172a", marginBottom: "6px", display: "block", fontWeight: 700 }}>Staff Assignment</label>
+                    <select value={packageForm.staffId} onChange={(e) => setPackageForm(prev => ({...prev, staffId: e.target.value}))} style={{ border: "1px solid #cbd5e1", borderRadius: 6, outline: "none", width: "100%", padding: "10px", fontSize: "0.9rem", boxSizing: "border-box", background: "#fff", color: "#0f172a" }}>
+                      <option value="" style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>Select Staff</option>
+                      {staffUsers.map(s => <option key={s.id} value={s.id} style={{ color: "#0f172a", backgroundColor: "#ffffff" }}>{s.user?.name || s.name || s.id}</option>)}
+                    </select>
+                 </div>
+              </div>
+
+              {/* Remark */}
+              <div>
+                <label style={{ fontSize: "0.9rem", fontWeight: 700, color: "#334155", marginBottom: "8px", display: "block" }}>Remark:</label>
+                <textarea 
+                  value={packageForm.remark}
+                  onChange={(e) => setPackageForm(prev => ({...prev, remark: e.target.value}))}
+                  style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 8, padding: "12px", minHeight: "80px", outline: "none", boxSizing: "border-box", fontSize: "0.9rem" }}
+                  placeholder="Enter remarks..."
+                />
+              </div>
+
+              {packageError && (
+                <div style={{ color: "#ef4444", fontSize: "0.82rem", fontWeight: 600, marginTop: "12px", background: "#fef2f2", padding: "8px 12px", borderRadius: 8, border: "1px solid #fca5a5", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <AlertCircle size={14} /> {packageError}
+                </div>
+              )}
+
             </div>
 
             {/* Footer */}
-            <div style={{ padding: "16px 28px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end", gap: 12, background: "#f8fafc" }}>
-              <button onClick={() => setShowPackageModal(false)} style={{ padding: "10px 20px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", color: "#475569", fontSize: "0.9rem", transition: "all 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.background = "#f1f5f9"} onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}>Cancel</button>
-              <button 
-                onClick={handleAssignPackage} 
-                disabled={!selectedPackage || !packageForm.staffId} 
-                style={{ 
-                  padding: "10px 24px", 
-                  background: (selectedPackage && packageForm.staffId) ? "#2563eb" : "#cbd5e1", 
-                  color: "#fff", 
-                  border: "none", 
-                  borderRadius: 8, 
-                  fontWeight: 700, 
-                  cursor: (selectedPackage && packageForm.staffId) ? "pointer" : "not-allowed", 
-                  fontSize: "0.9rem", 
-                  transition: "all 0.2s", 
-                  boxShadow: (selectedPackage && packageForm.staffId) ? "0 4px 12px rgba(37,99,235,0.2)" : "none" 
-                }} 
-                onMouseEnter={(e) => { if (selectedPackage && packageForm.staffId) e.currentTarget.style.background = "#1d4ed8"; }} 
-                onMouseLeave={(e) => { if (selectedPackage && packageForm.staffId) e.currentTarget.style.background = "#2563eb"; }}
-              >
-                Assign Package
-              </button>
+            <div style={{ padding: "16px 24px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "flex-end", gap: 12 }}>
+              <button onClick={() => setShowPackageModal(false)} style={{ padding: "10px 24px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 6, fontWeight: 600, cursor: "pointer", color: "#475569", fontSize: "0.9rem" }}>Cancel</button>
+              <button onClick={handleAssignPackage} style={{ padding: "10px 24px", background: "var(--button-bg-solid, #3b82f6)", color: "#fff", border: "none", borderRadius: 6, fontWeight: 700, cursor: "pointer", fontSize: "0.9rem" }}>Add Package</button>
             </div>
           </div>
         </div>
       )}
+
 
       {/* Add Family Member Modal */}
       {showFamilyModal && (
@@ -2812,6 +3033,61 @@ export default function CustomersPage() {
             });
           }}
         />
+      )}
+
+      {saving && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(15, 23, 42, 0.4)",
+          backdropFilter: "blur(8px)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 99999,
+          animation: "fadeIn 0.2s ease-out"
+        }}>
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+          `}</style>
+          <div style={{
+            background: "#ffffff",
+            padding: "24px 32px",
+            borderRadius: "16px",
+            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "16px",
+            border: "1px solid #e2e8f0"
+          }}>
+            <div style={{
+              width: "40px",
+              height: "40px",
+              border: "4px solid #f1f5f9",
+              borderTop: "4px solid var(--accent, #3b82f6)",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite"
+            }} />
+            <div style={{
+              fontSize: "0.95rem",
+              fontWeight: 700,
+              color: "#0f172a",
+              textAlign: "center"
+            }}>{savingMessage}</div>
+          </div>
+        </div>
       )}
     </div>
   );

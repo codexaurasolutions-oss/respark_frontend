@@ -7,7 +7,7 @@
   --surface-border: rgba(148, 163, 184, 0.22);
   --surface-shadow: none;
   --surface-shadow-hover: none;
-  --accent: #0f766e;
+  --accent: var(--button-bg-solid, #0f766e);
   --accent-2: #0ea5e9;
   --text-main: #14213d;
   --text-soft: #64748b;
@@ -129,7 +129,7 @@ label span.muted {
 }
 
 button {
-  background: linear-gradient(135deg, #0f766e, #0ea5e9);
+  background: var(--button-bg, linear-gradient(135deg, #0f766e, #0ea5e9));
   color: white;
   cursor: pointer;
   border: none;
@@ -467,7 +467,7 @@ pre {
   display: flex;
   flex-direction: column;
   padding: 0;
-  background: #2b2d3e;
+  background: var(--sidebar-bg, #2b2d3e);
   border-right: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 4px 0 32px rgba(0, 0, 0, 0.32);
   transform: translateX(-110%);
@@ -3119,7 +3119,7 @@ pre {
     margin: 0 0 12px;
     padding: 10px 14px;
     border-radius: 16px;
-    background: #fff;
+    background: var(--navbar-bg, #fff);
     border: 1px solid #e2e5ea;
     box-shadow: none;
   }

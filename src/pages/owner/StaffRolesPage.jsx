@@ -15,7 +15,7 @@ const MODULE_GROUPS = SHARED_MODULE_GROUPS.map((group, index) => ({
 }));
 
 const ACTION_META = {
-  view:    { label: "View",    color: "#3b82f6", bg: "#eff6ff", border: "#bfdbfe" },
+  view:    { label: "View",    color: "var(--accent, #3b82f6)", bg: "#eff6ff", border: "#bfdbfe" },
   create:  { label: "Create",  color: "#10b981", bg: "#f0fdf4", border: "#bbf7d0" },
   edit:    { label: "Edit",    color: "#f59e0b", bg: "#fffbeb", border: "#fde68a" },
   delete:  { label: "Delete",  color: "#ef4444", bg: "#fef2f2", border: "#fecaca" },

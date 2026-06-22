@@ -139,17 +139,21 @@ const Protected = () => {
           hint: "Lead pipeline",
           items: [
             { label: "Enquiries", to: "/admin/enquiries" }
-
-
           ]
+        },
+        {
+          label: "Website",
+          hint: "Storefront & Portal",
+          items: [
+            can("settings", "edit") && { label: "Website Editor", to: "/admin/website-editor" },
+            can("customerPortalSettings", "view") && { label: "Portal Settings", to: "/admin/customer-portal-settings" },
+            { label: "View Live Site", to: `/site/${auth?.membership?.salon?.slug || "demo-salon"}` }
+          ].filter(Boolean)
         },
         {
           label: "System",
           hint: "Help and config",
           items: [
-
-
-
             can("settings", "edit") && {
               label: "Settings",
               to: "/admin/settings/generic"
@@ -471,19 +475,9 @@ export default function App() {
           <Route path="/admin/customer-portal-settings" element={<OwnerRoute moduleKey="customerPortalSettings" featureKey="customerPortal" element={<CustomerPortalSettingsPage />} />} />
           <Route path="/admin/support-tickets" element={<OwnerRoute moduleKey="support" element={<SupportTicketsPage />} />} />
           <Route path="/admin/settings" element={<OwnerRoute moduleKey="settings" action="edit" element={<Navigate to="/admin/settings/generic" replace />} />} />
-          {SETTINGS_WORKSPACE_SECTIONS.map((item) => (
-            <Route key={item.to} path={item.to} element={<OwnerRoute moduleKey="settings" action="edit" element={<SettingsPage />} />} />
-          ))}
-          <Route path="/admin/settings/business" element={<OwnerRoute moduleKey="settings" action="edit" element={<SettingsPage />} />} />
-          <Route path="/admin/settings/invoices" element={<OwnerRoute moduleKey="settings" action="edit" element={<SettingsPage />} />} />
-          <Route path="/admin/settings/payments" element={<OwnerRoute moduleKey="settings" action="edit" element={<SettingsPage />} />} />
-          <Route path="/admin/settings/booking" element={<OwnerRoute moduleKey="settings" action="edit" element={<SettingsPage />} />} />
-          <Route path="/admin/settings/notifications" element={<OwnerRoute moduleKey="settings" action="edit" element={<SettingsPage />} />} />
-          <Route path="/admin/settings/whatsapp" element={<OwnerRoute moduleKey="settings" action="edit" element={<SettingsPage />} />} />
-          <Route path="/admin/settings/advanced" element={<OwnerRoute moduleKey="settings" action="edit" element={<SettingsPage />} />} />
+          <Route path="/admin/settings/:section" element={<OwnerRoute moduleKey="settings" action="edit" element={<SettingsPage />} />} />
           <Route path="/admin/website-editor" element={<OwnerRoute moduleKey="settings" action="edit" element={<WebsiteEditorPage />} />} />
           <Route path="/admin/manage" element={<OwnerRoute moduleKey="settings" action="edit" element={<ManagePage />} />} />
-          <Route path="/admin/settings/payroll" element={<OwnerRoute moduleKey="settings" action="edit" element={<SettingsPage />} />} />
           <Route path="/admin/my-dashboard" element={<OwnerRoute moduleKey="myDashboard" element={<MyDashboardPage />} />} />
           <Route path="/admin/my-appointments" element={<OwnerRoute moduleKey="myAppointments" featureKey="appointments" element={<MyAppointmentsPage />} />} />
           <Route path="/admin/my-schedule" element={<OwnerRoute moduleKey="mySchedule" featureKey="appointments" element={<MySchedulePage />} />} />

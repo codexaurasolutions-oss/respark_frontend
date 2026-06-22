@@ -374,7 +374,7 @@ export default function ServiceHubPage() {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <button
                         type="button"
-                        style={{ padding: '6px 14px', border: '1px solid #3b82f6', borderRadius: 6, background: '#eff6ff', color: '#2563eb', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
+                        style={{ padding: '6px 14px', border: "1px solid var(--accent, #3b82f6)", borderRadius: 6, background: '#eff6ff', color: '#2563eb', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
                         onClick={() => startEditService(service)}
                       >
                         Edit

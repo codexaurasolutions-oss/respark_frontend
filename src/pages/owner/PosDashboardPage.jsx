@@ -904,7 +904,7 @@ export default function PosDashboardPage() {
                           <div>{taxAmount.toFixed(0)}</div>
                           <div>{(subTotal + taxAmount).toFixed(0)}</div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                            <button type="button" title="Split Service" onClick={() => setStatus({ error: "", success: "Split service workflow is reserved for the next pass." })} style={{ background: "transparent", border: "none", cursor: "pointer", color: "#3b82f6" }} disabled={!isEditing}><ScissorsLineDashed size={16} /></button>
+                            <button type="button" title="Split Service" onClick={() => setStatus({ error: "", success: "Split service workflow is reserved for the next pass." })} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--accent, #3b82f6)" }} disabled={!isEditing}><ScissorsLineDashed size={16} /></button>
                             <button type="button" title="Service Reminder" onClick={() => openReminderModal(index)} style={{ background: "transparent", border: "none", cursor: "pointer", color: item.serviceReminder?.date ? "#16a34a" : "#111827" }} disabled={!isEditing}><Clock3 size={16} /></button>
                             <button type="button" title="Complimentary" onClick={() => toggleComplimentary(index)} style={{ background: "transparent", border: "none", cursor: "pointer", color: item.complimentary ? "#16a34a" : "#3b82f6" }} disabled={!isEditing}><Gift size={16} /></button>
                             <button type="button" title="Add Consumable Items For Service" onClick={() => openConsumableModal(index)} style={{ background: "transparent", border: "none", cursor: "pointer", color: item.consumables?.length ? "#16a34a" : "#3b82f6" }} disabled={!isEditing}><TicketPercent size={16} /></button>
@@ -1019,7 +1019,7 @@ export default function PosDashboardPage() {
                 <div className="pos-detail-bottom-actions">
                   <button className="btn-view-bill" onClick={() => { setIsEditing(false); closeDetail(); }}>Clear</button>
                   <button className="btn-view-bill" onClick={updateInvoice} disabled={!isEditing}>Update</button>
-                  <button className="btn-clear" style={{ background: "white", color: "#3b82f6", border: "1px solid #3b82f6" }} onClick={() => { setIsEditing(false); setPaymentDraft({ online: "", offline: "" }); }}>Cancel Edit</button>
+                  <button className="btn-clear" style={{ background: "white", color: "var(--accent, #3b82f6)", border: "1px solid var(--accent, #3b82f6)" }} onClick={() => { setIsEditing(false); setPaymentDraft({ online: "", offline: "" }); }}>Cancel Edit</button>
                   <button className="btn-view-bill" onClick={openBillPreview} disabled={billLoading}>{billLoading ? "Loading..." : "View Bill"}</button>
                 </div>
               </div>
@@ -1121,7 +1121,7 @@ export default function PosDashboardPage() {
                       setGcModalGc({ id: gc.id, name: gc.code || "Gift Card" });
                       setGcDraft({ staffId: "", price: String(gc.amount||0), validityDays: String(gc.validityDays||30), purchaseDate: new Date().toISOString().slice(0,10) });
                     }} style={{ background: isSelected?"#fdf4ff":"#fdf4ff", border: isSelected?"2px solid #e879f9":"1px solid #fdf4ff", borderRadius:12, padding:16, cursor:"pointer", transition:"all 0.2s" }}>
-                      <div style={{ fontSize:"0.95rem", fontWeight:700, color:"#3b82f6", marginBottom:8, textTransform:"uppercase" }}>{gc.code || "GIFT CARD"}</div>
+                      <div style={{ fontSize:"0.95rem", fontWeight:700, color: "var(--accent, #3b82f6)", marginBottom:8, textTransform:"uppercase" }}>{gc.code || "GIFT CARD"}</div>
                       <div style={{ fontSize:"0.85rem", color:"#475569", marginBottom:4 }}>Fee: {formatMoney(Number(gc.amount||0))}</div>
                       <div style={{ fontSize:"0.85rem", color:"#475569", marginBottom:12 }}>Validity: {gc.validityDays || 30} Days</div>
                     </div>

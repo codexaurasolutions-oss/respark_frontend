@@ -142,7 +142,7 @@ export default function WebsiteEditorPage() {
             href={`/site/${slug}`} 
             target="_blank" 
             rel="noopener noreferrer" 
-            style={{ color: '#3b82f6', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
+            style={{ color: "var(--accent, #3b82f6)", textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
           >
             View Full Screen <span style={{ fontSize: '1.2rem' }}>&nearr;</span>
           </a>

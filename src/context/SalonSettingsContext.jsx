@@ -27,6 +27,7 @@ export const SalonSettingsProvider = ({ children }) => {
   }, [auth?.membership?.salon?.currency, salonId]);
 
   const [currencyCode, setCurrencyCode] = useState(initialCurrency);
+  const [settings, setSettings] = useState(() => readSalonSettingsCache(salonId));
 
   useEffect(() => {
     setCurrencyCode(initialCurrency);
@@ -51,6 +52,7 @@ export const SalonSettingsProvider = ({ children }) => {
         if (!active || !response.data) return;
         const nextCode = extractCurrencyCodeFromSettings(response.data);
         setCurrencyCode(nextCode);
+        setSettings(response.data);
         writeSalonSettingsCache(salonId, response.data);
       } catch {
         // Keep cached currency if settings fetch fails.
@@ -64,6 +66,7 @@ export const SalonSettingsProvider = ({ children }) => {
       const detailSalonId = event?.detail?.salonId || "global";
       if (detailSalonId !== salonId) return;
       setCurrencyCode(extractCurrencyCodeFromSettings(event.detail.settings));
+      setSettings(event.detail.settings);
     };
 
     window.addEventListener(SETTINGS_UPDATED_EVENT, onSettingsUpdated);
@@ -72,6 +75,35 @@ export const SalonSettingsProvider = ({ children }) => {
       window.removeEventListener(SETTINGS_UPDATED_EVENT, onSettingsUpdated);
     };
   }, [auth, salonId]);
+
+  useEffect(() => {
+    const ui = settings?.advancedSettings?.uiSettings || {};
+    const sidebar = ui.sidebarColor || "";
+    const button = ui.buttonColor || "";
+    const navbar = ui.navbarColor || "";
+    const font = ui.fontColor || "";
+
+    const root = document.documentElement;
+
+    if (sidebar) root.style.setProperty("--sidebar-bg", sidebar);
+    else root.style.removeProperty("--sidebar-bg");
+
+    if (button) {
+      root.style.setProperty("--button-bg", button);
+      root.style.setProperty("--button-bg-solid", button);
+      root.style.setProperty("--accent", button);
+    } else {
+      root.style.removeProperty("--button-bg");
+      root.style.removeProperty("--button-bg-solid");
+      root.style.removeProperty("--accent");
+    }
+
+    if (navbar) root.style.setProperty("--navbar-bg", navbar);
+    else root.style.removeProperty("--navbar-bg");
+
+    if (font) root.style.setProperty("--font-color", font);
+    else root.style.removeProperty("--font-color");
+  }, [settings]);
 
   const value = useMemo(() => {
     const safeCode = normalizeCurrencyCode(currencyCode);

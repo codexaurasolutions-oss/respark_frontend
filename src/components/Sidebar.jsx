@@ -13,6 +13,7 @@ import {
   ChevronDown,
   X,
   LogOut,
+  Globe,
 } from "lucide-react";
 
 const GROUP_ICONS = {
@@ -25,6 +26,7 @@ const GROUP_ICONS = {
   "Workspace":     <Home size={17} />,
   "Settings":      <Settings size={17} />,
   "Manage":        <FolderOpen size={17} />,
+  "Website":       <Globe size={17} />,
 };
 
 const DEFAULT_ICON = <LayoutDashboard size={17} />;

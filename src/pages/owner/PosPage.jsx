@@ -1133,7 +1133,7 @@ export default function PosPage() {
                       <div><strong style={{color:"#0f172a"}}>Membership :</strong> {activeMembership?.membershipPlan?.name || "NA"}</div>
                     </div>
                     <div style={{display: "flex", alignItems: "flex-start"}}>
-                      <button style={{background: "none", border: "none", cursor: "pointer", color: "#3b82f6"}} onClick={() => window.open('/#/customers', '_blank')}>
+                      <button style={{background: "none", border: "none", cursor: "pointer", color: "var(--accent, #3b82f6)"}} onClick={() => window.open('/#/customers', '_blank')}>
                         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                       </button>
                     </div>
@@ -1422,7 +1422,7 @@ export default function PosPage() {
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                 Download Receipt
               </button>
-              <button type="button" onClick={() => { setShowSuccessModal(false); setCreatedInvoice(null); setStatus({ error: "", success: "" }); }} style={{ padding: "12px", background: "#3b82f6", color: "white", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 600, marginTop: 8 }}>
+              <button type="button" onClick={() => { setShowSuccessModal(false); setCreatedInvoice(null); setStatus({ error: "", success: "" }); }} style={{ padding: "12px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 600, marginTop: 8 }}>
                 Start New Sale
               </button>
             </div>
@@ -1470,7 +1470,7 @@ export default function PosPage() {
                              setGcModalGc({ id: `tpl-${idx}`, name: gc.name });
                              setGcDraft({ staffId: gcDraft.staffId || "", price: String(gc.amount || ""), validityDays: String(gc.validityDays || 30), purchaseDate: new Date().toISOString().slice(0,10), code: "" });
                            }} style={{ background: isSelected?"#fdf4ff":"#f8fafc", border: isSelected?"2px solid #e879f9":"1px solid #e2e8f0", borderRadius:12, padding:16, cursor:"pointer", transition:"all 0.2s" }}>
-                             <div style={{ fontSize:"0.95rem", fontWeight:700, color:"#3b82f6", marginBottom:8, textTransform:"uppercase" }}>{gc.name || "GIFT CARD"}</div>
+                             <div style={{ fontSize:"0.95rem", fontWeight:700, color: "var(--accent, #3b82f6)", marginBottom:8, textTransform:"uppercase" }}>{gc.name || "GIFT CARD"}</div>
                              <div style={{ fontSize:"0.85rem", color:"#475569", marginBottom:4 }}>Amount: {formatMoney(Number(gc.amount || 0))}</div>
                              <div style={{ fontSize:"0.85rem", color:"#475569", marginBottom:4 }}>Validity: {gc.validityDays || 30} Days</div>
                            </div>

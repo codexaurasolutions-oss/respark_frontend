@@ -8,7 +8,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useSalonSettings } from "../../context/SalonSettingsContext";
 import { formatApiError } from "../../utils/apiError";
 import { normalizeCurrencyCode } from "../../utils/currency";
-import { writeSalonSettingsCache } from "../../utils/salonSettings";
+import { readSalonSettingsCache, writeSalonSettingsCache } from "../../utils/salonSettings";
 import { SETTINGS_WORKSPACE_SECTIONS, getSettingsSection } from "./settingsWorkspaceConfig";
 import "./SettingsPage.css";
 
@@ -257,6 +257,13 @@ const defaultAdvancedSettings = {
     copyrightLine: "",
     socialLine: "",
     brandNote: ""
+  },
+  uiSettings: {
+    activeThemePreset: "classic",
+    buttonColor: "",
+    sidebarColor: "",
+    navbarColor: "",
+    fontColor: ""
   }
 };
 
@@ -311,7 +318,8 @@ const mergeAdvancedSettings = (raw = {}) => {
     active: item.active !== undefined ? Boolean(item.active) : true
   })),
   incentiveSettings: { ...defaultAdvancedSettings.incentiveSettings, ...(raw.incentiveSettings || {}) },
-  footerContent: { ...defaultAdvancedSettings.footerContent, ...(raw.footerContent || {}) }
+  footerContent: { ...defaultAdvancedSettings.footerContent, ...(raw.footerContent || {}) },
+  uiSettings: { ...defaultAdvancedSettings.uiSettings, ...(raw.uiSettings || {}) }
   };
   merged.genericSettings.currency = normalizeCurrencyCode(merged.genericSettings.currency);
   return merged;
@@ -426,6 +434,7 @@ export default function SettingsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { auth } = useAuth();
+  const salonId = auth?.salonId || auth?.membership?.salonId || auth?.membership?.salon?.id || "global";
   const { formatMoney } = useSalonSettings();
   const [form, setForm] = useState(initialForm);
   const [paymentModes, setPaymentModes] = useState(defaultPaymentModes);
@@ -451,14 +460,27 @@ export default function SettingsPage() {
   const [cardForm, setCardForm] = useState({ name: "", description: "", active: true, amount: "", validityDays: 30, renewalReminderDays: 7 });
   const [selectedFeedbackTypeId, setSelectedFeedbackTypeId] = useState(null);
   const [draftFeedbackType, setDraftFeedbackType] = useState(null);
-  const [buttonColor, setButtonColor] = useState("#3b82f6");
-  const [sidebarColor, setSidebarColor] = useState("#0f172a");
-  const [navbarColor, setNavbarColor] = useState("#ffffff");
-  const [fontColor, setFontColor] = useState("#1e293b");
+  const [buttonColor, setButtonColor] = useState(() => {
+    const cached = readSalonSettingsCache(salonId);
+    return cached?.advancedSettings?.uiSettings?.buttonColor || "#3b82f6";
+  });
+  const [sidebarColor, setSidebarColor] = useState(() => {
+    const cached = readSalonSettingsCache(salonId);
+    return cached?.advancedSettings?.uiSettings?.sidebarColor || "#0f172a";
+  });
+  const [navbarColor, setNavbarColor] = useState(() => {
+    const cached = readSalonSettingsCache(salonId);
+    return cached?.advancedSettings?.uiSettings?.navbarColor || "#ffffff";
+  });
+  const [fontColor, setFontColor] = useState(() => {
+    const cached = readSalonSettingsCache(salonId);
+    return cached?.advancedSettings?.uiSettings?.fontColor || "#1e293b";
+  });
   const [activeThemePreset, setActiveThemePreset] = useState("classic");
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
   const rosterInitializedRef = useRef(false);
-  const salonId = auth?.salonId || auth?.membership?.salonId || auth?.membership?.salon?.id || "global";
+  const giftCardInitializedRef = useRef(false);
+  const couponsInitializedRef = useRef(false);
   const salonSlug = auth?.membership?.salon?.slug || auth?.salon?.slug || "";
   const settingsPermissions = Array.isArray(auth?.membership?.permissions?.settings)
     ? auth.membership.permissions.settings
@@ -598,6 +620,120 @@ export default function SettingsPage() {
   }, [form.advancedSettings.crmSegments]);
 
   useEffect(() => {
+    if (form.advancedSettings?.uiSettings) {
+      const ui = form.advancedSettings.uiSettings;
+      if (ui.activeThemePreset) setActiveThemePreset(ui.activeThemePreset);
+      if (ui.buttonColor) setButtonColor(ui.buttonColor);
+      if (ui.sidebarColor) setSidebarColor(ui.sidebarColor);
+      if (ui.navbarColor) setNavbarColor(ui.navbarColor);
+      if (ui.fontColor) setFontColor(ui.fontColor);
+    }
+  }, [form.advancedSettings?.uiSettings]);
+
+  useEffect(() => {
+    if (status.loading === false && !giftCardInitializedRef.current) {
+      const templates = form.advancedSettings?.giftCardSettings?.templates || [
+        { name: "Birthday Voucher", description: "Special birthday gift card for loyal customers", active: true, amount: 1000, validityDays: 90, renewalReminderDays: 7 },
+        { name: "Festive Special", description: "Limited edition festive season gift card", active: true, amount: 2500, validityDays: 180, renewalReminderDays: 14 },
+        { name: "Premium Package", description: "High-value gift card for premium services", active: true, amount: 5000, validityDays: 365, renewalReminderDays: 30 }
+      ];
+      if (templates.length > 0) {
+        giftCardInitializedRef.current = true;
+        const first = templates[0];
+        setEditingCard({ ...first, _idx: 0 });
+        setCardForm({
+          name: first.name,
+          description: first.description || "",
+          active: first.active !== false,
+          amount: first.amount,
+          validityDays: first.validityDays,
+          renewalReminderDays: first.renewalReminderDays
+        });
+      }
+    }
+  }, [status.loading, form.advancedSettings?.giftCardSettings?.templates]);
+
+  useEffect(() => {
+    if (status.loading === false && !couponsInitializedRef.current && summary.coupons?.length > 0) {
+      couponsInitializedRef.current = true;
+      const first = summary.coupons[0];
+      setSelectedCouponId(first.id);
+      
+      let valDays = 90;
+      if (first.startsAt && first.endsAt) {
+        const diffTime = Math.abs(new Date(first.endsAt) - new Date(first.startsAt));
+        valDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+      
+      const match = String(first.notes || "").match(/\[MaxBenefitAmt:\s*([^\]]*)\s*\]/);
+      const maxBenefitAmt = match ? match[1] : "";
+      const isPrivate = String(first.notes || "").includes("PRIVATE");
+      
+      setDraftCoupon({
+        id: first.id,
+        branchId: first.branchId || "",
+        serviceId: first.serviceId || "",
+        productId: first.productId || "",
+        code: first.code || "",
+        title: first.title || "",
+        description: first.description || "",
+        discountType: first.discountType || "PERCENT",
+        discountValue: first.discountValue ?? 10,
+        minBillAmount: first.minBillAmount ?? 0,
+        usageLimit: first.usageLimit ?? "",
+        customerUsageLimit: first.customerUsageLimit ?? "",
+        startsAt: first.startsAt ? new Date(first.startsAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        endsAt: first.endsAt ? new Date(first.endsAt).toISOString().split('T')[0] : "",
+        validityDays: valDays,
+        isReferral: Boolean(first.isReferral),
+        isInfluencer: Boolean(first.isInfluencer),
+        isBirthday: Boolean(first.isBirthday),
+        isFestival: Boolean(first.isFestival),
+        isArchived: Boolean(first.isArchived),
+        maxBenefitAmt: maxBenefitAmt,
+        isPrivate: isPrivate,
+        notesText: first.notes ? first.notes.replace(/\[MaxBenefitAmt:\s*[^\]]*\s*\]/, "").replace("PRIVATE", "").trim() : "",
+        _isNew: false
+      });
+    }
+  }, [status.loading, summary.coupons]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (sidebarColor) root.style.setProperty("--sidebar-bg", sidebarColor);
+    if (buttonColor) {
+      root.style.setProperty("--button-bg", buttonColor);
+      root.style.setProperty("--button-bg-solid", buttonColor);
+      root.style.setProperty("--accent", buttonColor);
+    }
+    if (navbarColor) root.style.setProperty("--navbar-bg", navbarColor);
+    if (fontColor) root.style.setProperty("--font-color", fontColor);
+
+    return () => {
+      const cached = readSalonSettingsCache(salonId);
+      const ui = cached?.advancedSettings?.uiSettings || {};
+      if (ui.sidebarColor) root.style.setProperty("--sidebar-bg", ui.sidebarColor);
+      else root.style.removeProperty("--sidebar-bg");
+      
+      if (ui.buttonColor) {
+        root.style.setProperty("--button-bg", ui.buttonColor);
+        root.style.setProperty("--button-bg-solid", ui.buttonColor);
+        root.style.setProperty("--accent", ui.buttonColor);
+      } else {
+        root.style.removeProperty("--button-bg");
+        root.style.removeProperty("--button-bg-solid");
+        root.style.removeProperty("--accent");
+      }
+      
+      if (ui.navbarColor) root.style.setProperty("--navbar-bg", ui.navbarColor);
+      else root.style.removeProperty("--navbar-bg");
+      
+      if (ui.fontColor) root.style.setProperty("--font-color", ui.fontColor);
+      else root.style.removeProperty("--font-color");
+    };
+  }, [buttonColor, sidebarColor, navbarColor, fontColor, salonId]);
+
+  useEffect(() => {
     if (!summary.staffRows.length) return;
     setForm((current) => {
       const existingRows = current.advancedSettings.rosterManagement.rows;
@@ -701,6 +837,18 @@ export default function SettingsPage() {
   const saveWorkspace = async () => {
     setSaving(true);
     setStatus((current) => ({ ...current, error: "", success: "" }));
+
+    const updatedAdvancedSettings = {
+      ...form.advancedSettings,
+      uiSettings: {
+        activeThemePreset,
+        buttonColor,
+        sidebarColor,
+        navbarColor,
+        fontColor
+      }
+    };
+
     try {
       const response = await api.post("/owner/settings", {
         invoicePrefix: form.invoicePrefix,
@@ -712,12 +860,12 @@ export default function SettingsPage() {
         paymentModes,
         allowNegativeStock: Boolean(form.allowNegativeStock),
         paymentGatewaySettings: form.paymentGatewaySettings,
-        advancedSettings: form.advancedSettings,
+        advancedSettings: updatedAdvancedSettings,
         smsSettings: form.smsSettings
       });
       setStatus({ loading: false, error: "", success: "Settings workspace saved successfully." });
       writeSalonSettingsCache(salonId, response.data || {
-        advancedSettings: form.advancedSettings,
+        advancedSettings: updatedAdvancedSettings,
         invoicePrefix: form.invoicePrefix,
         invoiceFooter: form.invoiceFooter,
         taxLabel: form.taxLabel
@@ -1532,7 +1680,7 @@ export default function SettingsPage() {
               type="button"
               onClick={addShift}
               disabled={!rosterModuleEnabled}
-              style={{ width: "100%", padding: "10px 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 14 }}
+              style={{ width: "100%", padding: "10px 16px", background: "var(--button-bg-solid, #3b82f6)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 14 }}
             >
               Create New
             </button>
@@ -1661,7 +1809,7 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => addBreak(selectedShift.id)}
                     disabled={!rosterModuleEnabled}
-                    style={{ padding: "8px 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 13 }}
+                    style={{ padding: "8px 16px", background: "var(--button-bg-solid, #3b82f6)", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 13 }}
                   >
                     Add Break Type
                   </button>
@@ -1716,7 +1864,7 @@ export default function SettingsPage() {
                     onClick={() => {
                       updateAdvancedObject("shiftManagement", { shifts });
                     }}
-                    style={{ padding: "10px 32px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 }}
+                    style={{ padding: "10px 32px", background: "var(--button-bg-solid, #3b82f6)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 }}
                   >
                     Save
                   </button>
@@ -1944,7 +2092,7 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={handleSaveRoster}
-            style={{ padding: "10px 32px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 }}
+            style={{ padding: "10px 32px", background: "var(--button-bg-solid, #3b82f6)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 }}
           >
             Save
           </button>
@@ -2086,7 +2234,7 @@ export default function SettingsPage() {
                       type="checkbox"
                       checked={draftTax?.active ?? editing.active}
                       onChange={(e) => draftTax && setDraftTax({ ...draftTax, active: e.target.checked })}
-                      style={{ width: 18, height: 18, accentColor: "#3b82f6", cursor: "pointer" }}
+                      style={{ width: 18, height: 18, accentColor: "var(--accent, #3b82f6)", cursor: "pointer" }}
                     />
                     Active
                   </label>
@@ -2095,7 +2243,7 @@ export default function SettingsPage() {
                       type="checkbox"
                       checked={inclusiveTax}
                       onChange={(e) => updateAdvancedObject("taxMapping", { inclusiveTax: e.target.checked })}
-                      style={{ width: 18, height: 18, accentColor: "#3b82f6", cursor: "pointer" }}
+                      style={{ width: 18, height: 18, accentColor: "var(--accent, #3b82f6)", cursor: "pointer" }}
                     />
                     Inclusive Taxes
                   </label>
@@ -2110,7 +2258,7 @@ export default function SettingsPage() {
                           type="checkbox"
                           checked={(draftTax?.applicableFor ?? (editing.applicableFor || [])).includes(key)}
                           onChange={() => draftTax && toggleApplicable(key)}
-                          style={{ width: 16, height: 16, accentColor: "#3b82f6", cursor: "pointer" }}
+                          style={{ width: 16, height: 16, accentColor: "var(--accent, #3b82f6)", cursor: "pointer" }}
                         />
                         {label}
                       </label>
@@ -2120,7 +2268,7 @@ export default function SettingsPage() {
 
                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20, paddingTop: 16, borderTop: "1px solid #f1f5f9" }}>
                   <button type="button" onClick={cancelDraft} style={{ padding: "10px 24px", background: "white", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", color: "#475569", fontSize: 13 }}>Cancel</button>
-                  <button type="button" onClick={saveDraft} style={{ padding: "10px 24px", background: "#3b82f6", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Save</button>
+                  <button type="button" onClick={saveDraft} style={{ padding: "10px 24px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Save</button>
                 </div>
               </div>
             ) : (
@@ -2153,7 +2301,7 @@ export default function SettingsPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <h3 style={{ margin: 0, border: "none", padding: 0, fontSize: 16 }}>Loyalty</h3>
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                <input type="checkbox" checked={loyalty.enabled} onChange={(e) => u({ enabled: e.target.checked })} style={{ width: 20, height: 20, accentColor: "#3b82f6", cursor: "pointer" }} />
+                <input type="checkbox" checked={loyalty.enabled} onChange={(e) => u({ enabled: e.target.checked })} style={{ width: 20, height: 20, accentColor: "var(--accent, #3b82f6)", cursor: "pointer" }} />
                 <span style={{ fontSize: 13, fontWeight: 600, color: loyalty.enabled ? "#16a34a" : "#64748b" }}>Enabled</span>
               </label>
             </div>
@@ -2168,15 +2316,15 @@ export default function SettingsPage() {
         <div className="settings-panel-card" style={{ marginBottom: 24 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, fontWeight: 600, color: "#334155", cursor: "pointer" }}>
-              <input type="checkbox" checked={loyalty.earnIndividually} onChange={(e) => u({ earnIndividually: e.target.checked })} style={{ width: 18, height: 18, accentColor: "#3b82f6", cursor: "pointer" }} />
+              <input type="checkbox" checked={loyalty.earnIndividually} onChange={(e) => u({ earnIndividually: e.target.checked })} style={{ width: 18, height: 18, accentColor: "var(--accent, #3b82f6)", cursor: "pointer" }} />
               Earn Loyalty on Service, Product and Package Individually
             </label>
             <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, fontWeight: 600, color: "#334155", cursor: "pointer" }}>
-              <input type="checkbox" checked={loyalty.skipEarnOnRedemption} onChange={(e) => u({ skipEarnOnRedemption: e.target.checked })} style={{ width: 18, height: 18, accentColor: "#3b82f6", cursor: "pointer" }} />
+              <input type="checkbox" checked={loyalty.skipEarnOnRedemption} onChange={(e) => u({ skipEarnOnRedemption: e.target.checked })} style={{ width: 18, height: 18, accentColor: "var(--accent, #3b82f6)", cursor: "pointer" }} />
               Skip Earning Loyalty on Redemption
             </label>
             <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, fontWeight: 600, color: "#334155", cursor: "pointer" }}>
-              <input type="checkbox" checked={loyalty.earnOnMembershipApplied} onChange={(e) => u({ earnOnMembershipApplied: e.target.checked })} style={{ width: 18, height: 18, accentColor: "#3b82f6", cursor: "pointer" }} />
+              <input type="checkbox" checked={loyalty.earnOnMembershipApplied} onChange={(e) => u({ earnOnMembershipApplied: e.target.checked })} style={{ width: 18, height: 18, accentColor: "var(--accent, #3b82f6)", cursor: "pointer" }} />
               Earn Loyalty on Service, Product when Percentage Membership is Applied
             </label>
           </div>
@@ -2239,7 +2387,7 @@ export default function SettingsPage() {
         <div className="settings-panel-card" style={{ marginBottom: 24 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
             <h3 style={{ margin: 0, border: "none", padding: 0, fontSize: 16, color: "#94a3b8" }}>Redeem Loyalty on Service, Product and Package Individually</h3>
-            <input type="checkbox" checked={loyalty.redeemIndividually} onChange={(e) => u({ redeemIndividually: e.target.checked })} style={{ width: 18, height: 18, accentColor: "#3b82f6", cursor: "pointer" }} />
+            <input type="checkbox" checked={loyalty.redeemIndividually} onChange={(e) => u({ redeemIndividually: e.target.checked })} style={{ width: 18, height: 18, accentColor: "var(--accent, #3b82f6)", cursor: "pointer" }} />
           </div>
 
           {loyalty.redeemIndividually ? (
@@ -2406,7 +2554,7 @@ export default function SettingsPage() {
           <div style={{ width: 280, flexShrink: 0 }}>
             <div className="settings-panel-card" style={{ padding: 0 }}>
               <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid #f1f5f9" }}>
-                <button type="button" onClick={startCreate} style={{ width: "100%", padding: "10px", background: "#3b82f6", color: "white", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Create New</button>
+                <button type="button" onClick={startCreate} style={{ width: "100%", padding: "10px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Create New</button>
               </div>
               <div style={{ maxHeight: 420, overflowY: "auto" }}>
                 {feedbackTypes.map((row) => (
@@ -2443,7 +2591,7 @@ export default function SettingsPage() {
           <div style={{ flex: 1, minWidth: 0 }}>
             {editing ? (
               <div className="settings-panel-card">
-                <h3 style={{ color: "#3b82f6" }}>{draftFeedbackType?._isNew ? "Create Feedback Type" : "Edit Feedback Type"}</h3>
+                <h3 style={{ color: "var(--accent, #3b82f6)" }}>{draftFeedbackType?._isNew ? "Create Feedback Type" : "Edit Feedback Type"}</h3>
                 <div className="settings-form-grid" style={{ marginBottom: 16 }}>
                   <label className="settings-input-group">
                     <span className="muted">Feedback Name</span>
@@ -2451,7 +2599,7 @@ export default function SettingsPage() {
                   </label>
                 </div>
                 <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: "#334155", cursor: "pointer", marginBottom: 20 }}>
-                  <input type="checkbox" checked={draftFeedbackType?.active ?? editing.active} onChange={(event) => draftFeedbackType && setDraftFeedbackType({ ...draftFeedbackType, active: event.target.checked })} style={{ width: 18, height: 18, accentColor: "#3b82f6", cursor: "pointer" }} />
+                  <input type="checkbox" checked={draftFeedbackType?.active ?? editing.active} onChange={(event) => draftFeedbackType && setDraftFeedbackType({ ...draftFeedbackType, active: event.target.checked })} style={{ width: 18, height: 18, accentColor: "var(--accent, #3b82f6)", cursor: "pointer" }} />
                   Active
                 </label>
                 <div style={{ marginTop: 18, padding: 16, borderRadius: 12, background: "#f8fafc", border: "1px solid #e2e8f0", marginBottom: 20 }}>
@@ -2462,7 +2610,7 @@ export default function SettingsPage() {
                 </div>
                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20, paddingTop: 16, borderTop: "1px solid #f1f5f9" }}>
                   <button type="button" onClick={cancelDraft} style={{ padding: "10px 24px", background: "white", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", color: "#475569", fontSize: 13 }}>Cancel</button>
-                  <button type="button" onClick={saveDraft} style={{ padding: "10px 24px", background: "#3b82f6", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Save</button>
+                  <button type="button" onClick={saveDraft} style={{ padding: "10px 24px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Save</button>
                 </div>
               </div>
             ) : (
@@ -2682,7 +2830,7 @@ export default function SettingsPage() {
                         type="checkbox"
                         checked={isChecked}
                         onChange={(e) => handleToggleChange(item.key, e.target.checked)}
-                        style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#3b82f6" }}
+                        style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--accent, #3b82f6)" }}
                       />
                       <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>SMS</span>
                     </label>
@@ -2697,124 +2845,237 @@ export default function SettingsPage() {
   };
 
   const renderGiftCardSection = () => {
-    const section = form.advancedSettings.giftCardSettings;
+    const section = form.advancedSettings.giftCardSettings || {};
     const previewRows = (summary.giftCards || []).slice(0, 6);
     const gcTemplateDefaults = [
-      { name: "Birthday Voucher", description: "Special birthday gift card for loyal customers", amount: 1000, validityDays: 90, renewalReminderDays: 7 },
-      { name: "Festive Special", description: "Limited edition festive season gift card", amount: 2500, validityDays: 180, renewalReminderDays: 14 },
-      { name: "Premium Package", description: "High-value gift card for premium services", amount: 5000, validityDays: 365, renewalReminderDays: 30 }
+      { name: "Birthday Voucher", description: "Special birthday gift card for loyal customers", active: true, amount: 1000, validityDays: 90, renewalReminderDays: 7 },
+      { name: "Festive Special", description: "Limited edition festive season gift card", active: true, amount: 2500, validityDays: 180, renewalReminderDays: 14 },
+      { name: "Premium Package", description: "High-value gift card for premium services", active: true, amount: 5000, validityDays: 365, renewalReminderDays: 30 }
     ];
-    const cardTemplates = (form.advancedSettings.giftCardSettings.templates || gcTemplateDefaults);
+    const cardTemplates = (section.templates || gcTemplateDefaults);
+
     return (
       <>
         <SectionHeader
           title="Gift Card"
-          description="Configure gift card validity, amount bands, and operational readiness."
-          badges={[`${summary.giftCards.length} gift cards`]}
-          action={<Link className="secondary-button" to="/admin/gift-cards">Open Module</Link>}
+          description="Configure gift card templates, validity, and renewal alerts."
+          badges={[`${cardTemplates.length} templates`]}
         />
-        <div className="settings-panel-card">
-          <div className="settings-toggle-grid">
-            <ToggleRow checked={section.enabled} label="Enable Gift Card" onChange={(value) => updateAdvancedObject("giftCardSettings", { enabled: value })} />
-            <label className="settings-input-group"><span className="muted">Validity days</span><input type="number" value={section.validityDays} onChange={(event) => updateAdvancedObject("giftCardSettings", { validityDays: Number(event.target.value) })} /></label>
-            <label className="settings-input-group"><span className="muted">Minimum amount</span><input type="number" value={section.minimumAmount} onChange={(event) => updateAdvancedObject("giftCardSettings", { minimumAmount: Number(event.target.value) })} /></label>
-            <label className="settings-input-group"><span className="muted">Maximum amount</span><input type="number" value={section.maximumAmount} onChange={(event) => updateAdvancedObject("giftCardSettings", { maximumAmount: Number(event.target.value) })} /></label>
-          </div>
-        </div>
-
-        <div className="settings-panel-card" style={{ marginTop: 16 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-            <div>
-              <h3 style={{ margin: 0, marginBottom: 14, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{auth?.membership?.salon?.name || "Salon"} - Gift Card</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
-                {cardTemplates.map((template, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => { setCardForm({ name: template.name, description: template.description || "", active: true, amount: template.amount, validityDays: template.validityDays, renewalReminderDays: template.renewalReminderDays }); setEditingCard({ ...template, _idx: idx }); }}
-                    style={{
-                      padding: "10px 14px",
-                      border: editingCard?._idx === idx ? "2px solid #3b82f6" : "1px solid #e2e8f0",
-                      borderRadius: 8,
-                      background: editingCard?._idx === idx ? "#eff6ff" : "#fff",
-                      textAlign: "left",
-                      fontSize: 14,
-                      color: "#0f172a",
-                      cursor: "pointer",
-                      fontWeight: editingCard?._idx === idx ? 600 : 500
-                    }}
-                  >
-                    {template.name}
-                  </button>
-                ))}
+        
+        <div className="settings-panel-card" style={{ marginTop: 16, padding: "24px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 32 }}>
+            
+            {/* Left Column: list of templates */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, borderRight: "1px solid #e2e8f0", paddingRight: 24 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {cardTemplates.map((template, idx) => {
+                  const isSelected = editingCard?._idx === idx;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setCardForm({
+                          name: template.name,
+                          description: template.description || "",
+                          active: template.active !== false,
+                          amount: template.amount,
+                          validityDays: template.validityDays,
+                          renewalReminderDays: template.renewalReminderDays
+                        });
+                        setEditingCard({ ...template, _idx: idx });
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "16px",
+                        borderRadius: 6,
+                        background: isSelected ? "var(--button-bg-solid, #3b82f6)" : "#f8fafc",
+                        border: isSelected ? "none" : "1px solid #cbd5e1",
+                        textAlign: "left",
+                        fontSize: 14,
+                        color: isSelected ? "#fff" : "#1e293b",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                        boxShadow: isSelected ? "0 4px 6px -1px rgba(59, 130, 246, 0.2), 0 2px 4px -1px rgba(59, 130, 246, 0.1)" : "none",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      {template.name}
+                    </button>
+                  );
+                })}
               </div>
               <button
                 type="button"
                 onClick={() => {
-                  const name = window.prompt("Enter new gift card name:");
-                  if (name && name.trim()) {
-                    const newTemplate = { name: name.trim(), description: "", amount: 1000, validityDays: 30, renewalReminderDays: 7 };
-                    const next = [...cardTemplates, newTemplate];
-                    updateAdvancedObject("giftCardSettings", { templates: next });
-                    setCardForm({ name: newTemplate.name, description: "", active: true, amount: 1000, validityDays: 30, renewalReminderDays: 7 });
-                    setEditingCard({ ...newTemplate, _idx: next.length - 1 });
-                  }
+                  setEditingCard(null);
+                  setCardForm({ name: "", description: "", active: true, amount: "", validityDays: 30, renewalReminderDays: 7 });
                 }}
-                style={{ width: "100%", padding: "10px 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 14 }}
+                style={{
+                  width: "100%",
+                  padding: "12px 20px",
+                  background: "var(--button-bg-solid, #3b82f6)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontSize: 14,
+                  marginTop: 12,
+                  transition: "all 0.15s ease",
+                  textAlign: "center"
+                }}
               >
                 Create New Gift Card
               </button>
             </div>
-            <div>
-              <h3 style={{ margin: 0, marginBottom: 14, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>{editingCard ? "Edit Gift Card" : "Create New Gift Card"}</h3>
-              <div className="settings-form-grid">
-                <label className="settings-input-group"><span className="muted">Name</span><input value={cardForm.name} onChange={(e) => setCardForm({ ...cardForm, name: e.target.value })} placeholder="Enter Gift Card Name" /></label>
-                <label className="settings-input-group"><span className="muted">Description</span><input value={cardForm.description} onChange={(e) => setCardForm({ ...cardForm, description: e.target.value })} placeholder="Enter Gift Card Description" /></label>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", gridColumn: "span 2" }}>
-                  <input type="checkbox" checked={cardForm.active} onChange={(e) => setCardForm({ ...cardForm, active: e.target.checked })} style={{ width: 18, height: 18 }} />
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>Active</span>
-                </label>
-                <label className="settings-input-group"><span className="muted">Amount</span><input type="number" value={cardForm.amount} onChange={(e) => setCardForm({ ...cardForm, amount: e.target.value })} placeholder="Enter Amount" /></label>
-                <label className="settings-input-group"><span className="muted">Validity (In days)</span><input type="number" value={cardForm.validityDays} onChange={(e) => setCardForm({ ...cardForm, validityDays: Number(e.target.value) })} placeholder="Enter Days" /></label>
-                <label className="settings-input-group"><span className="muted">Renewal Reminder</span><input type="number" value={cardForm.renewalReminderDays} onChange={(e) => setCardForm({ ...cardForm, renewalReminderDays: Number(e.target.value) })} placeholder="In Days" /></label>
-              </div>
-              <div style={{ display: "flex", gap: 10, marginTop: 18, justifyContent: "flex-end" }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (editingCard?._idx !== undefined) {
-                      const next = cardTemplates.map((t, i) => i === editingCard._idx ? { ...cardForm, amount: Number(cardForm.amount), validityDays: Number(cardForm.validityDays), renewalReminderDays: Number(cardForm.renewalReminderDays) } : t);
-                      updateAdvancedObject("giftCardSettings", { templates: next });
-                    }
-                    setEditingCard(null);
-                    setCardForm({ name: "", description: "", active: true, amount: "", validityDays: 30, renewalReminderDays: 7 });
-                  }}
-                  style={{ padding: "10px 24px", background: "#fff", border: "1px solid #cbd5e1", color: "#475569", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 14 }}
-                >
-                  {editingCard ? "Cancel" : "Clear"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (editingCard?._idx !== undefined) {
-                      const next = cardTemplates.map((t, i) => i === editingCard._idx ? { name: cardForm.name, description: cardForm.description, amount: Number(cardForm.amount), validityDays: Number(cardForm.validityDays), renewalReminderDays: Number(cardForm.renewalReminderDays) } : t);
-                      updateAdvancedObject("giftCardSettings", { templates: next });
-                    } else {
-                      const newTemplate = { name: cardForm.name, description: cardForm.description, amount: Number(cardForm.amount), validityDays: Number(cardForm.validityDays), renewalReminderDays: Number(cardForm.renewalReminderDays) };
-                      updateAdvancedObject("giftCardSettings", { templates: [...cardTemplates, newTemplate] });
-                    }
-                    setEditingCard(null);
-                    setCardForm({ name: "", description: "", active: true, amount: "", validityDays: 30, renewalReminderDays: 7 });
-                  }}
-                  style={{ padding: "10px 28px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 }}
-                >
-                  Save
-                </button>
+
+            {/* Right Column: Update / Create Form */}
+            <div style={{ paddingLeft: 8 }}>
+              <h2 style={{ margin: 0, marginBottom: 24, fontSize: 22, fontWeight: 700, color: "#3b82f6" }}>
+                {editingCard ? "Update Gift Card" : "Create Gift Card"}
+              </h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                
+                {/* Row 1: Name, Description, Active */}
+                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.5fr auto", gap: 20, alignItems: "center" }}>
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Name</span>
+                    <input
+                      value={cardForm.name}
+                      onChange={(e) => setCardForm({ ...cardForm, name: e.target.value })}
+                      placeholder="Enter Gift Card Name"
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "10px 14px", fontSize: 14, outline: "none" }}
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Description</span>
+                    <input
+                      value={cardForm.description}
+                      onChange={(e) => setCardForm({ ...cardForm, description: e.target.value })}
+                      placeholder="Enter Gift Card Description"
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "10px 14px", fontSize: 14, outline: "none" }}
+                    />
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginTop: 24 }}>
+                    <input
+                      type="checkbox"
+                      checked={cardForm.active}
+                      onChange={(e) => setCardForm({ ...cardForm, active: e.target.checked })}
+                      style={{ width: 18, height: 18, accentColor: "#3b82f6" }}
+                    />
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "#475569" }}>Active</span>
+                  </label>
+                </div>
+
+                {/* Row 2: Amount, Validity (In days), Renewal Reminder */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Amount</span>
+                    <input
+                      type="number"
+                      value={cardForm.amount}
+                      onChange={(e) => setCardForm({ ...cardForm, amount: e.target.value })}
+                      placeholder="Enter Amount"
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "10px 14px", fontSize: 14, outline: "none" }}
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Validity (In days)</span>
+                    <input
+                      type="number"
+                      value={cardForm.validityDays}
+                      onChange={(e) => setCardForm({ ...cardForm, validityDays: e.target.value })}
+                      placeholder="Enter Days"
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "10px 14px", fontSize: 14, outline: "none" }}
+                    />
+                  </label>
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Renewal Reminder</span>
+                    <input
+                      type="number"
+                      value={cardForm.renewalReminderDays}
+                      onChange={(e) => setCardForm({ ...cardForm, renewalReminderDays: e.target.value })}
+                      placeholder="In Days"
+                      style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "10px 14px", fontSize: 14, outline: "none" }}
+                    />
+                  </label>
+                </div>
+
+                {/* Form Buttons */}
+                <div style={{ display: "flex", gap: 12, marginTop: 24, justifyContent: "flex-end" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingCard(null);
+                      setCardForm({ name: "", description: "", active: true, amount: "", validityDays: 30, renewalReminderDays: 7 });
+                    }}
+                    style={{
+                      padding: "10px 24px",
+                      background: "#fff",
+                      border: "1px solid #cbd5e1",
+                      color: "#475569",
+                      borderRadius: 6,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontSize: 14
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editingCard?._idx !== undefined) {
+                        const next = cardTemplates.map((t, i) =>
+                          i === editingCard._idx
+                            ? {
+                                name: cardForm.name,
+                                description: cardForm.description,
+                                active: cardForm.active,
+                                amount: Number(cardForm.amount) || 0,
+                                validityDays: Number(cardForm.validityDays) || 0,
+                                renewalReminderDays: Number(cardForm.renewalReminderDays) || 0
+                              }
+                            : t
+                        );
+                        updateAdvancedObject("giftCardSettings", { templates: next });
+                      } else {
+                        const newTemplate = {
+                          name: cardForm.name,
+                          description: cardForm.description,
+                          active: cardForm.active,
+                          amount: Number(cardForm.amount) || 0,
+                          validityDays: Number(cardForm.validityDays) || 0,
+                          renewalReminderDays: Number(cardForm.renewalReminderDays) || 0
+                        };
+                        updateAdvancedObject("giftCardSettings", { templates: [...cardTemplates, newTemplate] });
+                      }
+                      setEditingCard(null);
+                      setCardForm({ name: "", description: "", active: true, amount: "", validityDays: 30, renewalReminderDays: 7 });
+                    }}
+                    style={{
+                      padding: "10px 28px",
+                      background: "var(--button-bg-solid, #3b82f6)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontSize: 14
+                    }}
+                  >
+                    Save
+                  </button>
+                </div>
+
               </div>
             </div>
+
           </div>
         </div>
-                <div className="settings-panel-card">
+
+        <div className="settings-panel-card" style={{ marginTop: 16 }}>
           <div className="item-head" style={{ marginBottom: 12 }}>
             <div>
               <h3 style={{ margin: 0 }}>Live Gift Cards</h3>
@@ -3156,7 +3417,7 @@ export default function SettingsPage() {
           <div style={{ width: 300, flexShrink: 0 }}>
             <div className="settings-panel-card" style={{ padding: 0 }}>
               <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid #f1f5f9" }}>
-                <button type="button" onClick={startCreate} style={{ width: "100%", padding: "10px", background: "#3b82f6", color: "white", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Create New</button>
+                <button type="button" onClick={startCreate} style={{ width: "100%", padding: "10px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Create New</button>
               </div>
               <div style={{ maxHeight: 420, overflowY: "auto" }}>
                 {rows.map((row) => (
@@ -3199,7 +3460,7 @@ export default function SettingsPage() {
           <div style={{ flex: 1, minWidth: 0 }}>
             {editing ? (
               <div className="settings-panel-card">
-                <h3 style={{ color: "#3b82f6" }}>{draftPnlCategory?._isNew ? "Create PNL Category" : `Edit: ${editing.name || "Category"}`}</h3>
+                <h3 style={{ color: "var(--accent, #3b82f6)" }}>{draftPnlCategory?._isNew ? "Create PNL Category" : `Edit: ${editing.name || "Category"}`}</h3>
                 <div className="settings-form-grid" style={{ marginBottom: 16 }}>
                   <label className="settings-input-group">
                     <span className="muted">Category Name</span>
@@ -3236,13 +3497,13 @@ export default function SettingsPage() {
                     type="checkbox"
                     checked={draftPnlCategory?.active ?? editing.active}
                     onChange={(event) => draftPnlCategory && setDraftPnlCategory({ ...draftPnlCategory, active: event.target.checked })}
-                    style={{ width: 18, height: 18, accentColor: "#3b82f6", cursor: "pointer" }}
+                    style={{ width: 18, height: 18, accentColor: "var(--accent, #3b82f6)", cursor: "pointer" }}
                   />
                   Active
                 </label>
                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20, paddingTop: 16, borderTop: "1px solid #f1f5f9" }}>
                   <button type="button" onClick={cancelDraft} style={{ padding: "10px 24px", background: "white", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", color: "#475569", fontSize: 13 }}>Cancel</button>
-                  <button type="button" onClick={saveDraft} style={{ padding: "10px 24px", background: "#3b82f6", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Save</button>
+                  <button type="button" onClick={saveDraft} style={{ padding: "10px 24px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Save</button>
                 </div>
               </div>
             ) : (
@@ -3291,39 +3552,71 @@ export default function SettingsPage() {
       return date.toISOString().slice(0, 10);
     };
 
-    const makeDraftFromRow = (row, isNew = false) => ({
-      id: row?.id || makeId("coupon"),
-      branchId: row?.branchId || row?.branch?.id || "",
-      serviceId: row?.serviceId || row?.service?.id || "",
-      productId: row?.productId || row?.product?.id || "",
-      code: row?.code || "",
-      title: row?.title || "",
-      description: row?.description || "",
-      discountType: row?.discountType || "PERCENT",
-      discountValue: row?.discountValue ?? 10,
-      minBillAmount: row?.minBillAmount ?? 0,
-      usageLimit: row?.usageLimit ?? "",
-      customerUsageLimit: row?.customerUsageLimit ?? "",
-      startsAt: toDateInput(row?.startsAt),
-      endsAt: toDateInput(row?.endsAt),
-      isReferral: Boolean(row?.isReferral),
-      isInfluencer: Boolean(row?.isInfluencer),
-      isBirthday: Boolean(row?.isBirthday),
-      isFestival: Boolean(row?.isFestival),
-      isArchived: Boolean(row?.isArchived),
-      notes: row?.notes || "",
-      _isNew: isNew
-    });
+    const makeDraftFromRow = (row, isNew = false) => {
+      let valDays = 90;
+      if (row?.startsAt && row?.endsAt) {
+        const diffTime = Math.abs(new Date(row.endsAt) - new Date(row.startsAt));
+        valDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+      
+      const match = String(row?.notes || "").match(/\[MaxBenefitAmt:\s*([^\]]*)\s*\]/);
+      const maxBenefitAmt = match ? match[1] : "";
+      const isPrivate = String(row?.notes || "").includes("PRIVATE");
+      const cleanNotesText = row?.notes ? row.notes.replace(/\[MaxBenefitAmt:\s*[^\]]*\s*\]/, "").replace("PRIVATE", "").trim() : "";
+
+      return {
+        id: row?.id || makeId("coupon"),
+        branchId: row?.branchId || row?.branch?.id || "",
+        serviceId: row?.serviceId || row?.service?.id || "",
+        productId: row?.productId || row?.product?.id || "",
+        code: row?.code || "",
+        title: row?.title || "",
+        description: row?.description || "",
+        discountType: row?.discountType || "PERCENT",
+        discountValue: row?.discountValue ?? 10,
+        minBillAmount: row?.minBillAmount ?? 0,
+        usageLimit: row?.usageLimit ?? "",
+        customerUsageLimit: row?.customerUsageLimit ?? "",
+        startsAt: row?.startsAt ? toDateInput(row.startsAt) : new Date().toISOString().split('T')[0],
+        endsAt: row?.endsAt ? toDateInput(row.endsAt) : "",
+        validityDays: valDays,
+        isReferral: Boolean(row?.isReferral),
+        isInfluencer: Boolean(row?.isInfluencer),
+        isBirthday: Boolean(row?.isBirthday),
+        isFestival: Boolean(row?.isFestival),
+        isArchived: Boolean(row?.isArchived),
+        maxBenefitAmt: maxBenefitAmt,
+        isPrivate: isPrivate,
+        notesText: cleanNotesText,
+        _isNew: isNew
+      };
+    };
+
+    const handleSelectCoupon = (row) => {
+      setSelectedCouponId(row.id);
+      setDraftCoupon(makeDraftFromRow(row, false));
+    };
+
+    const handleFieldChange = (field, value) => {
+      if (!draftCoupon) return;
+      const updated = { ...draftCoupon, [field]: value };
+      
+      if (field === "startsAt" || field === "validityDays") {
+        const start = updated.startsAt ? new Date(updated.startsAt) : new Date();
+        if (!isNaN(start.getTime())) {
+          const end = new Date(start);
+          end.setDate(end.getDate() + Number(updated.validityDays || 0));
+          updated.endsAt = end.toISOString().split('T')[0];
+        }
+      }
+      
+      setDraftCoupon(updated);
+    };
 
     const startCreate = () => {
       const newDraft = makeDraftFromRow({ code: "", title: "", discountType: "PERCENT", discountValue: 10, minBillAmount: 0, isArchived: false }, true);
       setDraftCoupon(newDraft);
       setSelectedCouponId(newDraft.id);
-    };
-
-    const startEdit = (row) => {
-      setDraftCoupon(makeDraftFromRow(row, false));
-      setSelectedCouponId(row.id);
     };
 
     const cancelDraft = () => {
@@ -3333,27 +3626,39 @@ export default function SettingsPage() {
       setDraftCoupon(null);
     };
 
-    const buildPayload = (draft) => ({
-      branchId: draft.branchId || null,
-      serviceId: draft.serviceId || null,
-      productId: draft.productId || null,
-      code: String(draft.code || "").trim().toUpperCase(),
-      title: String(draft.title || "").trim(),
-      description: String(draft.description || "").trim() || null,
-      discountType: draft.discountType === "FIXED" ? "FIXED" : "PERCENT",
-      discountValue: Number(draft.discountValue || 0),
-      minBillAmount: Number(draft.minBillAmount || 0),
-      usageLimit: draft.usageLimit === "" || draft.usageLimit == null ? null : Number(draft.usageLimit),
-      customerUsageLimit: draft.customerUsageLimit === "" || draft.customerUsageLimit == null ? null : Number(draft.customerUsageLimit),
-      startsAt: draft.startsAt || null,
-      endsAt: draft.endsAt || null,
-      isReferral: Boolean(draft.isReferral),
-      isInfluencer: Boolean(draft.isInfluencer),
-      isBirthday: Boolean(draft.isBirthday),
-      isFestival: Boolean(draft.isFestival),
-      isArchived: Boolean(draft.isArchived),
-      notes: String(draft.notes || "").trim() || null
-    });
+    const buildPayload = (draft) => {
+      const start = draft.startsAt ? new Date(draft.startsAt) : new Date();
+      const end = new Date(start);
+      end.setDate(end.getDate() + Number(draft.validityDays || 0));
+
+      const notesArr = [];
+      if (draft.isPrivate) notesArr.push("PRIVATE");
+      if (draft.maxBenefitAmt) notesArr.push(`[MaxBenefitAmt: ${draft.maxBenefitAmt}]`);
+      if (draft.notesText) notesArr.push(draft.notesText);
+      const finalNotes = notesArr.join(" ");
+
+      return {
+        branchId: draft.branchId || null,
+        serviceId: draft.serviceId || null,
+        productId: draft.productId || null,
+        code: String(draft.code || "").trim().toUpperCase(),
+        title: String(draft.title || "").trim(),
+        description: String(draft.description || "").trim() || null,
+        discountType: draft.discountType === "FIXED" ? "FIXED" : "PERCENT",
+        discountValue: Number(draft.discountValue || 0),
+        minBillAmount: Number(draft.minBillAmount || 0),
+        usageLimit: draft.usageLimit === "" || draft.usageLimit == null ? null : Number(draft.usageLimit),
+        customerUsageLimit: draft.customerUsageLimit === "" || draft.customerUsageLimit == null ? null : Number(draft.customerUsageLimit),
+        startsAt: start.toISOString(),
+        endsAt: end.toISOString(),
+        isReferral: Boolean(draft.isReferral),
+        isInfluencer: Boolean(draft.isInfluencer),
+        isBirthday: Boolean(draft.isBirthday),
+        isFestival: Boolean(draft.isFestival),
+        isArchived: Boolean(draft.isArchived),
+        notes: finalNotes || null
+      };
+    };
 
     const saveDraft = async () => {
       if (!draftCoupon) return;
@@ -3427,246 +3732,302 @@ export default function SettingsPage() {
         </div>
 
         <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-          <div style={{ width: 320, flexShrink: 0 }}>
-            <div className="settings-panel-card" style={{ padding: 0 }}>
-              <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid #f1f5f9" }}>
-                <button type="button" onClick={startCreate} style={{ width: "100%", padding: "10px", background: "#3b82f6", color: "white", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Create New Coupon</button>
-              </div>
-              <div style={{ padding: 12, borderBottom: "1px solid #f1f5f9" }}>
-                <input
-                  value={couponSearch}
-                  onChange={(event) => setCouponSearch(event.target.value)}
-                  placeholder="Search coupons..."
-                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }}
-                />
-              </div>
-              <div style={{ maxHeight: 520, overflowY: "auto" }}>
-                {filteredRows.map((row) => (
+          {/* Left Column - List of Coupons */}
+          <div style={{ width: 320, flexShrink: 0, display: "flex", flexDirection: "column", background: "white", borderRadius: 12, padding: "16px", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            <div style={{ marginBottom: 12 }}>
+              <input
+                value={couponSearch}
+                onChange={(event) => setCouponSearch(event.target.value)}
+                placeholder="Search coupons..."
+                style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }}
+              />
+            </div>
+            <div style={{ maxHeight: 520, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, paddingRight: 4 }}>
+              {filteredRows.map((row) => {
+                const isSelected = selectedCouponId === row.id;
+                return (
                   <div
                     key={row.id}
+                    onClick={() => handleSelectCoupon(row)}
                     style={{
-                      padding: "14px 16px",
-                      borderBottom: "1px solid #f1f5f9",
+                      padding: "12px 14px",
+                      borderRadius: 8,
                       cursor: "pointer",
-                      background: selectedCouponId === row.id ? "#eff6ff" : "white",
-                      borderLeft: selectedCouponId === row.id ? "3px solid #3b82f6" : "3px solid transparent",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 12
+                      background: isSelected ? "#e0f2fe" : "transparent",
+                      border: isSelected ? "1px solid #0284c7" : "1px solid #f1f5f9",
+                      transition: "all 0.2s"
                     }}
                   >
-                    <div style={{ flex: 1 }} onClick={() => { setSelectedCouponId(row.id); setDraftCoupon(null); }}>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a" }}>{row.code || "Untitled Coupon"}</div>
-                      <div style={{ fontSize: 12, color: "#475569", marginTop: 3, display: "flex", alignItems: "center", gap: 6 }}>
-                        <span>{row.title || "No title"}</span>
-                        <span>·</span>
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: row.isArchived ? "#ef4444" : "#22c55e" }} />
-                          {row.isArchived ? "Archived" : "Active"}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
-                        {row.discountType === "PERCENT" ? `${row.discountValue}% off` : `₹${row.discountValue || 0} off`} | Min bill {formatMoney(Number(row.minBillAmount || 0))}
-                      </div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a" }}>
+                      {row.discountType === "PERCENT" ? `FLAT ${Number(row.discountValue)}% OFF` : `FLAT ${Number(row.discountValue)} Rs OFF`}
                     </div>
-                    <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                      <button
-                        type="button"
-                        onClick={(event) => { event.stopPropagation(); startEdit(row); }}
-                        title="Edit coupon"
-                        style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, cursor: "pointer", color: "#475569", padding: 0 }}
-                      >
-                        <Edit2 size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(event) => { event.stopPropagation(); toggleArchived(row); }}
-                        title={row.isArchived ? "Restore coupon" : "Archive coupon"}
-                        style={{ width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", background: row.isArchived ? "#eff6ff" : "#fef2f2", border: `1px solid ${row.isArchived ? "#bfdbfe" : "#fecaca"}`, borderRadius: 6, cursor: "pointer", color: row.isArchived ? "#1d4ed8" : "#dc2626", padding: 0 }}
-                      >
-                        {row.isArchived ? <RefreshCw size={13} /> : <Trash2 size={13} />}
-                      </button>
+                    <div style={{ color: isSelected ? "#0284c7" : "#475569", fontSize: 12, marginTop: 4, fontWeight: 500 }}>
+                      {row.code}
                     </div>
                   </div>
-                ))}
-                {!filteredRows.length && (
-                  <div style={{ padding: "44px 16px", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
-                    <strong style={{ display: "block", marginBottom: 6 }}>No coupons found</strong>
-                    <span>{couponSearch ? "Try a different search term." : "Create a coupon to manage discounts, campaigns, and POS offers."}</span>
-                  </div>
-                )}
-              </div>
+                );
+              })}
+              {!filteredRows.length && (
+                <div style={{ padding: "44px 16px", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
+                  <strong style={{ display: "block", marginBottom: 6 }}>No coupons found</strong>
+                  <span>{couponSearch ? "Try a different search term." : "Create a coupon to manage discounts."}</span>
+                </div>
+              )}
             </div>
+            <button
+              type="button"
+              onClick={startCreate}
+              style={{
+                marginTop: 16,
+                width: "100%",
+                padding: "12px",
+                background: "var(--button-bg-solid, #3b82f6)",
+                color: "white",
+                border: "none",
+                borderRadius: 8,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontSize: 14
+              }}
+            >
+              Create New Coupon
+            </button>
           </div>
 
+          {/* Right Column - Coupon Form */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            {editing ? (
-              <div className="settings-panel-card">
-                <h3 style={{ color: "#3b82f6", marginTop: 0 }}>{draftCoupon?._isNew ? "Create Coupon" : `Update Coupon: ${editing.code || "Coupon"}`}</h3>
-                <div className="settings-form-grid" style={{ marginBottom: 16 }}>
-                  <label className="settings-input-group">
-                    <span className="muted">Name</span>
-                    <input
-                      type="text"
-                      value={draftCoupon?.title ?? editing.title}
-                      onChange={(event) => draftCoupon && setDraftCoupon({ ...draftCoupon, title: event.target.value })}
-                      placeholder="e.g. Summer Sale Discount"
-                    />
-                  </label>
-                  <label className="settings-input-group">
-                    <span className="muted">Code</span>
-                    <input
-                      type="text"
-                      value={draftCoupon?.code ?? editing.code}
-                      onChange={(event) => draftCoupon && setDraftCoupon({ ...draftCoupon, code: event.target.value.toUpperCase() })}
-                      placeholder="e.g. SUMMER20"
-                    />
-                  </label>
-                  <label className="settings-input-group">
-                    <span className="muted">Description</span>
-                    <input
-                      type="text"
-                      value={draftCoupon?.description ?? editing.description ?? ""}
-                      onChange={(event) => draftCoupon && setDraftCoupon({ ...draftCoupon, description: event.target.value })}
-                      placeholder="Optional description"
-                    />
-                  </label>
-                  <label className="settings-input-group">
-                    <span className="muted">Benefit Type</span>
-                    <select
-                      value={draftCoupon?.discountType ?? editing.discountType}
-                      onChange={(event) => draftCoupon && setDraftCoupon({ ...draftCoupon, discountType: event.target.value })}
+            {draftCoupon ? (
+              <div style={{ background: "white", borderRadius: 12, padding: "24px 30px", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ color: "var(--accent, #3b82f6)", marginTop: 0, marginBottom: 24, fontSize: 18, fontWeight: 700 }}>
+                  {draftCoupon?._isNew ? "Create Coupon" : "Update Coupon"}
+                </h3>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  {/* Row 1: Name, Code, Description, Active */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr 2fr auto", gap: 16, alignItems: "center" }}>
+                    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>Name</span>
+                      <input
+                        type="text"
+                        value={draftCoupon.title}
+                        onChange={(e) => handleFieldChange("title", e.target.value)}
+                        placeholder="e.g. GMAP Review"
+                        style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.9rem", width: "100%", boxSizing: "border-box" }}
+                      />
+                    </label>
+                    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>Code</span>
+                      <input
+                        type="text"
+                        value={draftCoupon.code}
+                        onChange={(e) => handleFieldChange("code", e.target.value.toUpperCase())}
+                        placeholder="e.g. GMAP"
+                        style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.9rem", width: "100%", boxSizing: "border-box" }}
+                      />
+                    </label>
+                    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>Description</span>
+                      <input
+                        type="text"
+                        value={draftCoupon.description}
+                        onChange={(e) => handleFieldChange("description", e.target.value)}
+                        placeholder="e.g. Once Per Customer Where..."
+                        style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.9rem", width: "100%", boxSizing: "border-box" }}
+                      />
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22, cursor: "pointer", userSelect: "none" }}>
+                      <input
+                        type="checkbox"
+                        checked={!draftCoupon.isArchived}
+                        onChange={(e) => handleFieldChange("isArchived", !e.target.checked)}
+                        style={{ width: 18, height: 18, cursor: "pointer" }}
+                      />
+                      <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "#475569" }}>Active</span>
+                    </label>
+                  </div>
+
+                  {/* Row 2: Benefit Type, Benefit Value, Coupon Activated Date */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.2fr 1.2fr", gap: 16 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>Benefit Type</span>
+                      <div style={{ display: "flex", gap: 20, marginTop: 10 }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                          <input
+                            type="radio"
+                            name="discountType"
+                            checked={draftCoupon.discountType === "FIXED"}
+                            onChange={() => handleFieldChange("discountType", "FIXED")}
+                            style={{ width: 16, height: 16 }}
+                          />
+                          <span style={{ fontSize: "0.9rem", fontWeight: 500, color: "#334155" }}>Fixed</span>
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                          <input
+                            type="radio"
+                            name="discountType"
+                            checked={draftCoupon.discountType === "PERCENT"}
+                            onChange={() => handleFieldChange("discountType", "PERCENT")}
+                            style={{ width: 16, height: 16 }}
+                          />
+                          <span style={{ fontSize: "0.9rem", fontWeight: 500, color: "#334155" }}>Percentage</span>
+                        </label>
+                      </div>
+                    </div>
+                    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>
+                        {draftCoupon.discountType === "PERCENT" ? "Benefit Value in %" : "Benefit Value in ₹"}
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={draftCoupon.discountValue}
+                        onChange={(e) => handleFieldChange("discountValue", Number(e.target.value || 0))}
+                        placeholder="50"
+                        style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.9rem", width: "100%", boxSizing: "border-box" }}
+                      />
+                    </label>
+                    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>Coupon Activated Date</span>
+                      <input
+                        type="date"
+                        value={draftCoupon.startsAt}
+                        onChange={(e) => handleFieldChange("startsAt", e.target.value)}
+                        style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.9rem", width: "100%", boxSizing: "border-box" }}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Row 3: Minimum Amount, Max benefit Amt, Max Used Count, Validity */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16 }}>
+                    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>Minimum Amount for Redemption</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={draftCoupon.minBillAmount}
+                        onChange={(e) => handleFieldChange("minBillAmount", Number(e.target.value || 0))}
+                        placeholder="59"
+                        style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.9rem", width: "100%", boxSizing: "border-box" }}
+                      />
+                    </label>
+                    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>Max benefit Amt</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={draftCoupon.maxBenefitAmt}
+                        onChange={(e) => handleFieldChange("maxBenefitAmt", e.target.value)}
+                        placeholder="e.g. 150"
+                        style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.9rem", width: "100%", boxSizing: "border-box" }}
+                      />
+                    </label>
+                    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>Max Used Count</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={draftCoupon.usageLimit}
+                        onChange={(e) => handleFieldChange("usageLimit", e.target.value)}
+                        placeholder="Enter Count"
+                        style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.9rem", width: "100%", boxSizing: "border-box" }}
+                      />
+                    </label>
+                    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>Validity (In days)</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={draftCoupon.validityDays}
+                        onChange={(e) => handleFieldChange("validityDays", e.target.value)}
+                        placeholder="90"
+                        style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.9rem", width: "100%", boxSizing: "border-box" }}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Toggle Row: Private */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc" }}>
+                    <div>
+                      <div style={{ fontWeight: 600, color: "#1e293b", fontSize: "0.9rem" }}>Private</div>
+                      <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: 2 }}>This coupon will not be visible on the public online catalog.</div>
+                    </div>
+                    <div
+                      onClick={() => handleFieldChange("isPrivate", !draftCoupon.isPrivate)}
+                      style={{
+                        width: 44,
+                        height: 22,
+                        background: draftCoupon.isPrivate ? "#10b981" : "#cbd5e1",
+                        borderRadius: 11,
+                        padding: 2,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: draftCoupon.isPrivate ? "flex-end" : "flex-start",
+                        transition: "all 0.2s",
+                        boxSizing: "border-box"
+                      }}
                     >
-                      <option value="PERCENT">Percentage</option>
-                      <option value="FIXED">Fixed Amount</option>
-                    </select>
-                  </label>
-                  <label className="settings-input-group">
-                    <span className="muted">Benefit Value in {formatMoney(1).replace(/1/g, "") || "â‚¹"}</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={draftCoupon?.discountValue ?? editing.discountValue ?? 0}
-                      onChange={(event) => draftCoupon && setDraftCoupon({ ...draftCoupon, discountValue: Number(event.target.value || 0) })}
-                      placeholder="e.g. 20"
-                    />
-                  </label>
-                  <label className="settings-input-group">
-                    <span className="muted">Minimum Amount for Redemption</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={draftCoupon?.minBillAmount ?? editing.minBillAmount ?? 0}
-                      onChange={(event) => draftCoupon && setDraftCoupon({ ...draftCoupon, minBillAmount: Number(event.target.value || 0) })}
-                      placeholder="e.g. 500"
-                    />
-                  </label>
-                  <label className="settings-input-group">
-                    <span className="muted">Coupon Activated Date</span>
-                    <input
-                      type="date"
-                      value={draftCoupon?.startsAt ?? editing.startsAt ? toDateInput(draftCoupon?.startsAt ?? editing.startsAt) : ""}
-                      onChange={(event) => draftCoupon && setDraftCoupon({ ...draftCoupon, startsAt: event.target.value })}
-                    />
-                  </label>
-                  <label className="settings-input-group">
-                    <span className="muted">Validity End Date</span>
-                    <input
-                      type="date"
-                      value={draftCoupon?.endsAt ?? editing.endsAt ? toDateInput(draftCoupon?.endsAt ?? editing.endsAt) : ""}
-                      onChange={(event) => draftCoupon && setDraftCoupon({ ...draftCoupon, endsAt: event.target.value })}
-                    />
-                  </label>
-                  <label className="settings-input-group">
-                    <span className="muted">Max Used Count</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={draftCoupon?.usageLimit ?? editing.usageLimit ?? ""}
-                      onChange={(event) => draftCoupon && setDraftCoupon({ ...draftCoupon, usageLimit: event.target.value })}
-                      placeholder="Unlimited if empty"
-                    />
-                  </label>
-                  <label className="settings-input-group">
-                    <span className="muted">Customer Usage Limit</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={draftCoupon?.customerUsageLimit ?? editing.customerUsageLimit ?? ""}
-                      onChange={(event) => draftCoupon && setDraftCoupon({ ...draftCoupon, customerUsageLimit: event.target.value })}
-                      placeholder="Per customer"
-                    />
-                  </label>
-                  <label className="settings-input-group">
-                    <span className="muted">Branch</span>
-                    <input
-                      type="text"
-                      value={draftCoupon?.branchId ?? editing.branchId ?? ""}
-                      onChange={(event) => draftCoupon && setDraftCoupon({ ...draftCoupon, branchId: event.target.value })}
-                      placeholder="Optional branch id"
-                    />
-                  </label>
-                  <label className="settings-input-group">
-                    <span className="muted">Service</span>
-                    <input
-                      type="text"
-                      value={draftCoupon?.serviceId ?? editing.serviceId ?? ""}
-                      onChange={(event) => draftCoupon && setDraftCoupon({ ...draftCoupon, serviceId: event.target.value })}
-                      placeholder="Optional service id"
-                    />
-                  </label>
-                  <label className="settings-input-group">
-                    <span className="muted">Product</span>
-                    <input
-                      type="text"
-                      value={draftCoupon?.productId ?? editing.productId ?? ""}
-                      onChange={(event) => draftCoupon && setDraftCoupon({ ...draftCoupon, productId: event.target.value })}
-                      placeholder="Optional product id"
-                    />
-                  </label>
-                </div>
-
-                <div className="settings-toggle-grid" style={{ marginBottom: 16 }}>
-                  <ToggleRow checked={Boolean(draftCoupon?.isReferral ?? editing.isReferral)} label="Referral coupon" onChange={(value) => draftCoupon && setDraftCoupon({ ...draftCoupon, isReferral: value })} />
-                  <ToggleRow checked={Boolean(draftCoupon?.isInfluencer ?? editing.isInfluencer)} label="Influencer coupon" onChange={(value) => draftCoupon && setDraftCoupon({ ...draftCoupon, isInfluencer: value })} />
-                  <ToggleRow checked={Boolean(draftCoupon?.isBirthday ?? editing.isBirthday)} label="Birthday coupon" onChange={(value) => draftCoupon && setDraftCoupon({ ...draftCoupon, isBirthday: value })} />
-                  <ToggleRow checked={Boolean(draftCoupon?.isFestival ?? editing.isFestival)} label="Festival coupon" onChange={(value) => draftCoupon && setDraftCoupon({ ...draftCoupon, isFestival: value })} />
-                </div>
-
-                <div className="settings-panel-card" style={{ marginBottom: 16, background: "#f8fafc" }}>
-                  <div className="settings-panel-header-with-toggle" style={{ borderBottom: "none", marginBottom: 0, paddingBottom: 0 }}>
-                    <h3 style={{ margin: 0, fontSize: 16 }}>Status</h3>
-                    <div className="header-toggle-container">
-                      <label className="toggle-switch-label">
-                        <input
-                          type="checkbox"
-                          checked={!Boolean(draftCoupon?.isArchived ?? editing.isArchived)}
-                          onChange={(event) => draftCoupon && setDraftCoupon({ ...draftCoupon, isArchived: !event.target.checked })}
-                        />
-                        <span className="toggle-switch-slider" />
-                      </label>
-                      <span className="toggle-status-text">{Boolean(draftCoupon?.isArchived ?? editing.isArchived) ? "Archived" : "Active"}</span>
+                      <div style={{ width: 18, height: 18, background: "white", borderRadius: "50%", boxShadow: "0 1px 3px rgba(0,0,0,0.15)" }} />
                     </div>
                   </div>
-                  <div className="muted" style={{ marginTop: 10, fontSize: 12 }}>
-                    Archived coupons stay in history, but you can keep them out of active redemption workflows.
-                  </div>
                 </div>
 
-                <label className="settings-input-group" style={{ marginBottom: 20 }}>
-                  <span className="muted">Notes</span>
-                  <textarea
-                    rows="4"
-                    value={draftCoupon?.notes ?? editing.notes ?? ""}
-                    onChange={(event) => draftCoupon && setDraftCoupon({ ...draftCoupon, notes: event.target.value })}
-                    placeholder="Optional internal notes"
-                  />
-                </label>
-
-                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20, paddingTop: 16, borderTop: "1px solid #f1f5f9" }}>
-                  <button type="button" onClick={cancelDraft} disabled={saving} style={{ padding: "10px 24px", background: "white", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", color: "#475569", fontSize: 13 }}>Cancel</button>
-                  <button type="button" onClick={saveDraft} disabled={saving} style={{ padding: "10px 24px", background: "#3b82f6", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>{saving ? "Saving..." : "Save"}</button>
+                {/* Form Buttons */}
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 24, paddingTop: 16, borderTop: "1px solid #f1f5f9" }}>
+                  {!draftCoupon._isNew && (
+                    <button
+                      type="button"
+                      onClick={() => toggleArchived(draftCoupon)}
+                      disabled={saving}
+                      style={{
+                        marginRight: "auto",
+                        padding: "10px 18px",
+                        background: draftCoupon.isArchived ? "#f0fdf4" : "#fef2f2",
+                        color: draftCoupon.isArchived ? "#166534" : "#dc2626",
+                        border: `1px solid ${draftCoupon.isArchived ? "#dcfce7" : "#fee2e2"}`,
+                        borderRadius: 8,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        fontSize: "0.9rem"
+                      }}
+                    >
+                      {draftCoupon.isArchived ? "Restore Coupon" : "Archive Coupon"}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={cancelDraft}
+                    disabled={saving}
+                    style={{
+                      padding: "10px 18px",
+                      background: "white",
+                      color: "#475569",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: 8,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontSize: "0.9rem"
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveDraft}
+                    disabled={saving}
+                    style={{
+                      padding: "10px 22px",
+                      background: "var(--button-bg-solid, #3b82f6)",
+                      color: "white",
+                      border: "none",
+                      borderRadius: 8,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontSize: "0.9rem"
+                    }}
+                  >
+                    {saving ? "Saving..." : "Save"}
+                  </button>
                 </div>
               </div>
             ) : (
@@ -3738,7 +4099,7 @@ export default function SettingsPage() {
           <div style={{ width: 280, flexShrink: 0 }}>
             <div className="settings-panel-card" style={{ padding: 0 }}>
               <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid #f1f5f9" }}>
-                <button type="button" onClick={startCreate} style={{ width: "100%", padding: "10px", background: "#3b82f6", color: "white", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Create New</button>
+                <button type="button" onClick={startCreate} style={{ width: "100%", padding: "10px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Create New</button>
               </div>
               <div style={{ maxHeight: 420, overflowY: "auto" }}>
                 {rows.map((row) => (
@@ -3779,7 +4140,7 @@ export default function SettingsPage() {
           <div style={{ flex: 1, minWidth: 0 }}>
             {editing ? (
               <div className="settings-panel-card">
-                <h3 style={{ color: "#3b82f6" }}>{draftPnlIncomeTax?._isNew ? "Create PNL Income Tax Slab" : "Edit PNL Income Tax Slab"}</h3>
+                <h3 style={{ color: "var(--accent, #3b82f6)" }}>{draftPnlIncomeTax?._isNew ? "Create PNL Income Tax Slab" : "Edit PNL Income Tax Slab"}</h3>
                 <div className="settings-form-grid" style={{ marginBottom: 16 }}>
                   <label className="settings-input-group">
                     <span className="muted">Slab From</span>
@@ -3798,12 +4159,12 @@ export default function SettingsPage() {
                   </label>
                 </div>
                 <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: "#334155", cursor: "pointer", marginBottom: 20 }}>
-                  <input type="checkbox" checked={draftPnlIncomeTax?.active ?? editing.active} onChange={(event) => draftPnlIncomeTax && setDraftPnlIncomeTax({ ...draftPnlIncomeTax, active: event.target.checked })} style={{ width: 18, height: 18, accentColor: "#3b82f6", cursor: "pointer" }} />
+                  <input type="checkbox" checked={draftPnlIncomeTax?.active ?? editing.active} onChange={(event) => draftPnlIncomeTax && setDraftPnlIncomeTax({ ...draftPnlIncomeTax, active: event.target.checked })} style={{ width: 18, height: 18, accentColor: "var(--accent, #3b82f6)", cursor: "pointer" }} />
                   Active
                 </label>
                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20, paddingTop: 16, borderTop: "1px solid #f1f5f9" }}>
                   <button type="button" onClick={cancelDraft} style={{ padding: "10px 24px", background: "white", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", color: "#475569", fontSize: 13 }}>Cancel</button>
-                  <button type="button" onClick={saveDraft} style={{ padding: "10px 24px", background: "#3b82f6", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Save</button>
+                  <button type="button" onClick={saveDraft} style={{ padding: "10px 24px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>Save</button>
                 </div>
               </div>
             ) : (
@@ -4023,7 +4384,7 @@ export default function SettingsPage() {
 
               <div style={{ padding: 14, borderTop: "1px solid #e2e8f0", display: "flex", gap: 10, justifyContent: "flex-end", background: "#ffffff" }}>
                 <button type="button" onClick={() => applyPreset(presets[0])} style={{ padding: "8px 16px", background: "white", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, color: "#475569", fontSize: 12, cursor: "pointer" }}>Reset Defaults</button>
-                <button type="button" style={{ padding: "8px 16px", background: buttonColor, color: "white", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer", transition: "background 0.3s ease" }}>Save Palette</button>
+                <button type="button" onClick={saveWorkspace} disabled={saving} style={{ padding: "8px 16px", background: buttonColor, color: "white", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer", transition: "background 0.3s ease", opacity: saving ? 0.7 : 1 }}>{saving ? "Saving..." : "Save Palette"}</button>
               </div>
             </div>
           </div>

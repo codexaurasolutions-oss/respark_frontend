@@ -143,7 +143,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           z-index: 50;
         }
         .respark-top-row {
-          background: white;
+          background: var(--navbar-bg, white);
           height: 60px;
           display: flex;
           align-items: center;
@@ -394,7 +394,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
         }
         
         .respark-nav-row {
-          background: #334155; /* Slightly darker and richer than #475569 */
+          background: var(--sidebar-bg, #334155); /* Slightly darker and richer than #475569 */
           height: 48px;
           display: flex;
           align-items: center;
@@ -437,7 +437,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
         }
         .respark-tab.active {
           background: #0f172a;
-          border-bottom: 3px solid #ef4444;
+          border-bottom: 3px solid var(--accent, #ef4444);
           color: white;
         }
       `}</style>
@@ -555,7 +555,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
                     ))
                   )}
                 </div>
-                <div style={{ padding: "12px", textAlign: "center", background: "#f8fafc", borderTop: "1px solid #e2e8f0", fontSize: "0.85rem", color: "#3b82f6", cursor: "pointer", fontWeight: 500 }} onClick={() => { setIsNotifOpen(false); navigate("/admin/notifications"); }}>
+                <div style={{ padding: "12px", textAlign: "center", background: "#f8fafc", borderTop: "1px solid #e2e8f0", fontSize: "0.85rem", color: "var(--accent, #3b82f6)", cursor: "pointer", fontWeight: 500 }} onClick={() => { setIsNotifOpen(false); navigate("/admin/notifications"); }}>
                   View all alerts
                 </div>
               </div>
@@ -572,7 +572,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
             className="respark-profile-wrap"
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             style={{ 
-              width: 36, height: 36, borderRadius: '50%', background: '#3b82f6', color: 'white', 
+              width: 36, height: 36, borderRadius: '50%', background: "var(--button-bg-solid, #3b82f6)", color: 'white', 
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, 
               fontSize: '0.9rem', cursor: 'pointer', marginLeft: 8, position: 'relative'
             }}

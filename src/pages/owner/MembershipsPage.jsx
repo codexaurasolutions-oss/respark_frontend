@@ -382,7 +382,7 @@ export default function MembershipsPage() {
                     type="checkbox" 
                     checked={membershipForm.isActive} 
                     onChange={(e) => setMembershipForm({ ...membershipForm, isActive: e.target.checked })}
-                    style={{ accentColor: "#3b82f6", width: "16px", height: "16px", cursor: "pointer" }}
+                    style={{ accentColor: "var(--accent, #3b82f6)", width: "16px", height: "16px", cursor: "pointer" }}
                   />
                   <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#0f172a" }}>Active</span>
                 </div>
@@ -529,7 +529,7 @@ export default function MembershipsPage() {
                 
                 {membershipForm.membershipType === "Fixed" && (
                   <div style={{ background: "#e2e8f0", padding: "12px", borderRadius: "4px", display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    <span style={{ fontSize: "0.9rem", color: "#334155" }}>Final benefit amount is: <strong style={{ color: "#3b82f6" }}>{formatMoney(membershipForm.walletValue || 0)}</strong></span>
+                    <span style={{ fontSize: "0.9rem", color: "#334155" }}>Final benefit amount is: <strong style={{ color: "var(--accent, #3b82f6)" }}>{formatMoney(membershipForm.walletValue || 0)}</strong></span>
                   </div>
                 )}
               </div>
@@ -537,7 +537,7 @@ export default function MembershipsPage() {
               {/* Actions */}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "10px" }}>
                 <button type="button" onClick={() => setMembershipForm(emptyMembership)} style={{ padding: "8px 24px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "white", color: "#475569", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-                <button type="submit" style={{ padding: "8px 32px", borderRadius: "6px", border: "none", background: "#3b82f6", color: "white", fontWeight: 600, cursor: "pointer", transition: "opacity 0.2s" }}>Save</button>
+                <button type="submit" style={{ padding: "8px 32px", borderRadius: "6px", border: "none", background: "var(--button-bg-solid, #3b82f6)", color: "white", fontWeight: 600, cursor: "pointer", transition: "opacity 0.2s" }}>Save</button>
               </div>
 
             </form>
@@ -601,7 +601,7 @@ export default function MembershipsPage() {
                   <input 
                     type="checkbox" 
                     defaultChecked={true}
-                    style={{ accentColor: "#3b82f6", width: "16px", height: "16px", cursor: "pointer" }}
+                    style={{ accentColor: "var(--accent, #3b82f6)", width: "16px", height: "16px", cursor: "pointer" }}
                   />
                   <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#0f172a" }}>Active</span>
                 </div>
@@ -735,7 +735,7 @@ export default function MembershipsPage() {
               {/* Actions */}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "10px" }}>
                 <button type="button" onClick={() => setPackageForm(emptyPackage)} style={{ padding: "8px 24px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "white", color: "#475569", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-                <button type="submit" style={{ padding: "8px 32px", borderRadius: "6px", border: "none", background: "#3b82f6", color: "white", fontWeight: 600, cursor: "pointer", transition: "opacity 0.2s" }}>Save</button>
+                <button type="submit" style={{ padding: "8px 32px", borderRadius: "6px", border: "none", background: "var(--button-bg-solid, #3b82f6)", color: "white", fontWeight: 600, cursor: "pointer", transition: "opacity 0.2s" }}>Save</button>
               </div>
 
             </form>
