@@ -158,6 +158,7 @@ const Protected = () => {
             { label: "Enquiries", to: "/admin/enquiries" }
           ]
         },
+        /*
         {
           label: "Website",
           hint: "Storefront & Portal",
@@ -167,6 +168,7 @@ const Protected = () => {
             { label: "View Live Site", to: `/site/${auth?.membership?.salon?.slug || "demo-salon"}` }
           ].filter(Boolean)
         },
+        */
         {
           label: "System",
           hint: "Help and config",
