@@ -445,7 +445,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
       {/* Top White Row */}
       <div className="respark-top-row">
         <div className="respark-logo-area">
-          <img src="/skillify-logo.png" alt="Skillify" className="respark-brand-image" />
+          {/* <img src="/skillify-logo.png" alt="Skillify" className="respark-brand-image" /> */}
           <div className="respark-salon-name">{salonName}</div>
         </div>
 
