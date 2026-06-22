@@ -130,15 +130,21 @@ export default function AppointmentsPage() {
   const [salonSettings, setSalonSettings] = useState(null);
 
   const { TIME_SLOTS, TIME_SLOT_INDEX, currentStartHour } = useMemo(() => {
+    // Parses BOTH 24-hour "HH:MM" (from HTML time inputs) AND 12-hour "HH:MM AM/PM" (from slot labels)
     const parseHour = (timeStr) => {
       if (!timeStr) return NaN;
       const valStr = timeStr.trim().toLowerCase();
+      const hasAmPm = valStr.includes("am") || valStr.includes("pm");
       const [timePart] = valStr.split(" ");
-      const [hStr] = timePart.split(":");
+      const [hStr, mStr] = timePart.split(":");
       let h = parseInt(hStr, 10);
       if (isNaN(h)) return NaN;
-      if (valStr.includes("pm") && h < 12) h += 12;
-      if (valStr.includes("am") && h === 12) h = 0;
+      if (hasAmPm) {
+        // 12-hour format
+        if (valStr.includes("pm") && h < 12) h += 12;
+        if (valStr.includes("am") && h === 12) h = 0;
+      }
+      // If no AM/PM → already 24-hour, use as-is
       return h;
     };
 
@@ -151,12 +157,8 @@ export default function AppointmentsPage() {
     const parsedBizStart = parseHour(bizStart);
     const parsedBizEnd = parseHour(bizEnd);
 
-    if (!isNaN(parsedBizStart)) {
-      startHour = parsedBizStart;
-    }
-    if (!isNaN(parsedBizEnd)) {
-      endHour = parsedBizEnd;
-    }
+    if (!isNaN(parsedBizStart)) startHour = parsedBizStart;
+    if (!isNaN(parsedBizEnd)) endHour = parsedBizEnd;
 
     // Expand bounds if any working staff member has a shift extending beyond the business hours
     const rosterRows = salonSettings?.advancedSettings?.rosterManagement?.rows || [];
@@ -199,10 +201,13 @@ export default function AppointmentsPage() {
     const staffRow = rosterRows.find(r => String(r.id) === String(staffId));
     if (!staffRow) return true;
     if (staffRow.isWorking === false) return false;
+    if (!staffRow.fromTime || !staffRow.toTime) return true;
 
+    // Handles BOTH 24-hour "HH:MM" (roster fromTime/toTime) and 12-hour "HH:MM AM/PM" (slot labels)
     const getMinutes = (timeStr) => {
       if (!timeStr) return 0;
       const clean = timeStr.trim().toLowerCase();
+      const hasAmPm = clean.includes("am") || clean.includes("pm");
       const isPM = clean.includes("pm");
       const isAM = clean.includes("am");
       const cleanTime = clean.replace("am", "").replace("pm", "").trim();
@@ -211,8 +216,11 @@ export default function AppointmentsPage() {
       let m = parseInt(mStr, 10);
       if (isNaN(h)) h = 0;
       if (isNaN(m)) m = 0;
-      if (isPM && h < 12) h += 12;
-      if (isAM && h === 12) h = 0;
+      if (hasAmPm) {
+        if (isPM && h < 12) h += 12;
+        if (isAM && h === 12) h = 0;
+      }
+      // No AM/PM → already 24-hour format, use as-is
       return h * 60 + m;
     };
 
@@ -220,6 +228,7 @@ export default function AppointmentsPage() {
     const startMinutes = getMinutes(staffRow.fromTime);
     const endMinutes = getMinutes(staffRow.toTime);
 
+    // Allow booking in any slot that starts within the shift (up to and including the last slot)
     return slotMinutes >= startMinutes && slotMinutes < endMinutes;
   };
 
