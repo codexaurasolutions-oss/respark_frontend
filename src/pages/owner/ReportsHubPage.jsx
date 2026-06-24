@@ -88,6 +88,127 @@ const COLUMNS = {
   inventory_transaction: ["Date", "Product", "Type", "Qty", "Reference", "Branch", "Staff"],
 };
 
+const ALL_COLUMN_KEY = "ALL";
+
+const REPORT_FILTERS = {
+  sales_summary: [
+    { key: "categoryId", label: "Category", type: "select", endpoint: "/owner/service-categories", optionLabel: "name" },
+    { key: "serviceId", label: "Service", type: "select", endpoint: "/owner/services", optionLabel: "name" }
+  ],
+  product_sales: [
+    { key: "stylistId", label: "Stylist", type: "select", endpoint: "/owner/staff-users", optionLabel: "name", defaultLabel: "All" },
+    { key: "productId", label: "Product", type: "select", endpoint: "/owner/inventory/products", optionLabel: "name" },
+    { key: "group", label: "Group", type: "select", options: [{ value: "both", label: "Both" }, { value: "product", label: "Product Only" }, { value: "service", label: "Service Only" }], defaultValue: "both" },
+    { key: "groupData", label: "Group Data", type: "select", options: [{ value: "none", label: "None" }, { value: "category", label: "Category" }, { value: "date", label: "Date" }], defaultValue: "none" },
+    { key: "redemption", label: "Redemption", type: "select", options: [{ value: "all", label: "All" }, { value: "loyalty", label: "Loyalty" }, { value: "coupon", label: "Coupon" }, { value: "gift", label: "Gift Card" }], defaultValue: "all" }
+  ],
+  service_sales: [
+    { key: "stylistId", label: "Stylist", type: "select", endpoint: "/owner/staff-users", optionLabel: "name", defaultLabel: "All" },
+    { key: "categoryId", label: "Category", type: "select", endpoint: "/owner/service-categories", optionLabel: "name", defaultLabel: "All" },
+    { key: "serviceId", label: "Service", type: "select", endpoint: "/owner/services", optionLabel: "name" },
+    { key: "group", label: "Group", type: "select", options: [{ value: "both", label: "Both" }, { value: "product", label: "Product Only" }, { value: "service", label: "Service Only" }], defaultValue: "both" },
+    { key: "groupData", label: "Group Data", type: "select", options: [{ value: "none", label: "None" }, { value: "category", label: "Category" }, { value: "date", label: "Date" }], defaultValue: "none" },
+    { key: "redemption", label: "Redemption", type: "select", options: [{ value: "all", label: "All" }, { value: "loyalty", label: "Loyalty" }, { value: "coupon", label: "Coupon" }, { value: "gift", label: "Gift Card" }], defaultValue: "all" }
+  ],
+  customers: [
+    { key: "customerId", label: "Guest", type: "select", endpoint: "/owner/customers", optionLabel: "name", defaultLabel: "All" }
+  ],
+  staff_performance: [
+    { key: "stylistId", label: "Stylist", type: "select", endpoint: "/owner/staff-users", optionLabel: "name", defaultLabel: "All" }
+  ],
+  incentive_report: [
+    { key: "stylistId", label: "Stylist", type: "select", endpoint: "/owner/staff-users", optionLabel: "name", defaultLabel: "All" },
+    { key: "type", label: "Type", type: "select", options: [{ value: "all", label: "All" }, { value: "service", label: "Service" }, { value: "product", label: "Product" }, { value: "package", label: "Package" }], defaultValue: "all" },
+    { key: "categoryId", label: "Category", type: "select", endpoint: "/owner/service-categories", optionLabel: "name", defaultLabel: "All" },
+    { key: "upgraded", label: "Upgraded", type: "select", options: [{ value: "all", label: "All" }, { value: "yes", label: "Yes" }, { value: "no", label: "No" }], defaultValue: "all" },
+    { key: "status", label: "Status", type: "select", options: [{ value: "all", label: "All" }, { value: "active", label: "Active" }, { value: "expired", label: "Expired" }], defaultValue: "all" },
+    { key: "basedOn", label: "Based ON", type: "select", options: [{ value: "purchased", label: "Purchased" }, { value: "created", label: "Created" }], defaultValue: "purchased" }
+  ],
+  memberships: [
+    { key: "type", label: "Type", type: "select", options: [{ value: "all", label: "All" }, { value: "membership", label: "Membership" }, { value: "package", label: "Package" }], defaultValue: "all" }
+  ],
+  packages: [
+    { key: "stylistId", label: "Stylist", type: "select", endpoint: "/owner/staff-users", optionLabel: "name", defaultLabel: "All" },
+    { key: "packageId", label: "Packages", type: "select", endpoint: "/owner/packages", optionLabel: "name", defaultLabel: "All" }
+  ],
+  gift_card_sold: [],
+  gift_card_redemption: [],
+  advance_received: [],
+  balance_received: [],
+  coupon_redemption: [],
+  day_wise: [],
+  tip_report: [],
+  complimentary: [],
+  cancelled_invoices: [],
+  appointments: [
+    { key: "stylistId", label: "Stylist", type: "select", endpoint: "/owner/staff-users", optionLabel: "name", defaultLabel: "All" },
+    { key: "status", label: "Status", type: "select", options: [{ value: "all", label: "All" }, { value: "SCHEDULED", label: "Scheduled" }, { value: "CONFIRMED", label: "Confirmed" }, { value: "COMPLETED", label: "Completed" }, { value: "CANCELLED", label: "Cancelled" }, { value: "NO_SHOW", label: "No Show" }], defaultValue: "all" },
+    { key: "basedOn", label: "Based ON", type: "select", options: [{ value: "created", label: "Created" }, { value: "appointment", label: "Appointment" }], defaultValue: "created" }
+  ],
+  gst_returns: [],
+  gst_outwards: [],
+  guest_followups: [],
+  daily_stock: [
+    { key: "productId", label: "Item", type: "select", endpoint: "/owner/inventory/products", optionLabel: "name" },
+    { key: "stockType", label: "Stock Type", type: "select", options: [{ value: "all", label: "All" }, { value: "RETAIL", label: "Retail" }, { value: "CONSUMABLE", label: "Consumable" }], defaultValue: "all" }
+  ],
+  stock_transaction: [
+    { key: "productId", label: "Item", type: "select", endpoint: "/owner/inventory/products", optionLabel: "name" }
+  ],
+  material_received: [
+    { key: "productId", label: "Item", type: "select", endpoint: "/owner/inventory/products", optionLabel: "name" },
+    { key: "transactionId", label: "Transaction Id", type: "select", options: [{ value: "all", label: "All" }], defaultValue: "all" },
+    { key: "vendorId", label: "Vendor", type: "select", endpoint: "/owner/purchases/vendors", optionLabel: "name", defaultLabel: "All" },
+    { key: "vendorInvoiceId", label: "Vendor Invoice Id", type: "select", options: [{ value: "all", label: "All" }], defaultValue: "all" }
+  ],
+  minimum_stock: [],
+  reconcile_stock: [],
+  consumable_tracking: [],
+  total_consumed: [],
+  purchase_order: [],
+  inventory_transaction: [
+    { key: "productId", label: "Item", type: "select", endpoint: "/owner/inventory/products", optionLabel: "name" }
+  ],
+  service_reminder: [],
+  feedback: [],
+  staff_attendance: [
+    { key: "stylistId", label: "Stylist", type: "select", endpoint: "/owner/staff-users", optionLabel: "name", defaultLabel: "All" }
+  ],
+  membership_redemption: [
+    { key: "stylistId", label: "Stylist", type: "select", endpoint: "/owner/staff-users", optionLabel: "name", defaultLabel: "All" }
+  ],
+  package_redemption: [
+    { key: "stylistId", label: "Stylist", type: "select", endpoint: "/owner/staff-users", optionLabel: "name", defaultLabel: "All" }
+  ],
+  inter_store_membership: [],
+  pnl_report: []
+};
+
+const REPORTS_WITH_CHARTS = new Set([
+  "sales_summary", "product_sales", "service_sales", "customers", "staff_performance",
+  "monthly_sale", "day_wise", "memberships", "packages", "gift_card_sold",
+  "membership_redemption", "package_redemption", "tip_report", "appointments",
+  "daily_stock", "material_received", "feedback", "pnl_report", "incentive_report",
+  "balance_received", "advance_received", "coupon_redemption", "complimentary",
+  "cancelled_invoices", "service_reminder", "guest_followups", "gst_returns",
+  "gst_outwards", "reconcile_stock", "consumable_tracking", "total_consumed",
+  "purchase_order", "inventory_transaction", "minimum_stock", "stock_transaction",
+  "inter_store_membership", "staff_attendance", "gift_card_redemption"
+]);
+
+const REPORTS_WITH_COLUMN_PICKER = new Set(["day_wise"]);
+
+const buildDefaultFilterValues = (filterConfig) => {
+  const defaults = {};
+  filterConfig.forEach((f) => {
+    if (f.defaultValue !== undefined) defaults[f.key] = f.defaultValue;
+    else if (f.options) defaults[f.key] = f.options[0]?.value ?? "";
+    else if (f.endpoint) defaults[f.key] = "all";
+    else defaults[f.key] = "";
+  });
+  return defaults;
+};
+
 const REPORT_ENDPOINTS = {
   sales_summary: "/reports/sales-summary-list",
   product_sales: "/reports/product-sales",
@@ -401,8 +522,252 @@ function GuestCollectionChart({ rows }) {
   );
 }
 
-function ReportTable({ reportKey, rows, loading }) {
-  const cols = COLUMNS[reportKey] || ["Data"];
+const CHART_PALETTE = ["#2563eb", "#10b981", "#f97316", "#a855f7", "#ec4899", "#06b6d4", "#facc15", "#ef4444", "#14b8a6", "#8b5cf6", "#22c55e", "#3b82f6", "#eab308", "#fb7185"];
+
+function useReportOptions(activeReport) {
+  const [options, setOptions] = useState({});
+  const filterConfig = REPORT_FILTERS[activeReport] || [];
+
+  useEffect(() => {
+    const endpoints = [...new Set(filterConfig.filter((f) => f.endpoint).map((f) => f.endpoint))];
+    if (endpoints.length === 0) {
+      setOptions({});
+      return;
+    }
+    let cancelled = false;
+    Promise.all(
+      endpoints.map((ep) =>
+        api.get(ep, { params: { limit: 500 } })
+          .then((res) => [ep, Array.isArray(res.data) ? res.data : (res.data?.rows || [])])
+          .catch(() => [ep, []])
+      )
+    ).then((entries) => {
+      if (cancelled) return;
+      const map = {};
+      entries.forEach(([ep, list]) => { map[ep] = list; });
+      setOptions(map);
+    });
+    return () => { cancelled = true; };
+  }, [activeReport, filterConfig]);
+
+  return { options, filterConfig };
+}
+
+function getFilterOptions(filter, optionsState) {
+  if (filter.options) return filter.options;
+  if (filter.endpoint) {
+    const list = optionsState[filter.endpoint] || [];
+    const items = [{ value: "all", label: filter.defaultLabel || "All" }];
+    list.forEach((item) => {
+      const id = item.id || item._id || item.userId || item.staffId;
+      const label = filter.optionLabel ? item[filter.optionLabel] : (item.name || item.label || String(id));
+      if (id && label) items.push({ value: String(id), label });
+    });
+    return items;
+  }
+  return [];
+}
+
+function ReportChart({ reportKey, rows }) {
+  const { formatMoney } = useSalonSettings();
+  const data = useMemo(() => {
+    if (!rows || rows.length === 0) return [];
+    const filtered = rows.filter((r) => r && typeof r === "object");
+    if (reportKey === "customers") {
+      return filtered
+        .filter((r) => r["GUEST NAME"] && r["GUEST NAME"] !== "TOTAL")
+        .map((r) => ({ name: r["GUEST NAME"] || r["Guest Name"] || "Guest", value: Number(r["TOTAL"]) || 0 }))
+        .filter((d) => d.value > 0)
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10);
+    }
+    if (reportKey === "product_sales") {
+      return filtered
+        .map((r) => ({ name: r.Product || r["Product"] || "-", value: Number(r.Sales || r["Sales"] || r["Value"] || 0) }))
+        .filter((d) => d.value > 0)
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10);
+    }
+    if (reportKey === "service_sales") {
+      const grouped = {};
+      filtered.forEach((r) => {
+        const name = r.Service || r["Service"] || "-";
+        const total = Number(r.Total || r["Total"] || 0);
+        grouped[name] = (grouped[name] || 0) + total;
+      });
+      return Object.entries(grouped)
+        .map(([name, value]) => ({ name, value }))
+        .filter((d) => d.value > 0)
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10);
+    }
+    if (reportKey === "staff_performance") {
+      return filtered
+        .map((r) => ({ name: r.Staff || r["Staff"] || r.staff || "-", value: Number(r.Revenue || r["Revenue"] || 0) }))
+        .filter((d) => d.value > 0)
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10);
+    }
+    if (reportKey === "memberships" || reportKey === "packages" || reportKey === "gift_card_sold") {
+      const nameCol = reportKey === "memberships" ? "Membership Plan" : (reportKey === "packages" ? "Package" : "Customer");
+      const valCol = reportKey === "gift_card_sold" ? "Value" : "Price";
+      return filtered
+        .map((r) => ({ name: r[nameCol] || "-", value: Number(r[valCol] || 0) }))
+        .filter((d) => d.value > 0)
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10);
+    }
+    if (reportKey === "day_wise") {
+      return filtered
+        .filter((r) => r.Date && r.Date !== "TOTAL")
+        .map((r) => ({ name: r.Date, value: Number(r.Total || 0) }));
+    }
+    if (reportKey === "monthly_sale") {
+      return filtered
+        .filter((r) => r.DATE && r.DATE !== "TOTAL")
+        .map((r) => ({ name: r.DATE, value: Number(r.TOTAL || 0) }))
+        .slice(0, 30);
+    }
+    if (reportKey === "appointments") {
+      const grouped = {};
+      filtered.forEach((r) => {
+        const d = r.Date || "-";
+        grouped[d] = (grouped[d] || 0) + (Number(r.Amount || 0));
+      });
+      return Object.entries(grouped).map(([name, value]) => ({ name, value }));
+    }
+    if (reportKey === "daily_stock") {
+      return filtered
+        .slice(0, 15)
+        .map((r) => ({ name: r["ITEM NAME"] || "-", value: Number(r["CURRENT STOCK"] || 0) }));
+    }
+    if (reportKey === "pnl_report") {
+      return filtered.map((r) => ({ name: r.Month || r["Month"] || "-", value: Number(r.Revenue || r["Revenue"] || 0) }));
+    }
+    if (reportKey === "tip_report") {
+      const grouped = {};
+      filtered.forEach((r) => {
+        const name = r["GUEST NAME"] || "-";
+        grouped[name] = (grouped[name] || 0) + Number(r["TIP AMOUNT"] || 0);
+      });
+      return Object.entries(grouped).map(([name, value]) => ({ name, value })).filter((d) => d.value > 0).sort((a, b) => b.value - a.value).slice(0, 10);
+    }
+    if (reportKey === "complimentary" || reportKey === "cancelled_invoices") {
+      return filtered
+        .slice(0, 10)
+        .map((r) => ({ name: r.Customer || r["Customer"] || r["Guest Name"] || "-", value: Number(r.Value || r["Value"] || r["Total"] || 0) }));
+    }
+    return filtered
+      .slice(0, 10)
+      .map((r, idx) => {
+        const numericKey = Object.keys(r).find((k) => {
+          const v = r[k];
+          return typeof v === "number" || (!isNaN(parseFloat(v)) && v !== "" && k !== "SR. NO.");
+        });
+        const nameKey = Object.keys(r).find((k) => k.toLowerCase().includes("name") || k.toLowerCase().includes("customer") || k.toLowerCase().includes("date") || k.toLowerCase().includes("product") || k.toLowerCase().includes("service") || k.toLowerCase().includes("staff") || k.toLowerCase().includes("code"));
+        return { name: r[nameKey] || r[Object.keys(r)[0]] || `Row ${idx + 1}`, value: Number(r[numericKey] || 0) };
+      });
+  }, [reportKey, rows]);
+
+  if (!data || data.length === 0) {
+    return (
+      <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 8, padding: 20, marginTop: 16, textAlign: "center", color: "#94a3b8", fontSize: 14 }}>
+        No data available for the chart. Run the report to see the visualization.
+      </div>
+    );
+  }
+
+  const isHorizontal = ["staff_performance", "product_sales", "service_sales", "memberships", "packages", "gift_card_sold", "tip_report"].includes(reportKey);
+
+  return (
+    <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 8, padding: 20, marginTop: 16 }}>
+      <h3 style={{ margin: "0 0 16px 0", fontSize: 16, fontWeight: 700, color: "#1e293b" }}>{currentChartTitle(reportKey)}</h3>
+      <div style={{ width: "100%", height: 360 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          {isHorizontal ? (
+            <BarChart data={data} layout="vertical" margin={{ top: 10, right: 20, left: 60, bottom: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis type="number" tick={{ fontSize: 11, fill: "#475569" }} tickFormatter={(v) => `₹${v}`} />
+              <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: "#475569" }} width={150} />
+              <Tooltip formatter={(value) => formatMoney(value)} />
+              <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={CHART_PALETTE[index % CHART_PALETTE.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          ) : (
+            <ComposedChart data={data} margin={{ top: 10, right: 20, left: 10, bottom: 30 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#475569" }} angle={-20} textAnchor="end" interval={0} height={60} />
+              <YAxis tick={{ fontSize: 11, fill: "#475569" }} tickFormatter={(v) => `₹${v}`} />
+              <Tooltip formatter={(value) => formatMoney(value)} />
+              <Bar dataKey="value" fill="#86c7a3" radius={[4, 4, 0, 0]} maxBarSize={50}>
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={CHART_PALETTE[index % CHART_PALETTE.length]} />
+                ))}
+              </Bar>
+              <Line type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2} dot={{ r: 3, fill: "#f97316" }} />
+            </ComposedChart>
+          )}
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+function currentChartTitle(reportKey) {
+  const map = {
+    customers: "Guest wise sale",
+    product_sales: "Product wise revenue",
+    service_sales: "Service wise revenue",
+    staff_performance: "Stylist wise revenue",
+    memberships: "Membership wise revenue",
+    packages: "Package wise revenue",
+    gift_card_sold: "Gift Card wise sale",
+    day_wise: "Day wise sales",
+    monthly_sale: "Monthly sales",
+    appointments: "Appointments by date",
+    daily_stock: "Current stock levels",
+    pnl_report: "Revenue by month",
+    tip_report: "Top tippers",
+    complimentary: "Complimentary by customer",
+    cancelled_invoices: "Cancelled invoice amounts"
+  };
+  return map[reportKey] || "Visualization";
+}
+
+function ColumnPicker({ reportKey, visibleColumns, onToggle, onClose, onSelectAll, onClearAll }) {
+  const allCols = COLUMNS[reportKey] || ["Data"];
+  return (
+    <div
+      style={{
+        position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 50,
+        background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: 10,
+        minWidth: 220, maxHeight: 320, overflowY: "auto", boxShadow: "0 4px 12px rgba(15, 23, 42, 0.12)"
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 6, borderBottom: "1px solid #e2e8f0", marginBottom: 6 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "#0f172a" }}>Columns</span>
+        <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: 16, lineHeight: 1 }}>×</button>
+      </div>
+      <label style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 2px", cursor: "pointer", fontSize: 13, color: "#0f172a", fontWeight: 600, borderBottom: "1px solid #f1f5f9", marginBottom: 4 }}>
+        <input type="checkbox" checked={visibleColumns.length === allCols.length} onChange={(e) => e.target.checked ? onSelectAll() : onClearAll()} />
+        <span>{ALL_COLUMN_KEY}</span>
+      </label>
+      {allCols.map((col) => (
+        <label key={col} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 2px", cursor: "pointer", fontSize: 13, color: "#334155" }}>
+          <input type="checkbox" checked={visibleColumns.includes(col)} onChange={() => onToggle(col)} />
+          <span>{col}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+function ReportTable({ reportKey, rows, loading, visibleColumns }) {
+  const cols = (visibleColumns && visibleColumns.length > 0 ? visibleColumns : (COLUMNS[reportKey] || ["Data"]));
 
   return (
     <table className="rpt-table">
@@ -1071,14 +1436,26 @@ function SalesSummaryDashboard({ data, loading }) {
 export default function ReportsHubPage() {
   const [activeReport, setActiveReport] = useState("sales_summary");
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState({ start: "", end: "", branchId: "" });
+  const [filters, setFilters] = useState({ start: "", end: "", branchId: "", date: "" });
+  const [reportFilters, setReportFilters] = useState({});
   const [rows, setRows] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [statusText, setStatusText] = useState("Loaded");
   const [showChart, setShowChart] = useState(false);
+  const [columnPickerOpen, setColumnPickerOpen] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState(null);
 
+  const { options: filterOptions, filterConfig } = useReportOptions(activeReport);
   const currentReport = ALL_REPORTS.find((report) => report.key === activeReport);
+
+  useEffect(() => {
+    const defaults = buildDefaultFilterValues(filterConfig);
+    setReportFilters(defaults);
+    setVisibleColumns(null);
+    setShowChart(false);
+    setColumnPickerOpen(false);
+  }, [activeReport, filterConfig]);
 
   useEffect(() => {
     const endpoint = activeReport === "sales_summary" ? "/reports/sales-summary-dashboard" : REPORT_ENDPOINTS[activeReport];
@@ -1095,9 +1472,17 @@ export default function ReportsHubPage() {
     setStatusText("Loading...");
 
     const params = {};
-    if (filters.start) params.start = filters.start;
-    if (filters.end) params.end = filters.end;
+    if (filters.date) {
+      params.date = filters.date;
+    } else {
+      if (filters.start) params.start = filters.start;
+      if (filters.end) params.end = filters.end;
+    }
     if (filters.branchId) params.branchId = filters.branchId;
+    filterConfig.forEach((f) => {
+      const v = reportFilters[f.key];
+      if (v && v !== "all") params[f.key] = v;
+    });
 
     api.get(endpoint, { params })
       .then((res) => {
@@ -1115,14 +1500,14 @@ export default function ReportsHubPage() {
         setStatusText("Load failed");
       })
       .finally(() => setLoading(false));
-  }, [activeReport, filters.branchId, filters.end, filters.start]);
+  }, [activeReport, filters.branchId, filters.date, filters.end, filters.start, filterConfig, reportFilters]);
 
   const filteredReports = ALL_REPORTS.filter((report) => !search || report.label.toLowerCase().includes(search.toLowerCase()));
 
   const handleExportCSV = () => {
     if (!rows.length) return;
 
-    const cols = COLUMNS[activeReport] || ["Data"];
+    const cols = visibleColumns && visibleColumns.length > 0 ? visibleColumns : (COLUMNS[activeReport] || ["Data"]);
     let csv = `${cols.join(",")}\n`;
 
     rows.forEach((row) => {
@@ -1142,6 +1527,20 @@ export default function ReportsHubPage() {
     link.click();
     document.body.removeChild(link);
   };
+
+  const toggleColumn = (col) => {
+    setVisibleColumns((current) => {
+      const all = COLUMNS[activeReport] || ["Data"];
+      const currentList = current || all;
+      if (currentList.includes(col)) {
+        return currentList.filter((c) => c !== col);
+      }
+      return [...currentList, col];
+    });
+  };
+
+  const allColumns = COLUMNS[activeReport] || ["Data"];
+  const activeVisibleColumns = visibleColumns && visibleColumns.length > 0 ? visibleColumns : allColumns;
 
   return (
     <div style={{ display: "flex", height: "calc(100vh - 108px)", overflow: "hidden", background: "#f8fafc" }}>
@@ -1183,6 +1582,12 @@ export default function ReportsHubPage() {
           .rpt-empty { text-align: center; padding: 48px; color: #94a3b8; font-size: 0.82rem; }
           .rpt-loading td { animation: rpt-shimmer 1.2s infinite; background: linear-gradient(90deg, #f1f5f9 25%, #e8edf3 50%, #f1f5f9 75%); background-size: 200% 100%; height: 28px; }
           @keyframes rpt-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+          .rpt-icon-btn { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 7px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #475569; min-height: unset; }
+          .rpt-icon-btn:hover { background: #f1f5f9; color: #1e293b; }
+          .rpt-icon-btn.active { background: #dbeafe; border-color: #3b82f6; color: #1d4ed8; }
+          .rpt-filter-chip { display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #cbd5e1; padding: 4px 8px; border-radius: 6px; }
+          .rpt-filter-chip select { border: none; outline: none; background: transparent; font-size: 0.72rem; color: #334155; padding: 0; cursor: pointer; min-height: unset; box-shadow: none; }
+          .rpt-filter-chip input[type="date"] { border: none; outline: none; background: transparent; font-size: 0.72rem; color: #334155; padding: 0; width: 110px; }
         `}
       </style>
 
@@ -1220,6 +1625,47 @@ export default function ReportsHubPage() {
 
       <div id="printable-report" className="rpt-main">
         <div className="rpt-topbar">
+          {REPORTS_WITH_CHARTS.has(activeReport) && (
+            <button
+              type="button"
+              className={`rpt-icon-btn ${showChart ? "active" : ""}`}
+              title={showChart ? "Hide Chart" : "Show Chart"}
+              onClick={() => setShowChart((current) => !current)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.78 1.02 6.43 2.66" />
+                <path d="M21 4v5h-5" />
+                <path d="M12 7v5l3 3" />
+              </svg>
+            </button>
+          )}
+          {REPORTS_WITH_COLUMN_PICKER.has(activeReport) && (
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                className={`rpt-icon-btn ${columnPickerOpen ? "active" : ""}`}
+                title="Toggle Columns"
+                onClick={() => setColumnPickerOpen((current) => !current)}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="4" y1="6" x2="20" y2="6" />
+                  <line x1="4" y1="12" x2="20" y2="12" />
+                  <line x1="4" y1="18" x2="20" y2="18" />
+                  <line x1="7" y1="3" x2="7" y2="21" />
+                </svg>
+              </button>
+              {columnPickerOpen && (
+                <ColumnPicker
+                  reportKey={activeReport}
+                  visibleColumns={activeVisibleColumns}
+                  onToggle={toggleColumn}
+                  onSelectAll={() => setVisibleColumns([...allColumns])}
+                  onClearAll={() => setVisibleColumns([])}
+                  onClose={() => setColumnPickerOpen(false)}
+                />
+              )}
+            </div>
+          )}
           <h2 className="rpt-title">{currentReport?.label || "Report"}</h2>
           <div className="rpt-stat" style={{ flexShrink: 0 }}>
             <div className="rpt-stat-label">Records</div>
@@ -1227,7 +1673,7 @@ export default function ReportsHubPage() {
           </div>
           <div className="rpt-stat" style={{ flexShrink: 0 }}>
             <div className="rpt-stat-label">Range</div>
-            <div className="rpt-stat-val">{filters.start && filters.end ? `${filters.start} to ${filters.end}` : "All Time"}</div>
+            <div className="rpt-stat-val">{filters.date ? filters.date : (filters.start && filters.end ? `${filters.start} to ${filters.end}` : "All Time")}</div>
           </div>
           <div className="rpt-stat" style={{ flexShrink: 0 }}>
             <div className="rpt-stat-label">Status</div>
@@ -1247,29 +1693,38 @@ export default function ReportsHubPage() {
             </div>
           </div>
           <div id="report-filters" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginLeft: "auto" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "#ffffff", border: "1px solid #cbd5e1", padding: "4px 8px", borderRadius: "6px" }}>
-              <span className="rpt-filter-label" style={{ margin: 0, fontSize: "0.68rem" }}>FROM</span>
-              <input type="date" className="rpt-date-input" style={{ border: "none", padding: "0 2px", outline: "none", background: "transparent", fontSize: "0.72rem" }} value={filters.start} onChange={(event) => setFilters((current) => ({ ...current, start: event.target.value }))} />
-              <span className="rpt-filter-label" style={{ margin: "0 4px", fontSize: "0.68rem" }}>TO</span>
-              <input type="date" className="rpt-date-input" style={{ border: "none", padding: "0 2px", outline: "none", background: "transparent", fontSize: "0.72rem" }} value={filters.end} onChange={(event) => setFilters((current) => ({ ...current, end: event.target.value }))} />
+            {filterConfig.map((f) => {
+              const opts = getFilterOptions(f, filterOptions);
+              const value = reportFilters[f.key] ?? "";
+              return (
+                <div key={f.key} className="rpt-filter-chip">
+                  <span className="rpt-filter-label">{f.label}:</span>
+                  <select value={value} onChange={(e) => setReportFilters((current) => ({ ...current, [f.key]: e.target.value }))}>
+                    {opts.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  </select>
+                </div>
+              );
+            })}
+
+            <div className="rpt-filter-chip">
+              <input type="date" value={filters.date} onChange={(e) => setFilters((current) => ({ ...current, date: e.target.value, start: e.target.value ? "" : current.start, end: e.target.value ? "" : current.end }))} />
             </div>
-            
-            <button type="button" className="rpt-btn" onClick={() => setShowChart((current) => !current)} style={{
-              background: showChart ? "#1d4ed8" : "#2563eb",
+
+            {(filters.date || filters.start || filters.end) && (
+              <button type="button" className="rpt-btn rpt-btn-clear" onClick={() => setFilters((current) => ({ ...current, date: "", start: "", end: "" }))}>×</button>
+            )}
+            <button type="button" className="rpt-btn" style={{
+              background: loading ? "#94a3b8" : "#2563eb",
               color: "#ffffff",
               borderRadius: "6px",
               padding: "5px 14px",
               fontWeight: 700,
               fontSize: "0.72rem",
               border: "none",
-              cursor: "pointer",
+              cursor: loading ? "default" : "pointer",
               boxShadow: "0 1px 3px rgba(37, 99, 235, 0.2)",
               transition: "all 0.15s ease"
-            }}>{showChart ? "Hide Chart" : "Show Report"}</button>
-
-            {(filters.start || filters.end) && (
-              <button type="button" className="rpt-btn rpt-btn-clear" onClick={() => setFilters((current) => ({ ...current, start: "", end: "" }))}>×</button>
-            )}
+            }} disabled={loading}>{loading ? "Loading..." : "Show Report"}</button>
             {activeReport !== "sales_summary" && (
               <button type="button" className="rpt-btn rpt-btn-dark" onClick={handleExportCSV}>Export CSV</button>
             )}
@@ -1284,12 +1739,12 @@ export default function ReportsHubPage() {
           {activeReport === "sales_summary" ? (
             <SalesSummaryDashboard data={dashboardData} loading={loading} />
           ) : (
-            <ReportTable reportKey={activeReport} rows={rows} loading={loading} />
+            <ReportTable reportKey={activeReport} rows={rows} loading={loading} visibleColumns={activeVisibleColumns} />
           )}
         </div>
 
-        {showChart && activeReport === "customers" && (
-          <GuestCollectionChart rows={rows} />
+        {showChart && REPORTS_WITH_CHARTS.has(activeReport) && activeReport !== "sales_summary" && (
+          activeReport === "customers" ? <GuestCollectionChart rows={rows} /> : <ReportChart reportKey={activeReport} rows={rows} />
         )}
       </div>
     </div>
