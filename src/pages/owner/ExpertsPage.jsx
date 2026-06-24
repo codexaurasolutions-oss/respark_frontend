@@ -25,6 +25,7 @@ export default function ExpertsPage() {
   const [rows, setRows] = useState([]);
   const [branches, setBranches] = useState([]);
   const [services, setServices] = useState([]);
+  const [customRoles, setCustomRoles] = useState([]);
   const [filterBranch, setFilterBranch] = useState("");
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState("");
@@ -36,15 +37,17 @@ export default function ExpertsPage() {
   }, [form.branchId, services]);
 
   const load = async (branchId = filterBranch) => {
-    const [usersResponse, branchesResponse, servicesResponse] = await Promise.all([
+    const [usersResponse, branchesResponse, servicesResponse, rolesResponse] = await Promise.all([
       api.get("/owner/users", { params: branchId ? { branchId } : {} }),
       api.get("/owner/branches"),
-      api.get("/owner/services")
+      api.get("/owner/services"),
+      api.get("/owner/custom-roles").catch(() => ({ data: [] }))
     ]);
     const experts = (usersResponse.data || []).filter((row) => (row.serviceAssignments || []).length || row.showInCatalog || row.salonRole === "STAFF");
     setRows(experts);
     setBranches(branchesResponse.data);
     setServices(servicesResponse.data);
+    setCustomRoles(rolesResponse.data || []);
     setStatus((current) => ({ ...current, loading: false }));
   };
 
@@ -192,8 +195,22 @@ export default function ExpertsPage() {
                 <PasswordStrengthMeter password={form.password} />
               </div>
             )}
+            <select value={form.customRoleId || ""} onChange={(event) => {
+              const roleId = event.target.value;
+              const role = customRoles.find((r) => r.id === roleId);
+              setForm((current) => ({
+                ...current,
+                customRoleId: roleId,
+                salonRole: roleId ? "STAFF" : current.salonRole,
+                roleTitle: role?.name || current.roleTitle
+              }));
+            }}>
+              <option value="">— No saved access role (use system role) —</option>
+              {customRoles.length === 0 && <option value="" disabled>Create roles in Settings → Access Control</option>}
+              {customRoles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
+            </select>
             <div className="settings-section-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-              <select value={form.salonRole} onChange={(event) => setForm({ ...form, salonRole: event.target.value })}>
+              <select value={form.salonRole} onChange={(event) => setForm({ ...form, salonRole: event.target.value })} disabled={Boolean(form.customRoleId)} style={form.customRoleId ? { background: "#f1f5f9" } : undefined}>
                 <option value="STAFF">Expert / Staff</option>
                 <option value="RECEPTIONIST">Receptionist</option>
                 <option value="MANAGER">Manager</option>

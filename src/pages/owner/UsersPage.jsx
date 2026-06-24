@@ -21,7 +21,7 @@ const makeEmptyForm = () => ({
   name: "",
   email: "",
   password: "",
-  salonRole: "RECEPTIONIST",
+  salonRole: "STAFF",
   roleTitle: "",
   phone: "",
   avatarUrl: "",
@@ -199,6 +199,11 @@ export default function UsersPage() {
       customRoleId: "",
       permissions: preset
     }));
+    void ROLE_OPTIONS.find((r) => r.value === roleCode);
+  };
+
+  const openAccessControl = () => {
+    window.open("/#/admin/roles-permissions", "_blank", "noopener,noreferrer");
   };
 
   const startCreate = () => {
@@ -279,6 +284,7 @@ export default function UsersPage() {
     setForm((current) => ({
       ...current,
       customRoleId: roleId,
+      salonRole: roleId ? "STAFF" : current.salonRole,
       roleTitle: role?.name || current.roleTitle,
       permissions: clonePermissions(role?.permissions || DEFAULT_PERMISSIONS)
     }));
@@ -489,23 +495,62 @@ export default function UsersPage() {
                     {/* Identity Section */}
                     <div style={{ marginBottom: 32 }}>
                       <h4 style={{ fontSize: 15, color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 16 }}>Identity & Scope</h4>
+                      
+                      {/* PRIMARY: Custom role from Access Control */}
+                      <div style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: '1px solid #93c5fd', borderRadius: 10, padding: 16, marginBottom: 20 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span>🎯 Access Role (from Access Control)</span>
+                              <span style={{ background: '#2563eb', color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 10, letterSpacing: 0.5 }}>RECOMMENDED</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>
+                              Roles created in <strong>Settings → Access Control</strong>. Pick one to auto-apply its full permission set.
+                            </div>
+                          </div>
+                          <button type="button" onClick={openAccessControl} className="secondary-button" style={{ background: 'white', border: '1px solid #2563eb', color: '#1d4ed8', padding: '6px 12px', fontSize: 12, fontWeight: 600, borderRadius: 6, cursor: 'pointer' }}>
+                            + Create New Role
+                          </button>
+                        </div>
+                        <select
+                          className="hub-input"
+                          style={{ width: '100%', background: 'white', fontSize: 14, fontWeight: 600 }}
+                          value={form.customRoleId || ""}
+                          onChange={(event) => applyCustomRole(event.target.value)}
+                        >
+                          <option value="">— No saved access role (use system role below) —</option>
+                          {customRoles.length === 0 && (
+                            <option value="" disabled>No custom roles yet — create one in Access Control</option>
+                          )}
+                          {customRoles.map((role) => (
+                            <option key={role.id} value={role.id}>
+                              {role.name}{role.description ? ` — ${role.description}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                        {form.customRoleId && (() => {
+                          const sel = customRoles.find((r) => r.id === form.customRoleId);
+                          if (!sel) return null;
+                          const grantedModules = Object.entries(sel.permissions || {}).filter(([, actions]) => Array.isArray(actions) && actions.length > 0).length;
+                          return (
+                            <div style={{ marginTop: 8, fontSize: 12, color: '#1e40af', display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <span>✓ Permissions loaded: <strong>{grantedModules}</strong> module{grantedModules === 1 ? "" : "s"}</span>
+                              {sel.isSystemPreset && <span style={{ background: '#fbbf24', color: '#78350f', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4 }}>PRESET</span>}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                         <div className="hub-form-group">
-                          <label>Staff role</label>
-                          <select className="hub-input" value={form.salonRole} onChange={(event) => applyRolePreset(event.target.value)}>
+                          <label>System role (fallback) <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 11 }}>— auto-set when access role picked</span></label>
+                          <select className="hub-input" value={form.salonRole} onChange={(event) => applyRolePreset(event.target.value)} disabled={Boolean(form.customRoleId)} style={form.customRoleId ? { background: '#f1f5f9', cursor: 'not-allowed' } : undefined}>
                             {ROLE_OPTIONS.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
                           </select>
                         </div>
                         <div className="hub-form-group">
                           <label>Role title (Visible designation)</label>
-                          <input type="text" className="hub-input" value={form.roleTitle} onChange={(event) => setForm({ ...form, roleTitle: event.target.value })} />
-                        </div>
-                        <div className="hub-form-group">
-                          <label>Saved access role (Template)</label>
-                          <select className="hub-input" value={form.customRoleId || ""} onChange={(event) => applyCustomRole(event.target.value)}>
-                            <option value="">No saved role template</option>
-                            {customRoles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
-                          </select>
+                          <input type="text" className="hub-input" value={form.roleTitle} onChange={(event) => setForm({ ...form, roleTitle: event.target.value })} placeholder="e.g. Senior Stylist, Floor Manager" />
                         </div>
                         <div className="hub-form-group">
                           <label>Branch scope</label>
@@ -645,11 +690,30 @@ export default function UsersPage() {
                 </div>
 
                 <div className="hub-form-group" style={{ marginBottom: 16 }}>
-                  <label>Initial Role</label>
-                  <select className="hub-input" value={form.salonRole} onChange={e => applyRolePreset(e.target.value)}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    Access Role
+                    <span style={{ background: '#2563eb', color: 'white', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 8, letterSpacing: 0.5 }}>FROM ACCESS CONTROL</span>
+                  </label>
+                  <select className="hub-input" value={form.customRoleId || ""} onChange={e => applyCustomRole(e.target.value)}>
+                    <option value="">— No saved access role (use system role below) —</option>
+                    {customRoles.length === 0 && (
+                      <option value="" disabled>No custom roles yet — create one in Settings → Access Control</option>
+                    )}
+                    {customRoles.map(role => (
+                      <option key={role.id} value={role.id}>{role.name}{role.description ? ` — ${role.description}` : ""}</option>
+                    ))}
+                  </select>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                    <span style={{ fontSize: 11, color: '#64748b' }}>Roles from Settings → Access Control</span>
+                    <button type="button" onClick={openAccessControl} style={{ fontSize: 11, color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600 }}>+ Create role</button>
+                  </div>
+                </div>
+
+                <div className="hub-form-group" style={{ marginBottom: 16 }}>
+                  <label>System role {form.customRoleId ? "(locked to STAFF by access role)" : ""}</label>
+                  <select className="hub-input" value={form.salonRole} onChange={e => applyRolePreset(e.target.value)} disabled={Boolean(form.customRoleId)} style={form.customRoleId ? { background: '#f1f5f9' } : undefined}>
                     {ROLE_OPTIONS.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
                   </select>
-                  <span style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>You can customize permissions later in the staff settings.</span>
                 </div>
 
                 <div className="hub-form-group" style={{ marginBottom: 16 }}>
