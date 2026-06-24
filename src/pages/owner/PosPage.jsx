@@ -286,6 +286,54 @@ export default function PosPage() {
     }
   }, [context.branches, form.branchId]);
 
+  // Auto-apply advance: when a customer with advance is selected and items exist,
+  // auto-fill the ADVANCE payment up to min(advance, total). Only fills if the user
+  // hasn't already entered a different non-advance payment.
+  useEffect(() => {
+    if (!form.customerId) return;
+    const customer = context.customers.find(c => c.id === form.customerId);
+    if (!customer) return;
+    const adv = Number(customer.advanceAmount || 0);
+    if (adv <= 0) return;
+    // Only auto-apply if there are items and the total > 0
+    const itemsCount = (form.items || []).filter(i => i.serviceId || i.productId || i.membershipPlanId || i.packageId || i.giftCardId || i.itemType === "GIFT_CARD").length;
+    if (itemsCount === 0) return;
+    setForm((current) => {
+      // Recompute total from current items to avoid stale closure
+      const advancedSettings = context.settings?.advancedSettings && typeof context.settings.advancedSettings === "object" ? context.settings.advancedSettings : {};
+      const isInclusive = advancedSettings?.taxMapping?.inclusiveTax === true;
+      const subtotal = (current.items || []).reduce((sum, item) => {
+        const price = item.unitPrice != null ? Number(item.unitPrice) : Number(getCatalogBasePrice(item) || 0);
+        return sum + Number(item.qty || 0) * price;
+      }, 0);
+      const itemTax = (current.items || []).reduce((sum, item) => {
+        const price = item.unitPrice != null ? Number(item.unitPrice) : Number(getCatalogBasePrice(item) || 0);
+        const taxPct = Number(item.taxPct || 0);
+        const linePreTax = Number(item.qty || 0) * price;
+        if (isInclusive && taxPct > 0) {
+          return sum + (linePreTax * taxPct) / (100 + taxPct);
+        }
+        return sum + (linePreTax * taxPct) / 100;
+      }, 0);
+      const extraTax = Number(current.tax || 0);
+      const discount = Number(current.discount || 0);
+      const total = subtotal + itemTax + extraTax - discount;
+      if (total <= 0) return current;
+      // Check existing non-advance payments — if user has already entered CASH/ONLINE/BALANCE, don't auto-apply
+      const nonAdvancePayments = (current.payments || []).filter(p => p.mode !== "ADVANCE" && Number(p.amount || 0) > 0);
+      if (nonAdvancePayments.length > 0) return current;
+      // Check if user has already set an advance amount — if yes, don't override
+      const existingAdvance = (current.payments || []).find(p => p.mode === "ADVANCE");
+      if (existingAdvance && Number(existingAdvance.amount || 0) > 0) return current;
+      // Auto-apply advance up to min(advance, total)
+      const useAdv = Math.min(adv, total);
+      const newPayments = (current.payments || []).filter(p => p.mode !== "ADVANCE");
+      newPayments.push({ mode: "ADVANCE", amount: useAdv, note: "Advance auto-applied" });
+      return { ...current, payments: newPayments };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.customerId, context.customers, form.items?.length, context.settings, form.tax, form.discount]);
+
   const serviceCategories = useMemo(() => {
     if (!context.serviceCategories) return [];
     return context.serviceCategories;
@@ -1258,8 +1306,36 @@ export default function PosPage() {
             </div>
 
             <div className="pos-grand-total-row">
-              <div className="pos-grand-total">
-                Grand Total <strong>{formatMoney(totals.total.toFixed(0))}</strong>
+              <div className="pos-grand-total" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, width: "100%" }}>
+                {(() => {
+                  const advancePayment = (form.payments || []).find(p => p.mode === "ADVANCE");
+                  const advanceUsed = Number(advancePayment?.amount || 0);
+                  const hasAdvance = advanceUsed > 0;
+                  if (hasAdvance) {
+                    const due = Math.max(0, totals.total - totals.paid);
+                    return (
+                      <>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#64748b" }}>
+                          <span>Subtotal:</span>
+                          <span style={{ textDecoration: "line-through" }}>{formatMoney(totals.total.toFixed(0))}</span>
+                          <span style={{ background: "#d1fae5", color: "#065f46", fontWeight: 700, fontSize: 11, padding: "2px 8px", borderRadius: 10, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            <span>−</span>Advance: {formatMoney(advanceUsed.toFixed(0))}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>Payable:</span>
+                          <strong style={{ color: due === 0 ? "#10b981" : "#0f172a", fontSize: 18 }}>{formatMoney(due.toFixed(0))}</strong>
+                          {due === 0 && <span style={{ fontSize: 11, color: "#10b981", fontWeight: 700, background: "#d1fae5", padding: "2px 8px", borderRadius: 10 }}>FULLY PAID VIA ADVANCE</span>}
+                        </div>
+                      </>
+                    );
+                  }
+                  return (
+                    <div>
+                      Grand Total <strong>{formatMoney(totals.total.toFixed(0))}</strong>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
