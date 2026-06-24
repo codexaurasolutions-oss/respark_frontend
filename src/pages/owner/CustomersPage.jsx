@@ -353,7 +353,7 @@ export default function CustomersPage() {
     setSavingMessage("Adding Advance Payment...");
     setSaving(true);
     try {
-      await api.post("/owner/advance-payments", {
+      const res = await api.post("/owner/advance-payments", {
         customerId: selectedCustomer.id,
         amount: Number(advanceForm.amount),
         mode: advanceForm.mode,
@@ -362,8 +362,12 @@ export default function CustomersPage() {
       setShowAddAdvanceModal(false);
       setAdvanceForm({ amount: "", mode: "Online", remark: "" });
       fetchCustomerAdvances(selectedCustomer.id);
-      const res = await api.get(`/owner/customers/${selectedCustomer.id}`);
-      setCustomerDetail(res.data);
+      const detailRes = await api.get(`/owner/customers/${selectedCustomer.id}`);
+      setCustomerDetail(detailRes.data);
+      // Show popup with View Invoice + Download buttons (like Membership/Package)
+      if (res.data?.invoice) {
+        setInvoiceSuccessData({ type: "Advance", name: `₹${Number(advanceForm.amount).toLocaleString("en-IN")} advance added`, invoice: res.data.invoice });
+      }
     } catch (e) {
       alert("Failed to add advance");
       console.error(e);
