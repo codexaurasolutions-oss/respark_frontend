@@ -282,7 +282,7 @@ export default function PosPage() {
     setGcRedemptionLoading(true);
     setGcRedemptionResult(null);
     try {
-      const response = await api.post("/owner/gift-cards/validate", { code: gcRedemptionCode.trim() });
+      const response = await api.post("/owner/gift-cards/validate", { code: gcRedemptionCode.trim(), customerId: form.customerId || undefined });
       setGcRedemptionResult(response.data);
     } catch (err) {
       setGcRedemptionResult(null);
