@@ -1379,31 +1379,73 @@ export default function PosPage() {
               <div className="pos-payment-grid">
                 <div className="pos-payment-input">
                   <label style={{ cursor: 'pointer' }} onClick={() => {
-                    setForm((current) => ({ ...current, payments: [{ mode: "ONLINE", amount: totals.total, note: "" }] }));
+                    setForm((current) => {
+                      const existingAdvance = (current.payments || []).find(p => p.mode === "ADVANCE");
+                      const advAmount = Number(existingAdvance?.amount || 0);
+                      const maxOnline = Math.max(0, totals.total - advAmount);
+                      const newPayments = (current.payments || []).filter(p => p.mode !== "ONLINE" && p.mode !== "CASH");
+                      if (advAmount > 0 && !newPayments.find(p => p.mode === "ADVANCE")) {
+                        newPayments.push({ mode: "ADVANCE", amount: advAmount, note: "Advance used" });
+                      }
+                      newPayments.push({ mode: "ONLINE", amount: maxOnline, note: "" });
+                      return { ...current, payments: newPayments };
+                    });
                   }}><svg width="16" height="16" style={{ color: "#10b981" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> Online</label>
                   <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "ONLINE")?.amount || ""} onChange={(e) => {
-                    const amount = Math.min(Number(e.target.value) || 0, totals.total);
-                    setForm((current) => ({ ...current, payments: [{ mode: "ONLINE", amount, note: "" }] }));
+                    const advAmount = Number((form.payments || []).find(p => p.mode === "ADVANCE")?.amount || 0);
+                    const maxOnline = Math.max(0, totals.total - advAmount);
+                    const amount = Math.min(Number(e.target.value) || 0, maxOnline);
+                    setForm((current) => {
+                      const newPayments = (current.payments || []).filter(p => p.mode !== "ONLINE");
+                      newPayments.push({ mode: "ONLINE", amount, note: "" });
+                      return { ...current, payments: newPayments };
+                    });
                   }} />
                 </div>
                 <div className="pos-payment-input">
                   <label style={{ cursor: 'pointer' }} onClick={() => {
-                    setForm((current) => ({ ...current, payments: [{ mode: "CASH", amount: totals.total, note: "" }] }));
+                    setForm((current) => {
+                      const existingAdvance = (current.payments || []).find(p => p.mode === "ADVANCE");
+                      const advAmount = Number(existingAdvance?.amount || 0);
+                      const maxCash = Math.max(0, totals.total - advAmount);
+                      const newPayments = (current.payments || []).filter(p => p.mode !== "CASH" && p.mode !== "ONLINE");
+                      if (advAmount > 0 && !newPayments.find(p => p.mode === "ADVANCE")) {
+                        newPayments.push({ mode: "ADVANCE", amount: advAmount, note: "Advance used" });
+                      }
+                      newPayments.push({ mode: "CASH", amount: maxCash, note: "" });
+                      return { ...current, payments: newPayments };
+                    });
                   }}><svg width="16" height="16" style={{ color: "#64748b" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg> Cash</label>
                   <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "CASH")?.amount || ""} onChange={(e) => {
-                    const amount = Math.min(Number(e.target.value) || 0, totals.total);
-                    setForm((current) => ({ ...current, payments: [{ mode: "CASH", amount, note: "" }] }));
+                    const advAmount = Number((form.payments || []).find(p => p.mode === "ADVANCE")?.amount || 0);
+                    const maxCash = Math.max(0, totals.total - advAmount);
+                    const amount = Math.min(Number(e.target.value) || 0, maxCash);
+                    setForm((current) => {
+                      const newPayments = (current.payments || []).filter(p => p.mode !== "CASH");
+                      newPayments.push({ mode: "CASH", amount, note: "" });
+                      return { ...current, payments: newPayments };
+                    });
                   }} />
                 </div>
                 <div className="pos-payment-input">
                   <label style={{ cursor: 'pointer' }} onClick={() => {
-                    const paidSoFar = form.payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                    const paidSoFar = (form.payments || []).filter(p => p.mode !== "BALANCE").reduce((sum, p) => sum + Number(p.amount || 0), 0);
                     const balance = Math.max(0, totals.total - paidSoFar);
-                    setForm((current) => ({ ...current, payments: [{ mode: "BALANCE", amount: balance, note: "" }] }));
+                    setForm((current) => {
+                      const newPayments = (current.payments || []).filter(p => p.mode !== "BALANCE");
+                      newPayments.push({ mode: "BALANCE", amount: balance, note: "" });
+                      return { ...current, payments: newPayments };
+                    });
                   }}><svg width="16" height="16" style={{ color: "#f59e0b" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg> Balance</label>
                   <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "BALANCE")?.amount || ""} onChange={(e) => {
-                    const amount = Math.min(Number(e.target.value) || 0, totals.total);
-                    setForm((current) => ({ ...current, payments: [{ mode: "BALANCE", amount, note: "" }] }));
+                    const advAmount = Number((form.payments || []).find(p => p.mode === "ADVANCE")?.amount || 0);
+                    const maxBalance = Math.max(0, totals.total - advAmount);
+                    const amount = Math.min(Number(e.target.value) || 0, maxBalance);
+                    setForm((current) => {
+                      const newPayments = (current.payments || []).filter(p => p.mode !== "BALANCE");
+                      newPayments.push({ mode: "BALANCE", amount, note: "" });
+                      return { ...current, payments: newPayments };
+                    });
                   }} />
                 </div>
                 {form.customerId && (() => {
@@ -1413,8 +1455,8 @@ export default function PosPage() {
                   return (
                     <div className="pos-payment-input">
                       <label style={{ cursor: 'pointer', color: "#10b981" }} title={`Available advance: ${formatMoney(adv)}`} onClick={() => {
-                        const paidSoFar = form.payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-                        const remaining = Math.max(0, totals.total - paidSoFar);
+                        const nonAdvancePaid = (form.payments || []).filter(p => p.mode !== "ADVANCE").reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                        const remaining = Math.max(0, totals.total - nonAdvancePaid);
                         const useAdv = Math.min(remaining, adv);
                         setForm((current) => ({ ...current, payments: [...(current.payments || []).filter(p => p.mode !== "ADVANCE"), { mode: "ADVANCE", amount: useAdv, note: "Advance used" }] }));
                       }}>
@@ -1422,7 +1464,9 @@ export default function PosPage() {
                         Advance ({formatMoney(adv)})
                       </label>
                       <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "ADVANCE")?.amount || ""} onChange={(e) => {
-                        const amount = Math.min(Number(e.target.value) || 0, totals.total, adv);
+                        const nonAdvancePaid = (form.payments || []).filter(p => p.mode !== "ADVANCE").reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                        const maxAdv = Math.max(0, Math.min(adv, totals.total - nonAdvancePaid));
+                        const amount = Math.min(Number(e.target.value) || 0, maxAdv);
                         setForm((current) => ({ ...current, payments: [...(current.payments || []).filter(p => p.mode !== "ADVANCE"), { mode: "ADVANCE", amount, note: "Advance used" }] }));
                       }} />
                     </div>
