@@ -794,6 +794,7 @@ function PnLStatement({ data, loading }) {
 
 function ColumnPicker({ reportKey, visibleColumns, onToggle, onClose, onSelectAll, onClearAll }) {
   const allCols = COLUMNS[reportKey] || ["Data"];
+  const allSelected = visibleColumns.length === allCols.length && allCols.length > 0;
   return (
     <div
       style={{
@@ -807,10 +808,14 @@ function ColumnPicker({ reportKey, visibleColumns, onToggle, onClose, onSelectAl
         <span style={{ fontSize: 12, fontWeight: 700, color: "#0f172a" }}>Columns</span>
         <button type="button" onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: 16, lineHeight: 1 }}>×</button>
       </div>
-      <label style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 2px", cursor: "pointer", fontSize: 13, color: "#0f172a", fontWeight: 600, borderBottom: "1px solid #f1f5f9", marginBottom: 4 }}>
-        <input type="checkbox" checked={visibleColumns.length === allCols.length} onChange={(e) => e.target.checked ? onSelectAll() : onClearAll()} />
-        <span>{ALL_COLUMN_KEY}</span>
-      </label>
+      <div style={{ display: "flex", gap: 10, paddingBottom: 6, borderBottom: "1px solid #f1f5f9", marginBottom: 4 }}>
+        <button type="button" onClick={onSelectAll} disabled={allSelected} style={{ fontSize: 11, fontWeight: 600, color: allSelected ? "#94a3b8" : "#2563eb", background: "none", border: "none", cursor: allSelected ? "default" : "pointer", padding: 0 }}>
+          Select All
+        </button>
+        <button type="button" onClick={onClearAll} disabled={visibleColumns.length === 0} style={{ fontSize: 11, fontWeight: 600, color: visibleColumns.length === 0 ? "#94a3b8" : "#dc2626", background: "none", border: "none", cursor: visibleColumns.length === 0 ? "default" : "pointer", padding: 0 }}>
+          Clear All
+        </button>
+      </div>
       {allCols.map((col) => (
         <label key={col} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 2px", cursor: "pointer", fontSize: 13, color: "#334155" }}>
           <input type="checkbox" checked={visibleColumns.includes(col)} onChange={() => onToggle(col)} />
@@ -858,7 +863,7 @@ function ReportTable({ reportKey, rows, loading, visibleColumns }) {
   );
 }
 
-function SalesSummaryDashboard({ data, loading }) {
+function SalesSummaryDashboard({ data, loading, onViewReport }) {
   const [activeDetailsCard, setActiveDetailsCard] = useState(null);
 
   const formatVal = (val) => Number(val || 0).toFixed(2).replace(/\.00$/, "");
@@ -1302,7 +1307,7 @@ function SalesSummaryDashboard({ data, loading }) {
         <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
             <h3 style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", margin: 0 }}>Service Sale <span style={{ color: "#94a3b8", fontWeight: 500 }}>(Top 5)</span></h3>
-            <button onClick={() => setActiveReport("service_sales")} style={{ background: "#eff6ff", border: "none", color: "#2563eb", fontSize: "0.68rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", cursor: "pointer" }}>View All</button>
+            <button onClick={() => onViewReport("service_sales")} style={{ background: "#eff6ff", border: "none", color: "#2563eb", fontSize: "0.68rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", cursor: "pointer" }}>View All</button>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {data.topServices.length ? data.topServices.map((item, idx) => {
@@ -1327,7 +1332,7 @@ function SalesSummaryDashboard({ data, loading }) {
         <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
             <h3 style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", margin: 0 }}>Product Sale <span style={{ color: "#94a3b8", fontWeight: 500 }}>(Top 5)</span></h3>
-            <button onClick={() => setActiveReport("product_sales")} style={{ background: "#eff6ff", border: "none", color: "#2563eb", fontSize: "0.68rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", cursor: "pointer" }}>View All</button>
+            <button onClick={() => onViewReport("product_sales")} style={{ background: "#eff6ff", border: "none", color: "#2563eb", fontSize: "0.68rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", cursor: "pointer" }}>View All</button>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {data.topProducts.length ? data.topProducts.map((item, idx) => {
@@ -1352,7 +1357,7 @@ function SalesSummaryDashboard({ data, loading }) {
         <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
             <h3 style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", margin: 0 }}>Stylist Sale <span style={{ color: "#94a3b8", fontWeight: 500 }}>(Top 5)</span></h3>
-            <button onClick={() => setActiveReport("staff_performance")} style={{ background: "#eff6ff", border: "none", color: "#2563eb", fontSize: "0.68rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", cursor: "pointer" }}>View All</button>
+            <button onClick={() => onViewReport("staff_performance")} style={{ background: "#eff6ff", border: "none", color: "#2563eb", fontSize: "0.68rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", cursor: "pointer" }}>View All</button>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {data.topStylists.length ? data.topStylists.map((item, idx) => {
@@ -1380,7 +1385,7 @@ function SalesSummaryDashboard({ data, loading }) {
         <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
             <h3 style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", margin: 0 }}>Membership Sale <span style={{ color: "#94a3b8", fontWeight: 500 }}>(Top 5)</span></h3>
-            <button onClick={() => setActiveReport("memberships")} style={{ background: "#eff6ff", border: "none", color: "#2563eb", fontSize: "0.68rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", cursor: "pointer" }}>View All</button>
+            <button onClick={() => onViewReport("memberships")} style={{ background: "#eff6ff", border: "none", color: "#2563eb", fontSize: "0.68rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", cursor: "pointer" }}>View All</button>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {data.topMemberships.length ? data.topMemberships.map((item, idx) => {
@@ -1405,7 +1410,7 @@ function SalesSummaryDashboard({ data, loading }) {
         <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
             <h3 style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", margin: 0 }}>Package Sale <span style={{ color: "#94a3b8", fontWeight: 500 }}>(Top 5)</span></h3>
-            <button onClick={() => setActiveReport("packages")} style={{ background: "#eff6ff", border: "none", color: "#2563eb", fontSize: "0.68rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", cursor: "pointer" }}>View All</button>
+            <button onClick={() => onViewReport("packages")} style={{ background: "#eff6ff", border: "none", color: "#2563eb", fontSize: "0.68rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", cursor: "pointer" }}>View All</button>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {data.topPackages.length ? data.topPackages.map((item, idx) => {
@@ -1430,7 +1435,7 @@ function SalesSummaryDashboard({ data, loading }) {
         <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
             <h3 style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", margin: 0 }}>Client Count</h3>
-            <button onClick={() => setActiveReport("customers")} style={{ background: "#eff6ff", border: "none", color: "#2563eb", fontSize: "0.68rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", cursor: "pointer" }}>View All</button>
+            <button onClick={() => onViewReport("customers")} style={{ background: "#eff6ff", border: "none", color: "#2563eb", fontSize: "0.68rem", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", cursor: "pointer" }}>View All</button>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {data.clientCount.length ? data.clientCount.map((item, idx) => {
@@ -1819,7 +1824,7 @@ export default function ReportsHubPage() {
           border: activeReport === "sales_summary" ? "none" : "1px solid #e2e8f0"
         }}>
           {activeReport === "sales_summary" ? (
-            <SalesSummaryDashboard data={dashboardData} loading={loading} />
+            <SalesSummaryDashboard data={dashboardData} loading={loading} onViewReport={setActiveReport} />
           ) : activeReport === "pnl_report" ? (
             <PnLStatement data={pnlData} loading={loading} />
           ) : (

@@ -671,13 +671,13 @@ export default function UsersPage() {
           <div className="hub-modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
             <div className="hub-modal-header">Create New Staff</div>
             
-            <form onSubmit={submit}>
-              <div className="hub-modal-body">
+            <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+              <div className="hub-modal-body" style={{ overflowY: 'auto', flex: 1 }}>
                 <div className="hub-form-group" style={{ marginBottom: 16 }}>
                   <label>Full Name *</label>
                   <input type="text" required className="hub-input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. John Doe" />
                 </div>
-                
+
                 <div className="hub-form-group" style={{ marginBottom: 16 }}>
                   <label>Email Address *</label>
                   <input type="email" required className="hub-input" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="john@example.com" />
@@ -694,7 +694,7 @@ export default function UsersPage() {
                     <span style={{ background: '#2563eb', color: 'white', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 8, letterSpacing: 0.5 }}>FROM ACCESS CONTROL</span>
                   </label>
                   <select className="hub-input" value={form.customRoleId || ""} onChange={e => applyCustomRole(e.target.value)}>
-                    <option value="">— No saved access role (use system role below) —</option>
+                    <option value="">— Select access role —</option>
                     {customRoles.length === 0 && (
                       <option value="" disabled>No custom roles yet — create one in Settings → Access Control</option>
                     )}
@@ -706,13 +706,6 @@ export default function UsersPage() {
                     <span style={{ fontSize: 11, color: '#64748b' }}>Roles from Settings → Access Control</span>
                     <button type="button" onClick={openAccessControl} style={{ fontSize: 11, color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600 }}>+ Create role</button>
                   </div>
-                </div>
-
-                <div className="hub-form-group" style={{ marginBottom: 16 }}>
-                  <label>System role {form.customRoleId ? "(locked to STAFF by access role)" : ""}</label>
-                  <select className="hub-input" value={form.salonRole} onChange={e => applyRolePreset(e.target.value)} disabled={Boolean(form.customRoleId)} style={form.customRoleId ? { background: '#f1f5f9' } : undefined}>
-                    {ROLE_OPTIONS.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
-                  </select>
                 </div>
 
                 <div className="hub-form-group" style={{ marginBottom: 16 }}>

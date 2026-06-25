@@ -201,23 +201,15 @@ export default function ExpertsPage() {
               setForm((current) => ({
                 ...current,
                 customRoleId: roleId,
-                salonRole: roleId ? "STAFF" : current.salonRole,
+                salonRole: "STAFF",
                 roleTitle: role?.name || current.roleTitle
               }));
             }}>
-              <option value="">— No saved access role (use system role) —</option>
+              <option value="">— Select access role —</option>
               {customRoles.length === 0 && <option value="" disabled>Create roles in Settings → Access Control</option>}
               {customRoles.map((role) => <option key={role.id} value={role.id}>{role.name}</option>)}
             </select>
-            <div className="settings-section-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-              <select value={form.salonRole} onChange={(event) => setForm({ ...form, salonRole: event.target.value })} disabled={Boolean(form.customRoleId)} style={form.customRoleId ? { background: "#f1f5f9" } : undefined}>
-                <option value="STAFF">Expert / Staff</option>
-                <option value="RECEPTIONIST">Receptionist</option>
-                <option value="MANAGER">Manager</option>
-                <option value="SALON_OWNER">Salon Owner</option>
-              </select>
-              <input value={form.roleTitle} placeholder="Visible title" onChange={(event) => setForm({ ...form, roleTitle: event.target.value })} />
-            </div>
+            <input value={form.roleTitle} placeholder="Visible title" onChange={(event) => setForm({ ...form, roleTitle: event.target.value })} />
             <IndianPhoneInput value={form.phone} onChange={(phone) => setForm({ ...form, phone })} />
             <input value={form.avatarUrl} placeholder="Avatar URL" onChange={(event) => setForm({ ...form, avatarUrl: event.target.value })} />
             <select value={form.branchId} onChange={(event) => setForm({ ...form, branchId: event.target.value, serviceIds: [] })}>
