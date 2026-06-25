@@ -105,6 +105,7 @@ export default function PosPage() {
   const [pkgSearch, setPkgSearch] = useState("");
   const [pkgServiceSearch, setPkgServiceSearch] = useState("");
   const [pkgProductSearch, setPkgProductSearch] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [submittingPkg, setSubmittingPkg] = useState(false);
   const [showPkgDetailModal, setShowPkgDetailModal] = useState(null);
   const [showMemModal, setShowMemModal] = useState(false);
@@ -742,7 +743,7 @@ export default function PosPage() {
     // Note: form.tax is part of the API payload (extra tax) but always 0 in this UI; per-item taxPct handles all tax.
     const discount = Number(form.discount || 0);
     const total = subtotal + itemTax - discount;
-    const paid = form.payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    const paid = form.payments.filter(p => p.mode !== "BALANCE").reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
     return { subtotal, itemTax, total, paid, due: Math.max(0, total - paid) };
   }, [form, getCatalogBasePrice, context.settings]);
 
@@ -774,9 +775,9 @@ export default function PosPage() {
       if (Number(item.qty || 0) <= 0) return "Quantity must be greater than zero.";
     }
     if (mode === "complete") {
-      const totalPaid = form.payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const totalPaid = form.payments.filter(p => p.mode !== "BALANCE").reduce((sum, p) => sum + Number(p.amount || 0), 0);
       if (totalPaid <= 0) return "Please enter at least one payment amount (Cash or Online) before completing the invoice.";
-      if (totalPaid > totals.total + 1) return "Payment amount exceeds invoice total. Please check the amounts.";
+      if (totalPaid > totals.total + 0.01) return "Payment amount exceeds invoice total. Please check the amounts.";
     }
     return "";
   }, [form, totals.total]);
@@ -840,12 +841,14 @@ export default function PosPage() {
   };
 
   const submitInvoice = async (mode = "complete") => {
+    if (submitting) return;
     setStatus({ error: "", success: "" });
     const validationError = validateBeforeSubmit(mode);
     if (validationError) {
       setStatus({ error: validationError, success: "" });
       return;
     }
+    setSubmitting(true);
     try {
       const response = await api.post("/owner/pos/invoices", buildInvoicePayload(mode));
       setResult(response.data);
@@ -869,11 +872,15 @@ export default function PosPage() {
         notes: "",
         items: [emptyServiceItem],
         packageRedemptions: [],
-        payments: [emptyPayment]
+        payments: [emptyPayment],
+        sendFeedbackMessage: true,
+        sendInvoiceMessage: true
       });
       await loadContext("", form.branchId);
     } catch (error) {
       setStatus({ error: formatApiError(error, "Could not create invoice"), success: "" });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -1494,8 +1501,8 @@ export default function PosPage() {
               {status.success && <span style={{ color: "#10b981", fontWeight: 500, fontSize: "13px" }}>{status.success}</span>}
             </div>
             <button type="button" className="pos-btn-clear" onClick={() => setForm(c => ({ ...c, items: [] }))}>Clear</button>
-            <button type="button" className="pos-btn-create" onClick={() => submitInvoice("draft")}>Create</button>
-            <button type="button" className="pos-btn-complete" onClick={() => submitInvoice("complete")}>Create & Complete</button>
+            <button type="button" className="pos-btn-create" disabled={submitting} onClick={() => !submitting && submitInvoice("draft")}>Create</button>
+            <button type="button" className="pos-btn-complete" disabled={submitting} onClick={() => !submitting && submitInvoice("complete")}>Create & Complete</button>
           </div>
         </div>
       </div>

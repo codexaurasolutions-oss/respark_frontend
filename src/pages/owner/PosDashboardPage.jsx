@@ -131,7 +131,7 @@ export default function PosDashboardPage() {
         {
           id: `TEMP_${Date.now()}_${Math.random().toString(36).substring(7)}`,
           itemType: "MEMBERSHIP",
-          membershipId: mem.id !== "CUSTOM" ? mem.id : null,
+          membershipPlanId: mem.id !== "CUSTOM" ? mem.id : null,
           name: mem.name,
           qty: 1,
           unitPrice: Number(memDraft.price || 0),
