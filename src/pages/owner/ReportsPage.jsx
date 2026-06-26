@@ -70,10 +70,52 @@ const ReportList = ({ title, rows, emptyText, renderMeta }) => (
   </div>
 );
 
+const QUICK_RANGES = [
+  { key: "today",     label: "Today" },
+  { key: "yesterday", label: "Yesterday" },
+  { key: "7d",        label: "Last 7 Days" },
+  { key: "30d",       label: "Last 30 Days" },
+  { key: "thisMonth", label: "This Month" },
+  { key: "lastMonth", label: "Last Month" },
+];
+
+function computeRange(key) {
+  const now = new Date();
+  const fmt = (d) => d.toISOString().slice(0, 10);
+  switch (key) {
+    case "today":
+      return { start: fmt(now), end: fmt(now) };
+    case "yesterday": {
+      const y = new Date(now); y.setDate(y.getDate() - 1);
+      return { start: fmt(y), end: fmt(y) };
+    }
+    case "7d": {
+      const s = new Date(now); s.setDate(s.getDate() - 6);
+      return { start: fmt(s), end: fmt(now) };
+    }
+    case "30d": {
+      const s = new Date(now); s.setDate(s.getDate() - 29);
+      return { start: fmt(s), end: fmt(now) };
+    }
+    case "thisMonth": {
+      const s = new Date(now.getFullYear(), now.getMonth(), 1);
+      return { start: fmt(s), end: fmt(now) };
+    }
+    case "lastMonth": {
+      const s = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const e = new Date(now.getFullYear(), now.getMonth(), 0);
+      return { start: fmt(s), end: fmt(e) };
+    }
+    default:
+      return { start: "", end: "" };
+  }
+}
+
 export default function ReportsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [filters, setFilters] = useState({ branchId: "", start: "", end: "" });
+  const [quickRange, setQuickRange] = useState("");
   const [state, setState] = useState({ loading: true, error: "", data: initialData });
 
   const reportView = useMemo(() => {
@@ -247,9 +289,29 @@ export default function ReportsPage() {
               {data.branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
             </select>
             </label>
-            <input type="date" value={filters.start} onChange={(event) => setFilters((current) => ({ ...current, start: event.target.value }))} max={filters.end || undefined} />
-            <input type="date" value={filters.end} onChange={(event) => setFilters((current) => ({ ...current, end: event.target.value }))} min={filters.start || undefined} />
-            <button type="button" className="secondary-button" onClick={() => setFilters((current) => ({ ...current, start: "", end: "" }))}>Clear Dates</button>
+            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+              {QUICK_RANGES.map((qr) => (
+                <button
+                  key={qr.key}
+                  type="button"
+                  className="quick-range-chip"
+                  style={{
+                    padding: "5px 12px", borderRadius: 8, border: "none", fontSize: 12,
+                    fontWeight: 600, cursor: "pointer", transition: "all 0.15s",
+                    background: quickRange === qr.key ? "#6366f1" : "#f1f5f9",
+                    color: quickRange === qr.key ? "white" : "#64748b",
+                  }}
+                  onClick={() => {
+                    const range = computeRange(qr.key);
+                    setQuickRange(qr.key);
+                    setFilters((current) => ({ ...current, start: range.start, end: range.end }));
+                  }}
+                >{qr.label}</button>
+              ))}
+            </div>
+            <input type="date" value={filters.start} onChange={(event) => { setQuickRange(""); setFilters((current) => ({ ...current, start: event.target.value })); }} max={filters.end || undefined} />
+            <input type="date" value={filters.end} onChange={(event) => { setQuickRange(""); setFilters((current) => ({ ...current, end: event.target.value })); }} min={filters.start || undefined} />
+            <button type="button" className="secondary-button" onClick={() => { setQuickRange(""); setFilters((current) => ({ ...current, start: "", end: "" })); }}>Clear Dates</button>
             <button type="button" className="secondary-button" onClick={exportCurrent}>Export CSV</button>
             <button type="button" className="secondary-button" onClick={exportExcel}>Export Excel</button>
           </>
