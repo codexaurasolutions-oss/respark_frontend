@@ -948,7 +948,7 @@ export default function PosPage() {
     
     let finalPayments = [];
     if (mode === "complete") {
-      finalPayments = form.payments.filter((payment) => Number(payment.amount) > 0).map((payment) => ({
+      finalPayments = form.payments.filter((payment) => payment.mode !== "BALANCE" && Number(payment.amount) > 0).map((payment) => ({
         ...payment,
         amount: Number(payment.amount)
       }));
