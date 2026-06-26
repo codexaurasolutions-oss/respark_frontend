@@ -786,9 +786,9 @@ export default function PosDashboardPage() {
       <div className="pos-dash-header">
         <div className="pos-dash-header-left">
           <div className="pos-dash-date-picker" style={{ display: "flex", gap: "8px", alignItems: "center", background: "white", padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}>
-            <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} style={{ border: "none", outline: "none", background: "transparent" }} />
+            <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} max={endDate || undefined} style={{ border: "none", outline: "none", background: "transparent" }} />
             <span style={{ color: "#64748b" }}>-</span>
-            <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} style={{ border: "none", outline: "none", background: "transparent" }} />
+            <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} min={startDate || undefined} style={{ border: "none", outline: "none", background: "transparent" }} />
           </div>
           <button className="pos-dash-show-btn" onClick={load}>Show Orders</button>
           <button className="pos-dash-show-btn" style={{ background: "#64748b" }} onClick={showAllOrders}>All Orders</button>
@@ -1295,7 +1295,7 @@ export default function PosDashboardPage() {
                 </div>
                 <div style={{ flex:1, minWidth:140 }}>
                   <label style={{ fontSize:"0.82rem", fontWeight:600, color:"#475569", display:"block", marginBottom:6 }}>Card Activated From</label>
-                  <input type="date" value={gcDraft.purchaseDate} onChange={e=>setGcDraft(d=>({...d,purchaseDate:e.target.value}))} style={{ width:"100%", padding:"10px 12px", border:"1px solid #cbd5e1", borderRadius:8, fontSize:"0.9rem", boxSizing:"border-box" }} />
+                  <input type="date" value={gcDraft.purchaseDate} onChange={e=>setGcDraft(d=>({...d,purchaseDate:e.target.value}))} max={new Date().toISOString().slice(0, 10)} style={{ width:"100%", padding:"10px 12px", border:"1px solid #cbd5e1", borderRadius:8, fontSize:"0.9rem", boxSizing:"border-box" }} />
                 </div>
                 <div style={{ flex:1, minWidth:120 }}>
                   <label style={{ fontSize:"0.82rem", fontWeight:600, color:"#475569", display:"block", marginBottom:6 }}>Purchase Amount</label>
@@ -1424,7 +1424,7 @@ export default function PosDashboardPage() {
                   </div>
                   <div style={{ flex:1, minWidth:140 }}>
                     <label style={{ fontSize:"0.82rem", fontWeight:600, color:"#475569", display:"block", marginBottom:6 }}>Purchase date</label>
-                    <input type="date" value={pkgDraft.purchaseDate} onChange={e=>setPkgDraft(d=>({...d,purchaseDate:e.target.value}))} style={{ width:"100%", padding:"10px 12px", border:"1px solid #cbd5e1", borderRadius:8, fontSize:"0.9rem", boxSizing:"border-box" }} />
+                    <input type="date" value={pkgDraft.purchaseDate} onChange={e=>setPkgDraft(d=>({...d,purchaseDate:e.target.value}))} max={new Date().toISOString().slice(0, 10)} style={{ width:"100%", padding:"10px 12px", border:"1px solid #cbd5e1", borderRadius:8, fontSize:"0.9rem", boxSizing:"border-box" }} />
                   </div>
                 </div>
               </div>
@@ -1513,7 +1513,7 @@ export default function PosDashboardPage() {
                   </div>
                   <div style={{ flex:1, minWidth:140 }}>
                     <label style={{ fontSize:"0.82rem", fontWeight:600, color:"#475569", display:"block", marginBottom:6 }}>Purchase date</label>
-                    <input type="date" value={memDraft.purchaseDate} onChange={e=>setMemDraft(d=>({...d,purchaseDate:e.target.value}))} style={{ width:"100%", padding:"10px 12px", border:"1px solid #cbd5e1", borderRadius:8, fontSize:"0.9rem", boxSizing:"border-box" }} />
+                    <input type="date" value={memDraft.purchaseDate} onChange={e=>setMemDraft(d=>({...d,purchaseDate:e.target.value}))} max={new Date().toISOString().slice(0, 10)} style={{ width:"100%", padding:"10px 12px", border:"1px solid #cbd5e1", borderRadius:8, fontSize:"0.9rem", boxSizing:"border-box" }} />
                   </div>
                 </div>
               </div>

@@ -596,7 +596,7 @@ export default function UsersPage() {
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                         <div className="hub-form-group">
                           <label>Date of Joining</label>
-                          <input type="date" className="hub-input" value={form.joiningDate} onChange={(event) => setForm({ ...form, joiningDate: event.target.value })} />
+                          <input type="date" className="hub-input" value={form.joiningDate} onChange={(event) => setForm({ ...form, joiningDate: event.target.value })} max={new Date().toISOString().slice(0, 10)} />
                         </div>
                         <div className="hub-form-group">
                           <label>Designation</label>
@@ -750,7 +750,7 @@ export default function UsersPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div className="hub-form-group" style={{ marginBottom: 16 }}>
                     <label>Date of Joining</label>
-                    <input type="date" className="hub-input" value={form.joiningDate} onChange={e => setForm({ ...form, joiningDate: e.target.value })} />
+                    <input type="date" className="hub-input" value={form.joiningDate} onChange={e => setForm({ ...form, joiningDate: e.target.value })} max={new Date().toISOString().slice(0, 10)} />
                   </div>
                   <div className="hub-form-group" style={{ marginBottom: 16 }}>
                     <label>UAN Number</label>

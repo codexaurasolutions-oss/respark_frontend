@@ -30,6 +30,7 @@ export default function CustomerPortalPage() {
   const [status, setStatus] = useState({ loading: true, error: "" });
   const [profileForm, setProfileForm] = useState({ name: "", phone: "", email: "", preferences: "", allergies: "", skinNotes: "" });
   const [rescheduleForm, setRescheduleForm] = useState({ startAt: "", endAt: "", note: "" });
+  const nowStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 
   const route = useMemo(() => {
     if (location.pathname.startsWith("/customer/appointments/")) return { key: "appointmentDetail", endpoint: `/customer/appointments/${params.id}`, title: "Appointment Detail" };
@@ -220,8 +221,8 @@ export default function CustomerPortalPage() {
                   <div className="summary-box">
                     <strong>Reschedule</strong>
                     <form className="form-grid" onSubmit={rescheduleAppointment} style={{ marginTop: 12 }}>
-                      <label><span className="muted">New start time</span><input type="datetime-local" value={rescheduleForm.startAt} onChange={(event) => setRescheduleForm((current) => ({ ...current, startAt: event.target.value }))} /></label>
-                      <label><span className="muted">New end time</span><input type="datetime-local" value={rescheduleForm.endAt} onChange={(event) => setRescheduleForm((current) => ({ ...current, endAt: event.target.value }))} /></label>
+                      <label><span className="muted">New start time</span><input type="datetime-local" min={nowStr} value={rescheduleForm.startAt} onChange={(event) => setRescheduleForm((current) => ({ ...current, startAt: event.target.value }))} /></label>
+                      <label><span className="muted">New end time</span><input type="datetime-local" min={nowStr} value={rescheduleForm.endAt} onChange={(event) => setRescheduleForm((current) => ({ ...current, endAt: event.target.value }))} /></label>
                       <textarea rows="3" placeholder="Reason" value={rescheduleForm.note} onChange={(event) => setRescheduleForm((current) => ({ ...current, note: event.target.value }))} />
                       <button>Reschedule Appointment</button>
                     </form>

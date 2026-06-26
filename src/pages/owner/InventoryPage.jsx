@@ -760,6 +760,7 @@ export default function InventoryPage() {
                     type="date" 
                     value={poFromDate} 
                     onChange={(e) => setPoFromDate(e.target.value)}
+                    max={poToDate || undefined}
                     style={{ padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 6, outline: "none", color: "#334155", fontWeight: 500 }} 
                   />
                 </div>
@@ -769,6 +770,7 @@ export default function InventoryPage() {
                     type="date" 
                     value={poToDate} 
                     onChange={(e) => setPoToDate(e.target.value)}
+                    min={poFromDate || undefined}
                     style={{ padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 6, outline: "none", color: "#334155", fontWeight: 500 }} 
                   />
                 </div>

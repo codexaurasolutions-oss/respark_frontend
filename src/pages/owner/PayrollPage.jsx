@@ -95,8 +95,8 @@ export default function PayrollPage() {
           <h3>Create Payroll Run</h3>
           {loading ? <PageLoader compact title="Loading payroll workspace" message="Preparing payroll runs, attendance, leaves, incentives, and team-cost reporting." /> : null}
           <form className="form-grid" onSubmit={createRun}>
-            <input type="date" value={form.periodStart} onChange={(e) => setForm({ ...form, periodStart: e.target.value })} />
-            <input type="date" value={form.periodEnd} onChange={(e) => setForm({ ...form, periodEnd: e.target.value })} />
+            <input type="date" value={form.periodStart} onChange={(e) => setForm({ ...form, periodStart: e.target.value })} max={form.periodEnd || undefined} />
+            <input type="date" value={form.periodEnd} onChange={(e) => setForm({ ...form, periodEnd: e.target.value })} min={form.periodStart || undefined} />
             <label>
               <span className="muted">Notes</span>
               <input placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />

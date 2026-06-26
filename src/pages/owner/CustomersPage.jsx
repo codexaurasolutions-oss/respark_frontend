@@ -1005,11 +1005,11 @@ export default function CustomersPage() {
             </div>
             <div className="form-group">
               <label>Starting Date</label>
-              <input type="date" value={draftFilters.lastVisitedStart} onChange={(event) => setDraftFilters((current) => ({ ...current, lastVisitedStart: event.target.value }))} />
+              <input type="date" value={draftFilters.lastVisitedStart} onChange={(event) => setDraftFilters((current) => ({ ...current, lastVisitedStart: event.target.value }))} max={draftFilters.lastVisitedEnd || undefined} />
             </div>
             <div className="form-group">
               <label>Ending Date</label>
-              <input type="date" value={draftFilters.lastVisitedEnd} onChange={(event) => setDraftFilters((current) => ({ ...current, lastVisitedEnd: event.target.value }))} />
+              <input type="date" value={draftFilters.lastVisitedEnd} onChange={(event) => setDraftFilters((current) => ({ ...current, lastVisitedEnd: event.target.value }))} min={draftFilters.lastVisitedStart || undefined} />
             </div>
           </>
         );
@@ -1018,11 +1018,11 @@ export default function CustomersPage() {
           <>
             <div className="form-group">
               <label>Starting Date</label>
-              <input type="date" value={draftFilters.lastVisitedStart} onChange={(event) => setDraftFilters((current) => ({ ...current, lastVisitedStart: event.target.value }))} />
+              <input type="date" value={draftFilters.lastVisitedStart} onChange={(event) => setDraftFilters((current) => ({ ...current, lastVisitedStart: event.target.value }))} max={draftFilters.lastVisitedEnd || undefined} />
             </div>
             <div className="form-group">
               <label>Ending Date</label>
-              <input type="date" value={draftFilters.lastVisitedEnd} onChange={(event) => setDraftFilters((current) => ({ ...current, lastVisitedEnd: event.target.value }))} />
+              <input type="date" value={draftFilters.lastVisitedEnd} onChange={(event) => setDraftFilters((current) => ({ ...current, lastVisitedEnd: event.target.value }))} min={draftFilters.lastVisitedStart || undefined} />
             </div>
             <div className="form-group">
               <label>Visit Type</label>
@@ -1408,11 +1408,11 @@ export default function CustomersPage() {
                 </div>
                 <div className="form-group">
                   <label>DOB</label>
-                  <input type="date" value={formData.dateOfBirth} onChange={(event) => setFormData((current) => ({ ...current, dateOfBirth: event.target.value }))} />
+                  <input type="date" max={new Date().toISOString().slice(0, 10)} value={formData.dateOfBirth} onChange={(event) => setFormData((current) => ({ ...current, dateOfBirth: event.target.value }))} />
                 </div>
                 <div className="form-group">
                   <label>Anniversary Date</label>
-                  <input type="date" value={formData.anniversary} onChange={(event) => setFormData((current) => ({ ...current, anniversary: event.target.value }))} />
+                  <input type="date" max={new Date().toISOString().slice(0, 10)} value={formData.anniversary} onChange={(event) => setFormData((current) => ({ ...current, anniversary: event.target.value }))} />
                 </div>
                 <div className="form-group">
                   <label>GST Number</label>
@@ -2045,11 +2045,11 @@ export default function CustomersPage() {
                             </div>
                             <div className="form-group">
                               <label>Date of Birth</label>
-                              <input type="date" value={updateForm.dateOfBirth} onChange={(e) => setUpdateForm(prev => ({ ...prev, dateOfBirth: e.target.value }))} />
+                              <input type="date" max={new Date().toISOString().slice(0, 10)} value={updateForm.dateOfBirth} onChange={(e) => setUpdateForm(prev => ({ ...prev, dateOfBirth: e.target.value }))} />
                             </div>
                             <div className="form-group">
                               <label>Anniversary</label>
-                              <input type="date" value={updateForm.anniversary} onChange={(e) => setUpdateForm(prev => ({ ...prev, anniversary: e.target.value }))} />
+                              <input type="date" max={new Date().toISOString().slice(0, 10)} value={updateForm.anniversary} onChange={(e) => setUpdateForm(prev => ({ ...prev, anniversary: e.target.value }))} />
                             </div>
                             <button className="cust-assign-btn" onClick={handleUpdateProfile} style={{ marginTop: "8px" }}>
                               <CheckCircle size={16} /> Save Changes
@@ -2287,6 +2287,7 @@ export default function CustomersPage() {
                           type="date" 
                           value={membershipForm.purchaseDate} 
                           onChange={(e) => setMembershipForm((prev) => ({ ...prev, purchaseDate: e.target.value }))} 
+                          max={new Date().toISOString().slice(0, 10)}
                           style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box", outline: "none" }} 
                         />
                       </div>
@@ -2562,7 +2563,7 @@ export default function CustomersPage() {
               </div>
               <div className="form-group" style={{ margin: 0 }}>
                 <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", marginBottom: "6px", display: "block" }}>Card Activated From</label>
-                <input type="date" value={giftCardForm.activationDate || ""} onChange={(e) => setGiftCardForm(prev => ({...prev, activationDate: e.target.value}))} style={{ width: "100%", padding: "10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.85rem", boxSizing: "border-box", color: "#0f172a", backgroundColor: "#ffffff" }} />
+                <input type="date" value={giftCardForm.activationDate || ""} onChange={(e) => setGiftCardForm(prev => ({...prev, activationDate: e.target.value}))} max={new Date().toISOString().slice(0, 10)} style={{ width: "100%", padding: "10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.85rem", boxSizing: "border-box", color: "#0f172a", backgroundColor: "#ffffff" }} />
               </div>
               <div className="form-group" style={{ margin: 0 }}>
                 <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "#475569", marginBottom: "6px", display: "block" }}>Purchase Amount</label>

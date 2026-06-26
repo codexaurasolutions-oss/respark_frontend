@@ -392,6 +392,7 @@ export default function CouponsPage() {
                     required 
                     value={couponForm.startsAt} 
                     onChange={(e) => setCouponForm({ ...couponForm, startsAt: e.target.value })}
+                    min={new Date().toISOString().slice(0, 10)}
                     style={{ padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: "0.9rem", width: "100%", boxSizing: "border-box" }}
                   />
                 </label>

@@ -951,6 +951,7 @@ export default function ExpensesPage() {
                         className="filter-input"
                         value={filters.startDate}
                         onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                        max={filters.endDate || undefined}
                       />
                     </div>
 
@@ -961,6 +962,7 @@ export default function ExpensesPage() {
                         className="filter-input"
                         value={filters.endDate}
                         onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                        min={filters.startDate || undefined}
                       />
                     </div>
                   </div>
@@ -1189,6 +1191,7 @@ export default function ExpensesPage() {
                         className="filter-input"
                         value={filters.startDate}
                         onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                        max={filters.endDate || undefined}
                       />
                     </div>
                     <div className="filter-item">
@@ -1198,6 +1201,7 @@ export default function ExpensesPage() {
                         className="filter-input"
                         value={filters.endDate}
                         onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                        min={filters.startDate || undefined}
                       />
                     </div>
                   </div>

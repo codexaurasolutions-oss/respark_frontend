@@ -38,6 +38,7 @@ export default function CampaignsPage() {
   const [coupons, setCoupons] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [filters, setFilters] = useState({ q: "", status: "", type: "", audienceFilter: "" });
+  const nowStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   const [logFilters, setLogFilters] = useState({ q: "", eventType: "" });
   const [loading, setLoading] = useState(true);
 
@@ -294,7 +295,7 @@ export default function CampaignsPage() {
               </select>
             </label>
             ) : <div className="summary-box"><strong>Audience source</strong><p className="item-meta">This filter will use live CRM, invoice, appointment, package, and membership data.</p></div>}
-            <label><span className="muted">Scheduled For</span><input type="datetime-local" value={form.scheduledFor} onChange={(event) => setForm((current) => ({ ...current, scheduledFor: event.target.value }))} /></label>
+            <label><span className="muted">Scheduled For</span><input type="datetime-local" min={nowStr} value={form.scheduledFor} onChange={(event) => setForm((current) => ({ ...current, scheduledFor: event.target.value }))} /></label>
             <label>
               <span className="muted">Banner URL</span>
               <input placeholder="Banner URL" value={form.bannerUrl} onChange={(event) => setForm((current) => ({ ...current, bannerUrl: event.target.value }))} />

@@ -335,6 +335,7 @@ export default function EnquiriesPage() {
                 style={{ width: "160px" }}
                 value={filterFromDate}
                 onChange={(e) => setFilterFromDate(e.target.value)}
+                max={filterToDate || undefined}
               />
             </div>
 
@@ -346,6 +347,7 @@ export default function EnquiriesPage() {
                 style={{ width: "160px" }}
                 value={filterToDate}
                 onChange={(e) => setFilterToDate(e.target.value)}
+                min={filterFromDate || undefined}
               />
             </div>
 

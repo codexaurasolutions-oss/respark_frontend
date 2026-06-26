@@ -247,8 +247,8 @@ export default function ReportsPage() {
               {data.branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
             </select>
             </label>
-            <input type="date" value={filters.start} onChange={(event) => setFilters((current) => ({ ...current, start: event.target.value }))} />
-            <input type="date" value={filters.end} onChange={(event) => setFilters((current) => ({ ...current, end: event.target.value }))} />
+            <input type="date" value={filters.start} onChange={(event) => setFilters((current) => ({ ...current, start: event.target.value }))} max={filters.end || undefined} />
+            <input type="date" value={filters.end} onChange={(event) => setFilters((current) => ({ ...current, end: event.target.value }))} min={filters.start || undefined} />
             <button type="button" className="secondary-button" onClick={() => setFilters((current) => ({ ...current, start: "", end: "" }))}>Clear Dates</button>
             <button type="button" className="secondary-button" onClick={exportCurrent}>Export CSV</button>
             <button type="button" className="secondary-button" onClick={exportExcel}>Export Excel</button>
