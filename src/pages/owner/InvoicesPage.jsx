@@ -87,8 +87,18 @@ export default function InvoicesPage() {
 
   const addPayment = async (invoiceId) => {
     setStatus({ error: "", success: "" });
+    const amt = Number(paymentForm.amount);
+    if (!amt || amt <= 0) {
+      setStatus({ error: "Please enter a valid payment amount greater than zero.", success: "" });
+      return;
+    }
+    const balanceAmt = Number(selectedInvoice?.balanceAmount || 0);
+    if (balanceAmt > 0 && amt > balanceAmt + 0.01) {
+      setStatus({ error: `Payment amount (₹${amt}) exceeds balance due (₹${balanceAmt}). Please check the amount.`, success: "" });
+      return;
+    }
     try {
-      await api.post("/owner/payments", { invoiceId, ...paymentForm, amount: Number(paymentForm.amount) });
+      await api.post("/owner/payments", { invoiceId, ...paymentForm, amount: amt });
       setPaymentForm({ mode: "CASH", amount: 0, note: "" });
       await load(selectedBranch);
       await openDetail(invoiceId);
@@ -303,6 +313,7 @@ export default function InvoicesPage() {
               {selectedInvoice.status !== "PAID" && selectedInvoice.status !== "CANCELLED" && (
                 <div className="panel-card no-print" style={{ marginTop: 24 }}>
                   <h4 style={{ marginTop: 0 }}>Record Payment</h4>
+                  <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: 8 }}>Balance Due: <strong style={{ color: "#dc2626" }}>{String(selectedInvoice.balanceAmount)}</strong></div>
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: 'flex-end' }}>
                     <label style={{ flex: 1, minWidth: 150 }}>
                       <span className="muted">Method</span>
@@ -314,8 +325,15 @@ export default function InvoicesPage() {
                       </select>
                     </label>
                     <label style={{ flex: 1, minWidth: 150 }}>
-                      <span className="muted">Amount</span>
-                      <input type="number" value={paymentForm.amount} onChange={(event) => setPaymentForm({ ...paymentForm, amount: event.target.value })} />
+                      <span className="muted" style={{ cursor: "pointer" }} onClick={() => {
+                        const balanceAmt = Number(selectedInvoice?.balanceAmount || 0);
+                        if (balanceAmt > 0) setPaymentForm(prev => ({ ...prev, amount: balanceAmt }));
+                      }}>Amount (click to auto-fill balance)</span>
+                      <input type="number" min="0" step="0.01" inputMode="decimal" max={Number(selectedInvoice?.balanceAmount || 0) || undefined} value={paymentForm.amount || ""} onChange={(event) => {
+                        const balanceAmt = Number(selectedInvoice?.balanceAmount || 0);
+                        const val = Math.min(Number(event.target.value) || 0, balanceAmt || Infinity);
+                        setPaymentForm({ ...paymentForm, amount: val });
+                      }} />
                     </label>
                     <label style={{ flex: 2, minWidth: 200 }}>
                       <span className="muted">Note (Optional)</span>

@@ -693,6 +693,17 @@ export default function PosPage() {
     const offline = clampMoneyInput(pkgDraft.offline, Math.max(0, price - Number(online || 0)));
     const balance = Math.max(0, Number((price - Number(online || 0) - Number(offline || 0)).toFixed(2)));
 
+    const totalPaid = Number(online || 0) + Number(offline || 0);
+    if (price > 0 && totalPaid <= 0) {
+      setStatus({ error: "Please enter at least one payment amount (Online or Offline) before purchasing the package.", success: "" });
+      return;
+    }
+
+    if (totalPaid > price + 0.01) {
+      setStatus({ error: "Payment amount exceeds package price. Please check the amounts.", success: "" });
+      return;
+    }
+
     // Ensure total payments + balance equals exactly the price
     const totalPaymentsCovered = Number(online) + Number(offline) + Number(balance);
     if (Math.abs(totalPaymentsCovered - price) > 0.01) {
@@ -2070,14 +2081,26 @@ export default function PosPage() {
                       </div>
                     </div>
                     <div style={{ flex:1, minWidth:120 }}>
-                      <label style={{ fontSize:"0.82rem", fontWeight:600, color:"#475569", display:"block", marginBottom:6 }}>Online</label>
+                      <label style={{ fontSize:"0.82rem", fontWeight:600, color:"#475569", display:"block", marginBottom:6, cursor:"pointer" }} onClick={() => {
+                        const total = Math.max(0, Number(pkgDraft.price || pkgModalPkg?.price || 0));
+                        const offline = Math.max(0, Number(pkgDraft.offline || 0));
+                        const online = clampMoneyInput(String(total - offline), total);
+                        const nextBalance = Math.max(0, Number((total - Number(online || 0) - offline).toFixed(2)));
+                        setPkgDraft(d => ({ ...d, online, balance: String(nextBalance) }));
+                      }}>Online</label>
                       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                         <span style={{ fontSize:"1.2rem" }}>📱</span>
                         <input type="number" min="0" step="0.01" inputMode="decimal" max={pkgPaymentTotal} placeholder="0.0" value={pkgDraft.online} onChange={e=>setPkgDraft(d=>{ const total = Math.max(0, Number(d.price || pkgModalPkg?.price || 0)); const offline = Math.max(0, Number(d.offline || 0)); const online = clampMoneyInput(e.target.value, Math.max(0, total - offline)); const nextBalance = Math.max(0, Number((total - Number(online || 0) - offline).toFixed(2))); return { ...d, online, balance: String(nextBalance) }; })} style={{ width:"100%", padding:"10px 12px", border:"1px solid #cbd5e1", borderRadius:8, fontSize:"0.9rem", boxSizing:"border-box" }} />
                       </div>
                     </div>
                     <div style={{ flex:1, minWidth:120 }}>
-                      <label style={{ fontSize:"0.82rem", fontWeight:600, color:"#475569", display:"block", marginBottom:6 }}>Offline</label>
+                      <label style={{ fontSize:"0.82rem", fontWeight:600, color:"#475569", display:"block", marginBottom:6, cursor:"pointer" }} onClick={() => {
+                        const total = Math.max(0, Number(pkgDraft.price || pkgModalPkg?.price || 0));
+                        const online = Math.max(0, Number(pkgDraft.online || 0));
+                        const offline = clampMoneyInput(String(total - online), total);
+                        const nextBalance = Math.max(0, Number((total - online - Number(offline || 0)).toFixed(2)));
+                        setPkgDraft(d => ({ ...d, offline, balance: String(nextBalance) }));
+                      }}>Offline</label>
                       <input type="number" min="0" step="0.01" inputMode="decimal" max={Math.max(0, pkgPaymentTotal - pkgPaymentOnline)} placeholder="0.0" value={pkgDraft.offline} onChange={e=>setPkgDraft(d=>{ const total = Math.max(0, Number(d.price || pkgModalPkg?.price || 0)); const online = Math.max(0, Number(d.online || 0)); const offline = clampMoneyInput(e.target.value, Math.max(0, total - online)); const nextBalance = Math.max(0, Number((total - online - Number(offline || 0)).toFixed(2))); return { ...d, offline, balance: String(nextBalance) }; })} style={{ width:"100%", padding:"10px 12px", border:"1px solid #cbd5e1", borderRadius:8, fontSize:"0.9rem", boxSizing:"border-box" }} />
                     </div>
                   </div>

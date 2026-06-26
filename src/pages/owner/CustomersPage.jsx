@@ -2587,23 +2587,54 @@ export default function CustomersPage() {
               <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1e293b", marginBottom: "16px" }}>Payment Details:</div>
               <div style={{ display: "flex", gap: "24px" }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "6px", display: "block" }}>Online</label>
+                  <label style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "6px", display: "block", cursor: "pointer" }} onClick={() => {
+                    const amt = Number(giftCardForm.amount || 0);
+                    const offlineVal = Number(giftCardForm.offline || 0);
+                    setGiftCardForm(prev => ({...prev, online: String(Math.max(0, amt - offlineVal)), balance: String(0)}));
+                  }}>Online</label>
                   <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px" }}>
                     <Monitor size={18} color="#10b981" style={{ marginRight: "8px" }} />
-                    <input type="number" placeholder="0.0" value={giftCardForm.online || ""} onChange={(e) => setGiftCardForm(prev => ({...prev, online: e.target.value}))} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem", color: "#0f172a", backgroundColor: "#ffffff" }} />
+                    <input type="number" min="0" step="0.01" inputMode="decimal" max={Math.max(0, Number(giftCardForm.amount || 0) - Number(giftCardForm.offline || 0))} placeholder="0.0" value={giftCardForm.online || ""} onChange={(e) => {
+                      const amt = Number(giftCardForm.amount || 0);
+                      const offlineVal = Number(giftCardForm.offline || 0);
+                      const val = Math.min(Math.max(0, Number(e.target.value) || 0), Math.max(0, amt - offlineVal));
+                      const nextBalance = Math.max(0, amt - val - offlineVal);
+                      setGiftCardForm(prev => ({...prev, online: String(val), balance: String(nextBalance)}));
+                    }} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem", color: "#0f172a", backgroundColor: "#ffffff" }} />
                   </div>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "6px", display: "block" }}>Offline</label>
+                  <label style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "6px", display: "block", cursor: "pointer" }} onClick={() => {
+                    const amt = Number(giftCardForm.amount || 0);
+                    const onlineVal = Number(giftCardForm.online || 0);
+                    setGiftCardForm(prev => ({...prev, offline: String(Math.max(0, amt - onlineVal)), balance: String(0)}));
+                  }}>Offline</label>
                   <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px" }}>
-                    <input type="number" placeholder="0.0" value={giftCardForm.offline || ""} onChange={(e) => setGiftCardForm(prev => ({...prev, offline: e.target.value}))} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem", color: "#0f172a", backgroundColor: "#ffffff" }} />
+                    <input type="number" min="0" step="0.01" inputMode="decimal" max={Math.max(0, Number(giftCardForm.amount || 0) - Number(giftCardForm.online || 0))} placeholder="0.0" value={giftCardForm.offline || ""} onChange={(e) => {
+                      const amt = Number(giftCardForm.amount || 0);
+                      const onlineVal = Number(giftCardForm.online || 0);
+                      const val = Math.min(Math.max(0, Number(e.target.value) || 0), Math.max(0, amt - onlineVal));
+                      const nextBalance = Math.max(0, amt - onlineVal - val);
+                      setGiftCardForm(prev => ({...prev, offline: String(val), balance: String(nextBalance)}));
+                    }} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem", color: "#0f172a", backgroundColor: "#ffffff" }} />
                   </div>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "6px", display: "block" }}>Balance</label>
+                  <label style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "6px", display: "block", cursor: "pointer" }} onClick={() => {
+                    const amt = Number(giftCardForm.amount || 0);
+                    const onlineVal = Number(giftCardForm.online || 0);
+                    const offlineVal = Number(giftCardForm.offline || 0);
+                    setGiftCardForm(prev => ({...prev, balance: String(Math.max(0, amt - onlineVal - offlineVal))}));
+                  }}>Balance</label>
                   <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px" }}>
                     <Wallet size={18} color="#10b981" style={{ marginRight: "8px" }} />
-                    <input type="number" placeholder="0.0" value={giftCardForm.balance || ""} onChange={(e) => setGiftCardForm(prev => ({...prev, balance: e.target.value}))} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem", color: "#0f172a", backgroundColor: "#ffffff" }} />
+                    <input type="number" min="0" step="0.01" inputMode="decimal" max={Math.max(0, Number(giftCardForm.amount || 0) - Number(giftCardForm.online || 0) - Number(giftCardForm.offline || 0))} placeholder="0.0" value={giftCardForm.balance || ""} onChange={(e) => {
+                      const amt = Number(giftCardForm.amount || 0);
+                      const onlineVal = Number(giftCardForm.online || 0);
+                      const offlineVal = Number(giftCardForm.offline || 0);
+                      const val = Math.min(Math.max(0, Number(e.target.value) || 0), Math.max(0, amt - onlineVal - offlineVal));
+                      setGiftCardForm(prev => ({...prev, balance: String(val)}));
+                    }} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem", color: "#0f172a", backgroundColor: "#ffffff" }} />
                   </div>
                 </div>
               </div>
@@ -2866,23 +2897,58 @@ export default function CustomersPage() {
                 <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "#334155", marginBottom: "16px" }}>Payment Details:</div>
                 <div style={{ display: "flex", gap: "24px" }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: "0.8rem", color: "#0f172a", marginBottom: "6px", display: "block" }}>Balance</label>
+                    <label style={{ fontSize: "0.8rem", color: "#0f172a", marginBottom: "6px", display: "block", cursor: "pointer" }} onClick={() => {
+                      const price = Number(packageForm.price || 0);
+                      const onlineVal = Number(packageForm.online || 0);
+                      const offlineVal = Number(packageForm.offline || 0);
+                      const paid = onlineVal + offlineVal;
+                      const remaining = Math.max(0, price - paid);
+                      setPackageForm(prev => ({...prev, balance: String(remaining)}));
+                    }}>Balance</label>
                     <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px" }}>
                       <Wallet size={18} color="#10b981" style={{ marginRight: "8px" }} />
-                      <input type="number" placeholder="0.0" value={packageForm.balance} onChange={(e) => setPackageForm(prev => ({...prev, balance: e.target.value}))} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem" }} />
+                      <input type="number" min="0" step="0.01" inputMode="decimal" max={Number(packageForm.price || 0)} placeholder="0.0" value={packageForm.balance} onChange={(e) => {
+                        const price = Number(packageForm.price || 0);
+                        const onlineVal = Number(packageForm.online || 0);
+                        const offlineVal = Number(packageForm.offline || 0);
+                        const val = Math.min(Math.max(0, Number(e.target.value) || 0), Math.max(0, price - onlineVal - offlineVal));
+                        setPackageForm(prev => ({...prev, balance: String(val)}));
+                      }} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem" }} />
                     </div>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: "0.8rem", color: "#0f172a", marginBottom: "6px", display: "block" }}>Online</label>
+                    <label style={{ fontSize: "0.8rem", color: "#0f172a", marginBottom: "6px", display: "block", cursor: "pointer" }} onClick={() => {
+                      const price = Number(packageForm.price || 0);
+                      const offlineVal = Number(packageForm.offline || 0);
+                      const remaining = Math.max(0, price - offlineVal);
+                      setPackageForm(prev => ({...prev, online: String(remaining), balance: String(0)}));
+                    }}>Online</label>
                     <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px" }}>
                       <Monitor size={18} color="#10b981" style={{ marginRight: "8px" }} />
-                      <input type="number" placeholder="0.0" value={packageForm.online} onChange={(e) => setPackageForm(prev => ({...prev, online: e.target.value}))} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem" }} />
+                      <input type="number" min="0" step="0.01" inputMode="decimal" max={Math.max(0, Number(packageForm.price || 0) - Number(packageForm.offline || 0))} placeholder="0.0" value={packageForm.online} onChange={(e) => {
+                        const price = Number(packageForm.price || 0);
+                        const offlineVal = Number(packageForm.offline || 0);
+                        const val = Math.min(Math.max(0, Number(e.target.value) || 0), Math.max(0, price - offlineVal));
+                        const nextBalance = Math.max(0, price - val - offlineVal);
+                        setPackageForm(prev => ({...prev, online: String(val), balance: String(nextBalance)}));
+                      }} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem" }} />
                     </div>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: "0.8rem", color: "#0f172a", marginBottom: "6px", display: "block" }}>Offline</label>
+                    <label style={{ fontSize: "0.8rem", color: "#0f172a", marginBottom: "6px", display: "block", cursor: "pointer" }} onClick={() => {
+                      const price = Number(packageForm.price || 0);
+                      const onlineVal = Number(packageForm.online || 0);
+                      const remaining = Math.max(0, price - onlineVal);
+                      setPackageForm(prev => ({...prev, offline: String(remaining), balance: String(0)}));
+                    }}>Offline</label>
                     <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 12px" }}>
-                      <input type="number" placeholder="0.0" value={packageForm.offline} onChange={(e) => setPackageForm(prev => ({...prev, offline: e.target.value}))} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem" }} />
+                      <input type="number" min="0" step="0.01" inputMode="decimal" max={Math.max(0, Number(packageForm.price || 0) - Number(packageForm.online || 0))} placeholder="0.0" value={packageForm.offline} onChange={(e) => {
+                        const price = Number(packageForm.price || 0);
+                        const onlineVal = Number(packageForm.online || 0);
+                        const val = Math.min(Math.max(0, Number(e.target.value) || 0), Math.max(0, price - onlineVal));
+                        const nextBalance = Math.max(0, price - onlineVal - val);
+                        setPackageForm(prev => ({...prev, offline: String(val), balance: String(nextBalance)}));
+                      }} style={{ border: "none", outline: "none", width: "100%", fontSize: "0.9rem" }} />
                     </div>
                   </div>
                 </div>
