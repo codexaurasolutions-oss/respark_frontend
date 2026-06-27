@@ -1496,13 +1496,12 @@ function SalesSummaryDashboard({ data, loading, onViewReport }) {
 export default function ReportsHubPage() {
   const [activeReport, setActiveReport] = useState("sales_summary");
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState({ start: "", end: "", branchId: "", date: "" });
+  const [filters, setFilters] = useState({ start: "", end: "", branchId: "" });
   const [reportFilters, setReportFilters] = useState({});
   const [rows, setRows] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
   const [pnlData, setPnlData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [statusText, setStatusText] = useState("Loaded");
   const [showChart, setShowChart] = useState(false);
   const [columnPickerOpen, setColumnPickerOpen] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState(null);
@@ -1526,20 +1525,14 @@ export default function ReportsHubPage() {
 
     if (!endpoint) {
       setLoading(false);
-      setStatusText("Pending wiring");
       return;
     }
 
     setLoading(true);
-    setStatusText("Loading...");
 
     const params = {};
-    if (filters.date) {
-      params.date = filters.date;
-    } else {
-      if (filters.start) params.start = filters.start;
-      if (filters.end) params.end = filters.end;
-    }
+    if (filters.start) params.start = filters.start;
+    if (filters.end) params.end = filters.end;
     if (filters.branchId) params.branchId = filters.branchId;
     filterConfig.forEach((f) => {
       const v = reportFilters[f.key];
@@ -1557,15 +1550,13 @@ export default function ReportsHubPage() {
           const payload = Array.isArray(res.data) ? res.data : res.data?.rows || [];
           setRows(payload.map((row, index) => normalizeRowForReport(activeReport, row, index)));
         }
-        setStatusText("Loaded");
       })
       .catch(() => {
         setRows([]);
         setDashboardData(null);
-        setStatusText("Load failed");
       })
       .finally(() => setLoading(false));
-  }, [activeReport, filters.branchId, filters.date, filters.end, filters.start, filterConfig, reportFilters]);
+  }, [activeReport, filters.branchId, filters.end, filters.start, filterConfig, reportFilters]);
 
   const filteredReports = ALL_REPORTS.filter((report) => !search || report.label.toLowerCase().includes(search.toLowerCase()));
 
@@ -1732,31 +1723,6 @@ export default function ReportsHubPage() {
             </div>
           )}
           <h2 className="rpt-title">{currentReport?.label || "Report"}</h2>
-          <div className="rpt-stat" style={{ flexShrink: 0 }}>
-            <div className="rpt-stat-label">Records</div>
-            <div className="rpt-stat-val">{loading ? "..." : rows.length}</div>
-          </div>
-          <div className="rpt-stat" style={{ flexShrink: 0 }}>
-            <div className="rpt-stat-label">Range</div>
-            <div className="rpt-stat-val">{filters.date ? filters.date : (filters.start && filters.end ? `${filters.start} to ${filters.end}` : "All Time")}</div>
-          </div>
-          <div className="rpt-stat" style={{ flexShrink: 0 }}>
-            <div className="rpt-stat-label">Status</div>
-            <div
-              className="rpt-stat-val"
-              style={{
-                color: loading
-                  ? "#f59e0b"
-                  : statusText === "Load failed"
-                    ? "#dc2626"
-                    : statusText === "Pending wiring"
-                      ? "#64748b"
-                      : "#10b981"
-              }}
-            >
-              {statusText}
-            </div>
-          </div>
           <div id="report-filters" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginLeft: "auto" }}>
             {filterConfig.map((f) => {
               const opts = getFilterOptions(f, filterOptions);
@@ -1781,25 +1747,18 @@ export default function ReportsHubPage() {
               );
             })}
 
-            <div className="rpt-filter-chip">
-              <input type="date" value={filters.date} onChange={(e) => setFilters((current) => ({ ...current, date: e.target.value, start: e.target.value ? "" : current.start, end: e.target.value ? "" : current.end }))} />
+            <div className="rpt-filter-chip" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span className="rpt-filter-label">From:</span>
+              <input type="date" value={filters.start} onChange={(e) => setFilters((current) => ({ ...current, start: e.target.value }))} max={filters.end || undefined} style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: "5px", fontSize: "0.72rem" }} />
+            </div>
+            <div className="rpt-filter-chip" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span className="rpt-filter-label">To:</span>
+              <input type="date" value={filters.end} onChange={(e) => setFilters((current) => ({ ...current, end: e.target.value }))} min={filters.start || undefined} style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: "5px", fontSize: "0.72rem" }} />
             </div>
 
-            {(filters.date || filters.start || filters.end) && (
-              <button type="button" className="rpt-btn rpt-btn-clear" onClick={() => setFilters((current) => ({ ...current, date: "", start: "", end: "" }))}>×</button>
+            {(filters.start || filters.end) && (
+              <button type="button" className="rpt-btn rpt-btn-clear" onClick={() => setFilters((current) => ({ ...current, start: "", end: "" }))}>×</button>
             )}
-            <button type="button" className="rpt-btn" style={{
-              background: loading ? "#94a3b8" : "#2563eb",
-              color: "#ffffff",
-              borderRadius: "6px",
-              padding: "5px 14px",
-              fontWeight: 700,
-              fontSize: "0.72rem",
-              border: "none",
-              cursor: loading ? "default" : "pointer",
-              boxShadow: "0 1px 3px rgba(37, 99, 235, 0.2)",
-              transition: "all 0.15s ease"
-            }} disabled={loading}>{loading ? "Loading..." : "Show Report"}</button>
             {activeReport !== "sales_summary" && (
               <button type="button" className="rpt-icon-btn" title="Export CSV" onClick={handleExportCSV}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
