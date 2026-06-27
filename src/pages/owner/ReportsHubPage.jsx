@@ -454,6 +454,50 @@ const getCellValue = (row, col) => {
   return value;
 };
 
+const QUICK_RANGES = [
+  { key: "1d", label: "1D" },
+  { key: "7d", label: "7D" },
+  { key: "14d", label: "14D" },
+  { key: "1m", label: "1M" },
+  { key: "2m", label: "2M" },
+  { key: "ytd", label: "YTD" },
+  { key: "1y", label: "1Y" },
+];
+
+function computeQuickRange(key) {
+  const now = new Date();
+  const fmt = (d) => d.toISOString().slice(0, 10);
+  switch (key) {
+    case "1d":
+      return { start: fmt(now), end: fmt(now) };
+    case "7d": {
+      const s = new Date(now); s.setDate(s.getDate() - 6);
+      return { start: fmt(s), end: fmt(now) };
+    }
+    case "14d": {
+      const s = new Date(now); s.setDate(s.getDate() - 13);
+      return { start: fmt(s), end: fmt(now) };
+    }
+    case "1m": {
+      const s = new Date(now); s.setMonth(s.getMonth() - 1);
+      return { start: fmt(s), end: fmt(now) };
+    }
+    case "2m": {
+      const s = new Date(now); s.setMonth(s.getMonth() - 2);
+      return { start: fmt(s), end: fmt(now) };
+    }
+    case "ytd": {
+      return { start: `${now.getFullYear()}-01-01`, end: fmt(now) };
+    }
+    case "1y": {
+      const s = new Date(now); s.setFullYear(s.getFullYear() - 1);
+      return { start: fmt(s), end: fmt(now) };
+    }
+    default:
+      return { start: "", end: "" };
+  }
+}
+
 function GuestCollectionChart({ rows }) {
   const { formatMoney } = useSalonSettings();
   const dataRows = (rows || []).filter((r) => r && r["GUEST NAME"] && r["GUEST NAME"] !== "TOTAL" && (Number(r["TOTAL"]) || 0) > 0);
@@ -1497,6 +1541,7 @@ export default function ReportsHubPage() {
   const [activeReport, setActiveReport] = useState("sales_summary");
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({ start: "", end: "", branchId: "" });
+  const [quickRange, setQuickRange] = useState("");
   const [reportFilters, setReportFilters] = useState({});
   const [rows, setRows] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
@@ -1747,17 +1792,37 @@ export default function ReportsHubPage() {
               );
             })}
 
+            <div style={{ display: "flex", alignItems: "center", gap: 4, background: "#f1f5f9", borderRadius: 8, padding: "3px 6px" }}>
+              {QUICK_RANGES.map((qr) => (
+                <button
+                  key={qr.key}
+                  type="button"
+                  onClick={() => {
+                    const range = computeQuickRange(qr.key);
+                    setQuickRange(qr.key);
+                    setFilters((current) => ({ ...current, start: range.start, end: range.end }));
+                  }}
+                  style={{
+                    padding: "4px 10px", borderRadius: 6, border: "none", fontSize: 11,
+                    fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
+                    background: quickRange === qr.key ? "#6366f1" : "transparent",
+                    color: quickRange === qr.key ? "white" : "#64748b",
+                  }}
+                >{qr.label}</button>
+              ))}
+            </div>
+
             <div className="rpt-filter-chip" style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span className="rpt-filter-label">From:</span>
-              <input type="date" value={filters.start} onChange={(e) => setFilters((current) => ({ ...current, start: e.target.value }))} max={filters.end || undefined} style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: "5px", fontSize: "0.72rem" }} />
+              <input type="date" value={filters.start} onChange={(e) => { setQuickRange(""); setFilters((current) => ({ ...current, start: e.target.value })); }} max={filters.end || undefined} style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: "5px", fontSize: "0.72rem" }} />
             </div>
             <div className="rpt-filter-chip" style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span className="rpt-filter-label">To:</span>
-              <input type="date" value={filters.end} onChange={(e) => setFilters((current) => ({ ...current, end: e.target.value }))} min={filters.start || undefined} style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: "5px", fontSize: "0.72rem" }} />
+              <input type="date" value={filters.end} onChange={(e) => { setQuickRange(""); setFilters((current) => ({ ...current, end: e.target.value })); }} min={filters.start || undefined} style={{ padding: "4px 8px", border: "1px solid #e2e8f0", borderRadius: "5px", fontSize: "0.72rem" }} />
             </div>
 
             {(filters.start || filters.end) && (
-              <button type="button" className="rpt-btn rpt-btn-clear" onClick={() => setFilters((current) => ({ ...current, start: "", end: "" }))}>×</button>
+              <button type="button" className="rpt-btn rpt-btn-clear" onClick={() => { setQuickRange(""); setFilters((current) => ({ ...current, start: "", end: "" })); }}>×</button>
             )}
             {activeReport !== "sales_summary" && (
               <button type="button" className="rpt-icon-btn" title="Export CSV" onClick={handleExportCSV}>
