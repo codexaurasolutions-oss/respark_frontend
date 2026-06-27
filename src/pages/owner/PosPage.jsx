@@ -552,7 +552,10 @@ export default function PosPage() {
       if (!grouped[cat]) grouped[cat] = [];
       grouped[cat].push(p);
     });
-    return Object.entries(grouped).map(([title, items]) => ({ title, items }));
+    return Object.entries(grouped).map(([title, items]) => ({
+      title,
+      items: [...items].sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0))
+    }));
   }, [context.products, productSearch, productCategoryFilter, posGender]);
 
   const membershipTileGroups = useMemo(() => {
@@ -1210,14 +1213,15 @@ export default function PosPage() {
                  <div key={group.title}>
                    <div className="pos-group-header">{group.title}</div>
                    <div className="pos-item-grid">
-                     {group.items.map(product => (
-                       <button type="button" key={product.id} className="pos-item-card" onClick={() => addQuickProduct(product)}>
-                         <div className="pos-item-card-name">{product.name}</div>
-                         <div className="pos-item-card-prices">
-                           <span className="pos-item-card-price-new">{Number(product.sellingPrice || 0).toFixed(0)}</span>
-                         </div>
-                       </button>
-                     ))}
+                      {group.items.map(product => (
+                        <button type="button" key={product.id} className="pos-item-card" onClick={() => addQuickProduct(product)}>
+                          {product.featured && <div style={{ position: "absolute", top: 4, right: 4, fontSize: 9, background: "#fef3c7", color: "#92400e", padding: "1px 5px", borderRadius: 4, fontWeight: 700, lineHeight: "14px" }}>★</div>}
+                          <div className="pos-item-card-name">{product.name}</div>
+                          <div className="pos-item-card-prices">
+                            <span className="pos-item-card-price-new">{Number(product.sellingPrice || 0).toFixed(0)}</span>
+                          </div>
+                        </button>
+                      ))}
                    </div>
                  </div>
                )) : <EmptyState title="No products found" message="Try All, another product category, or clear product search." />

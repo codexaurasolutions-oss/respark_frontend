@@ -191,6 +191,7 @@
   margin-bottom: 10px;
 }
 .pos-item-card {
+  position: relative;
   background: white;
   border: 1px solid #cbd5e1;
   border-radius: 7px;
