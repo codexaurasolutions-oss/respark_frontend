@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { X } from "lucide-react";
 import { api } from "../../api/client";
 import { formatApiError } from "../../utils/apiError";
@@ -25,7 +25,11 @@ const defaultProductForm = {
   ingredients: "",
   usageInstructions: "",
   displayImages: [],
-  variations: []
+  variations: [],
+  weight: "",
+  length: "",
+  width: "",
+  height: ""
 };
 
 export default function ProductCategoriesPage() {
@@ -42,6 +46,9 @@ export default function ProductCategoriesPage() {
   const [categoryForm, setCategoryForm] = useState({ name: "", sortOrder: 1, isPublicVisible: true });
   const [status, setStatus] = useState({ error: "", success: "" });
   const [saving, setSaving] = useState(false);
+  const [nameSuggestions, setNameSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const nameRef = useRef(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -109,7 +116,11 @@ export default function ProductCategoriesPage() {
       ingredients: p.ingredients || "",
       usageInstructions: p.usageInstructions || "",
       displayImages: Array.isArray(p.displayImages) ? p.displayImages : [],
-      variations: Array.isArray(p.variations) ? p.variations : []
+      variations: Array.isArray(p.variations) ? p.variations : [],
+      weight: p.weight ?? "",
+      length: p.length ?? "",
+      width: p.width ?? "",
+      height: p.height ?? ""
     });
     setShowProductModal(true);
   };
@@ -133,7 +144,11 @@ export default function ProductCategoriesPage() {
         ingredients: productForm.ingredients || null,
         usageInstructions: productForm.usageInstructions || null,
         displayImages: Array.isArray(productForm.displayImages) ? productForm.displayImages : [],
-        variations: Array.isArray(productForm.variations) ? productForm.variations : []
+        variations: Array.isArray(productForm.variations) ? productForm.variations : [],
+        weight: productForm.weight !== "" ? Number(productForm.weight) : null,
+        length: productForm.length !== "" ? Number(productForm.length) : null,
+        width: productForm.width !== "" ? Number(productForm.width) : null,
+        height: productForm.height !== "" ? Number(productForm.height) : null
       };
       if (editingProduct) {
         await api.patch(`/owner/inventory/products/${editingProduct.id}`, payload);
@@ -309,9 +324,55 @@ export default function ProductCategoriesPage() {
               <div className="hub-modal-body" style={{ overflowY: "auto", flex: 1, padding: 24 }}>
                 {/* Name, Featured, Active */}
                 <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 16, marginBottom: 20, alignItems: "end" }}>
-                  <div className="hub-form-group">
+                  <div className="hub-form-group" style={{ position: "relative" }}>
                     <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 4, display: "block" }}>Name *</label>
-                    <input type="text" required className="hub-input" value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})} placeholder="Product name" style={{ width: "100%" }} />
+                    <input
+                      ref={nameRef}
+                      type="text"
+                      required
+                      className="hub-input"
+                      value={productForm.name}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setProductForm({...productForm, name: val});
+                        if (val.length >= 2) {
+                          const matches = products.filter(p => p.name.toLowerCase().includes(val.toLowerCase()) && p.name !== val).slice(0, 5);
+                          setNameSuggestions(matches);
+                          setShowSuggestions(matches.length > 0);
+                        } else {
+                          setShowSuggestions(false);
+                        }
+                      }}
+                      onFocus={() => {
+                        if (productForm.name.length >= 2) {
+                          const matches = products.filter(p => p.name.toLowerCase().includes(productForm.name.toLowerCase()) && p.name !== productForm.name).slice(0, 5);
+                          setNameSuggestions(matches);
+                          setShowSuggestions(matches.length > 0);
+                        }
+                      }}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                      placeholder="Product name"
+                      style={{ width: "100%" }}
+                    />
+                    {showSuggestions && nameSuggestions.length > 0 && (
+                      <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "white", border: "1px solid #e2e8f0", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 100, maxHeight: 160, overflowY: "auto" }}>
+                        {nameSuggestions.map(p => (
+                          <div
+                            key={p.id}
+                            onMouseDown={() => {
+                              setProductForm({...productForm, name: p.name, sellingPrice: Number(p.sellingPrice) || 0, costPrice: Number(p.costPrice) || 0, sku: p.sku || ""});
+                              setShowSuggestions(false);
+                            }}
+                            style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                            onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+                            onMouseLeave={e => e.currentTarget.style.background = "white"}
+                          >
+                            <span>{p.name}</span>
+                            <span style={{ color: "#94a3b8", fontSize: 11 }}>₹{Number(p.sellingPrice || 0).toFixed(0)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="hub-form-group" style={{ display: "flex", alignItems: "end" }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "#334155", cursor: "pointer" }}>
@@ -390,6 +451,29 @@ export default function ProductCategoriesPage() {
                   </div>
                 </div>
 
+                {/* Size & Dimensions */}
+                <div style={{ marginBottom: 20, padding: "12px 0", borderTop: "1px solid #f1f5f9" }}>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#0f172a", display: "block", marginBottom: 10 }}>Size & Dimensions</span>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 12, color: "#64748b", marginBottom: 4, display: "block" }}>Weight (g)</label>
+                      <input type="number" className="hub-input" value={productForm.weight} onChange={e => setProductForm({...productForm, weight: e.target.value})} placeholder="0" min="0" style={{ width: "100%" }} />
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 12, color: "#64748b", marginBottom: 4, display: "block" }}>Length (cm)</label>
+                      <input type="number" className="hub-input" value={productForm.length} onChange={e => setProductForm({...productForm, length: e.target.value})} placeholder="0" min="0" style={{ width: "100%" }} />
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 12, color: "#64748b", marginBottom: 4, display: "block" }}>Width (cm)</label>
+                      <input type="number" className="hub-input" value={productForm.width} onChange={e => setProductForm({...productForm, width: e.target.value})} placeholder="0" min="0" style={{ width: "100%" }} />
+                    </div>
+                    <div className="hub-form-group">
+                      <label style={{ fontSize: 12, color: "#64748b", marginBottom: 4, display: "block" }}>Height (cm)</label>
+                      <input type="number" className="hub-input" value={productForm.height} onChange={e => setProductForm({...productForm, height: e.target.value})} placeholder="0" min="0" style={{ width: "100%" }} />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Category */}
                 <div className="hub-form-group" style={{ marginBottom: 20 }}>
                   <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 4, display: "block" }}>Category</label>
@@ -461,13 +545,19 @@ export default function ProductCategoriesPage() {
                       Add Image
                       <input type="file" accept="image/*" multiple hidden onChange={(e) => {
                         const files = Array.from(e.target.files || []);
+                        const maxSize = 2 * 1024 * 1024;
                         files.forEach(file => {
+                          if (file.size > maxSize) {
+                            setStatus({ error: `"${file.name}" exceeds 2MB limit. Please choose a smaller image.`, success: "" });
+                            return;
+                          }
                           const reader = new FileReader();
                           reader.onload = (ev) => {
                             setProductForm(prev => ({...prev, displayImages: [...(prev.displayImages || []), ev.target.result]}));
                           };
                           reader.readAsDataURL(file);
                         });
+                        e.target.value = "";
                       }} />
                     </label>
                   </div>
