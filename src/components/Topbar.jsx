@@ -596,29 +596,27 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
 
         <div className="respark-top-right">
           {/* Branch Selector */}
-          {branches.length > 1 ? (
-            <div className="respark-branch-wrap">
-              <button className="respark-branch-btn" onClick={() => setIsBranchOpen(!isBranchOpen)}>
-                <Building2 size={14} color="#64748b" />
-                {selectedBranchName}
-                <ChevronDown size={14} color="#64748b" />
-              </button>
-              {isBranchOpen && (
-                <div className="respark-branch-dropdown" onClick={e => e.stopPropagation()}>
-                  <button className={`respark-branch-option ${!selectedBranchId ? "active" : ""}`} onClick={() => { setSelectedBranchId(""); setIsBranchOpen(false); }}>
-                    <svg className="respark-branch-option-check" viewBox="0 0 16 16" fill="none">{!selectedBranchId ? <path d="M2 8.5l4 4 8-8" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/> : null}</svg>
-                    All Branches
+          <div className="respark-branch-wrap">
+            <button className="respark-branch-btn" onClick={() => setIsBranchOpen(!isBranchOpen)}>
+              <Building2 size={14} color="#64748b" />
+              {selectedBranchName}
+              <ChevronDown size={14} color="#64748b" />
+            </button>
+            {isBranchOpen && (
+              <div className="respark-branch-dropdown" onClick={e => e.stopPropagation()}>
+                <button className={`respark-branch-option ${!selectedBranchId ? "active" : ""}`} onClick={() => { setSelectedBranchId(""); setIsBranchOpen(false); }}>
+                  <svg className="respark-branch-option-check" viewBox="0 0 16 16" fill="none">{!selectedBranchId ? <path d="M2 8.5l4 4 8-8" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/> : null}</svg>
+                  All Branches
+                </button>
+                {branches.filter(b => b.isActive).map(branch => (
+                  <button key={branch.id} className={`respark-branch-option ${selectedBranchId === branch.id ? "active" : ""}`} onClick={() => { setSelectedBranchId(branch.id); setIsBranchOpen(false); }}>
+                    <svg className="respark-branch-option-check" viewBox="0 0 16 16" fill="none">{selectedBranchId === branch.id ? <path d="M2 8.5l4 4 8-8" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/> : null}</svg>
+                    {branch.name}
                   </button>
-                  {branches.filter(b => b.isActive).map(branch => (
-                    <button key={branch.id} className={`respark-branch-option ${selectedBranchId === branch.id ? "active" : ""}`} onClick={() => { setSelectedBranchId(branch.id); setIsBranchOpen(false); }}>
-                      <svg className="respark-branch-option-check" viewBox="0 0 16 16" fill="none">{selectedBranchId === branch.id ? <path d="M2 8.5l4 4 8-8" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/> : null}</svg>
-                      {branch.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : null}
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="respark-date">{dateStr}</div>
           
