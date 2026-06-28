@@ -11,7 +11,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [quickSearch, setQuickSearch] = useState("");
-  const [searchResults, setSearchResults] = useState({ customers: [], services: [], products: [], staff: [], appointments: [], invoices: [] });
+  const [searchResults, setSearchResults] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const permissions = auth?.membership?.permissions || {};
@@ -54,20 +54,12 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
   }, []);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
-  const flatSearchResults = [
-    ...searchResults.customers.map((item) => ({ ...item, type: "Guest" })),
-    ...searchResults.appointments.map((item) => ({ ...item, type: "Appointment" })),
-    ...searchResults.services.map((item) => ({ ...item, type: "Service" })),
-    ...searchResults.products.map((item) => ({ ...item, type: "Product" })),
-    ...searchResults.staff.map((item) => ({ ...item, type: "Staff" })),
-    ...searchResults.invoices.map((item) => ({ ...item, type: "Invoice" }))
-  ];
 
   useEffect(() => {
     if (!canGlobalSearch) return undefined;
     const term = quickSearch.trim();
     if (term.length < 2) {
-      setSearchResults({ customers: [], services: [], products: [], staff: [], appointments: [], invoices: [] });
+      setSearchResults([]);
       setSearchLoading(false);
       return undefined;
     }
@@ -78,17 +70,10 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
       try {
         const response = await api.get("/owner/global-search", { params: { q: term } });
         if (!active) return;
-        setSearchResults({
-          customers: response.data?.customers || [],
-          appointments: response.data?.appointments || [],
-          services: response.data?.services || [],
-          products: response.data?.products || [],
-          staff: response.data?.staff || [],
-          invoices: response.data?.invoices || []
-        });
+        setSearchResults(response.data?.results || []);
         setSearchOpen(true);
       } catch {
-        if (active) setSearchResults({ customers: [], services: [], products: [], staff: [], appointments: [], invoices: [] });
+        if (active) setSearchResults([]);
       } finally {
         if (active) setSearchLoading(false);
       }
@@ -156,11 +141,13 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           justify-content: space-between;
           padding: 0 24px;
           border-bottom: 1px solid #e2e8f0;
+          position: relative;
         }
         .respark-logo-area {
           display: flex;
           align-items: center;
           gap: 16px;
+          flex: 1;
         }
         .respark-brand-image {
           height: 42px;
@@ -179,9 +166,9 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           display: flex;
           align-items: center;
           background: #f1f5f9;
-          border-radius: 20px;
-          padding: 5px 14px;
-          width: 360px;
+          border-radius: 24px;
+          padding: 6px 18px;
+          width: 480px;
           border: 1px solid transparent;
           transition: all 0.2s;
           position: relative;
@@ -208,24 +195,24 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
         }
         .respark-search-wrap {
           position: relative;
-          margin-right: 8px;
         }
         .respark-search-dropdown {
           position: absolute;
           top: calc(100% + 10px);
-          right: 0;
-          width: 420px;
-          max-height: 420px;
-          overflow: auto;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 520px;
+          max-height: 480px;
+          overflow-y: auto;
           background: white;
           border: 1px solid #e2e8f0;
-          border-radius: 18px;
-          box-shadow: none;
+          border-radius: 14px;
+          box-shadow: 0 8px 30px rgba(0,0,0,0.12);
           z-index: 120;
-          padding: 10px;
+          padding: 8px;
         }
         .respark-search-section-title {
-          padding: 8px 10px 6px;
+          padding: 8px 12px 4px;
           font-size: 0.68rem;
           font-weight: 800;
           color: #94a3b8;
@@ -238,38 +225,64 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           background: transparent;
           text-align: left;
           padding: 10px 12px;
-          border-radius: 12px;
+          border-radius: 10px;
           cursor: pointer;
-          display: grid;
-          grid-template-columns: 74px 1fr;
-          gap: 10px;
+          display: flex;
           align-items: center;
+          gap: 12px;
+          transition: background 0.15s;
         }
         .respark-search-result:hover {
           background: #eff6ff;
         }
-        .respark-search-result-type {
-          font-size: 0.68rem;
-          font-weight: 800;
-          color: #2563eb;
-          background: #dbeafe;
-          border-radius: 999px;
-          padding: 5px 8px;
+        .respark-search-module-badge {
+          font-size: 0.6rem;
+          font-weight: 700;
+          color: white;
+          border-radius: 6px;
+          padding: 4px 8px;
           text-align: center;
+          white-space: nowrap;
+          min-width: 70px;
+          flex-shrink: 0;
         }
-        .respark-search-result strong {
+        .respark-search-module-badge.crm { background: #3b82f6; }
+        .respark-search-module-badge.services { background: #8b5cf6; }
+        .respark-search-module-badge.inventory { background: #f59e0b; }
+        .respark-search-module-badge.staff { background: #10b981; }
+        .respark-search-module-badge.appointments { background: #06b6d4; }
+        .respark-search-module-badge.invoices { background: #6366f1; }
+        .respark-search-module-badge.memberships { background: #ec4899; }
+        .respark-search-module-badge.packages { background: #f97316; }
+        .respark-search-module-badge.pos { background: #14b8a6; }
+        .respark-search-result-text {
+          flex: 1;
+          min-width: 0;
+        }
+        .respark-search-result-text strong {
           display: block;
           color: #0f172a;
           font-size: 0.88rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
-        .respark-search-result small {
+        .respark-search-result-text small {
           display: block;
           color: #64748b;
-          font-size: 0.75rem;
+          font-size: 0.73rem;
           margin-top: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .respark-search-result-nav {
+          font-size: 0.68rem;
+          color: #94a3b8;
+          flex-shrink: 0;
         }
         .respark-search-empty {
-          padding: 18px;
+          padding: 24px 18px;
           text-align: center;
           color: #94a3b8;
           font-size: 0.85rem;
@@ -279,6 +292,8 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           display: flex;
           align-items: center;
           gap: 16px;
+          flex: 1;
+          justify-content: flex-end;
         }
         .respark-date {
           font-size: 0.85rem;
@@ -455,78 +470,63 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           <div className="respark-salon-name">{salonName}</div>
         </div>
 
-        <div className="respark-top-right">
-          {/* Search Bar */}
-          {canGlobalSearch ? (
-            <div className="respark-search-wrap">
-              <div className="respark-search-bar">
-                <Search size={16} color="#64748b" />
-                <input
-                  type="text"
-                  placeholder="Search guests, services, products, staff, invoices..."
-                  value={quickSearch}
-                  onFocus={() => setSearchOpen(true)}
-                  onChange={(event) => setQuickSearch(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") setSearchOpen(false);
-                    if (event.key === "Enter") {
-                      const term = quickSearch.trim();
-                      const first = flatSearchResults[0];
-                      if (first?.to) {
-                        navigate(first.to);
-                        setSearchOpen(false);
-                        setQuickSearch("");
-                      } else if (term) {
-                        navigate(`/admin/customers?q=${encodeURIComponent(term)}`);
-                        setSearchOpen(false);
-                      }
+        {/* Centered Search Bar */}
+        {canGlobalSearch ? (
+          <div className="respark-search-wrap" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
+            <div className="respark-search-bar">
+              <Search size={16} color="#64748b" />
+              <input
+                type="text"
+                placeholder="Search guests, services, products, staff, invoices..."
+                value={quickSearch}
+                onFocus={() => setSearchOpen(true)}
+                onChange={(event) => setQuickSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") setSearchOpen(false);
+                  if (event.key === "Enter") {
+                    const term = quickSearch.trim();
+                    const first = searchResults[0];
+                    if (first?.to) {
+                      navigate(first.to);
+                      setSearchOpen(false);
+                      setQuickSearch("");
+                    } else if (term) {
+                      navigate(`/admin/customers?q=${encodeURIComponent(term)}`);
+                      setSearchOpen(false);
                     }
-                  }}
-                />
-              </div>
-              {searchOpen && quickSearch.trim().length >= 2 ? (
-                <div className="respark-search-dropdown" onMouseDown={(event) => event.preventDefault()}>
-                  {searchLoading ? <div className="respark-search-empty">Searching workspace...</div> : null}
-                  {!searchLoading && !flatSearchResults.length ? <div className="respark-search-empty">No results found for "{quickSearch.trim()}"</div> : null}
-                  {!searchLoading && [
-                    { key: "customers", label: "Guests" },
-                    { key: "services", label: "Services" },
-                    { key: "products", label: "Products" },
-                    { key: "staff", label: "Staff" },
-                    { key: "appointments", label: "Appointments" },
-                    { key: "invoices", label: "Invoices" }
-                  ].map(({ key, label }) => {
-                    const rows = searchResults[key] || [];
-                    if (!rows.length) return null;
-                    return (
-                      <div key={key}>
-                        <div className="respark-search-section-title">{label}</div>
-                        {rows.map((item) => (
-                          <button
-                            type="button"
-                            key={`${key}-${item.id}`}
-                            className="respark-search-result"
-                            onClick={() => {
-                              navigate(item.to);
-                              setSearchOpen(false);
-                              setQuickSearch("");
-                            }}
-                          >
-                            <span className="respark-search-result-type">{label.slice(0, -1)}</span>
-                            <span>
-                              <strong>{item.title}</strong>
-                              <small>{item.subtitle || "Open record"}</small>
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : null}
+                  }
+                }}
+              />
             </div>
-          ) : null}
+            {searchOpen && quickSearch.trim().length >= 2 ? (
+              <div className="respark-search-dropdown" onMouseDown={(event) => event.preventDefault()}>
+                {searchLoading ? <div className="respark-search-empty">Searching workspace...</div> : null}
+                {!searchLoading && !searchResults.length ? <div className="respark-search-empty">No results found for "{quickSearch.trim()}"</div> : null}
+                {!searchLoading && searchResults.map((item) => (
+                  <button
+                    type="button"
+                    key={`${item.module}-${item.id}`}
+                    className="respark-search-result"
+                    onClick={() => {
+                      navigate(item.to);
+                      setSearchOpen(false);
+                      setQuickSearch("");
+                    }}
+                  >
+                    <span className={`respark-search-module-badge ${(item.module || "").toLowerCase()}`}>{item.module}</span>
+                    <span className="respark-search-result-text">
+                      <strong>{item.title}</strong>
+                      <small>{item.subtitle || "Open record"}</small>
+                    </span>
+                    <span className="respark-search-result-nav">→</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
+        <div className="respark-top-right">
           <div className="respark-date">{dateStr}</div>
           
           {/* Notifications */}
