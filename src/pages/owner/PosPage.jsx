@@ -252,7 +252,7 @@ export default function PosPage() {
     }
   };
 
-  const applyPackageService = (customerPkg, serviceEntry) => {
+  const applyPackageService = async (customerPkg, serviceEntry) => {
     const matchedItemIndex = form.items.findIndex(item =>
       (item.serviceId === serviceEntry.serviceId || item.serviceId === serviceEntry.service?.id) && Number(item.unitPrice || 0) > 0
     );
@@ -283,8 +283,13 @@ export default function PosPage() {
         { customerPackageId: customerPkg.id, serviceId: serviceEntry.serviceId || serviceEntry.service?.id, sessionsUsed: 1 }
       ]
     }));
-    setShowApplyPkgRedemptionModal(false);
     setToastMessage({ type: "success", title: "Package Applied", message: `${serviceEntry.service?.name || "Service"} applied from package.` });
+
+    try {
+      const response = await api.get(`/owner/customers/${form.customerId}/packages`);
+      const activePkgs = (response.data || []).filter(p => p.status === "ACTIVE" && new Date(p.endsAt) > new Date());
+      setCustomerPackages(activePkgs);
+    } catch (_) {}
   };
 
   // === Apply Gift Card ===
@@ -1487,7 +1492,18 @@ export default function PosPage() {
                           {item.itemType === "SERVICE" && (
                             <span title={`${item.consumableItems?.length || 0} consumable item(s)`} style={{ fontSize: 11, color: item.consumableItems?.length ? '#16a34a' : '#94a3b8', fontWeight: 600, cursor: 'default' }}>{item.consumableItems?.length || 0}</span>
                           )}
-                          <button type="button" className="pos-cart-remove" onClick={() => setForm(c => ({ ...c, items: c.items.filter((_, i) => i !== index) }))}>✕</button>
+                          <button type="button" className="pos-cart-remove" onClick={() => setForm(c => {
+                            const removedItem = c.items[index];
+                            const nextItems = c.items.filter((_, i) => i !== index);
+                            let nextRedemptions = c.packageRedemptions;
+                            if (removedItem && removedItem.unitPrice === 0 && removedItem.itemType === "SERVICE") {
+                              const matchedRedemptionIdx = c.packageRedemptions.findIndex(r => r.serviceId === removedItem.serviceId);
+                              if (matchedRedemptionIdx !== -1) {
+                                nextRedemptions = c.packageRedemptions.filter((_, i) => i !== matchedRedemptionIdx);
+                              }
+                            }
+                            return { ...c, items: nextItems, packageRedemptions: nextRedemptions };
+                          })}>✕</button>
                         </td>
                       </tr>
                     );
