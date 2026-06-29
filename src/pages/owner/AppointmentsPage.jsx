@@ -458,7 +458,7 @@ export default function AppointmentsPage() {
   const loadContext = async () => {
     try {
       const [contextResponse, settingsResponse] = await Promise.all([
-        api.get("/owner/pos/context"),
+        api.get("/owner/pos/context", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
         api.get("/owner/settings")
       ]);
       setCustomers(contextResponse.data.customers || []);

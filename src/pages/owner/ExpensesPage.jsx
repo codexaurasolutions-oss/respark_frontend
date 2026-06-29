@@ -87,11 +87,12 @@ export default function ExpensesPage() {
   // Load basic data
   const loadData = useCallback(async () => {
     setLoading(true);
+    const branchParams = selectedBranchId ? { branchId: selectedBranchId } : {};
     try {
       const [expenseRes, categoryRes, paymentRes, injectionRes] = await Promise.all([
-        api.get("/owner/expenses"),
-        api.get("/owner/expense-categories"),
-        api.get("/owner/payments").catch(() => ({ data: [] })),
+        api.get("/owner/expenses", { params: branchParams }),
+        api.get("/owner/expense-categories", { params: branchParams }),
+        api.get("/owner/payments", { params: branchParams }).catch(() => ({ data: [] })),
         api.get("/owner/expenses/accounts").catch(() => ({ data: { injections: [] } }))
       ]);
 
@@ -125,11 +126,11 @@ export default function ExpensesPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, selectedBranchId]);
 
   useEffect(() => {
     void loadData();
-  }, []);
+  }, [loadData]);
 
   // Filtered lists
   const baseFilteredExpenses = rows.filter(row => {

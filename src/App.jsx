@@ -138,6 +138,18 @@ const Protected = () => {
             can("staff") && {
               label: "Roles & Permissions",
               to: "/admin/roles-permissions"
+            },
+            can("attendance") && enabled("attendance") && {
+              label: "Attendance",
+              to: "/admin/attendance"
+            },
+            can("leaves") && enabled("leaves") && {
+              label: "Leaves",
+              to: "/admin/leaves"
+            },
+            can("payroll") && enabled("payroll") && {
+              label: "Payroll",
+              to: "/admin/payroll"
             }
           ].filter(Boolean)
         },
@@ -288,6 +300,31 @@ const OwnerRoute = ({ moduleKey, action = "view", featureKey, element }) => {
   const { auth } = useAuth();
 
   if (!auth) return <Navigate to="/login" replace />;
+
+  const permissions = auth.membership?.permissions || {};
+  const featureFlags = auth.membership?.featureFlags || {};
+  const allowed = Array.isArray(permissions[moduleKey]) && permissions[moduleKey].includes(action);
+  const enabled = featureKey ? featureFlags[featureKey] !== false : true;
+
+  if (!enabled) {
+    return <AccessNotice title="Module Disabled" message="This module is currently turned off in business settings." />;
+  }
+
+  if (!allowed) {
+    return <AccessNotice title="Access Restricted" message="You are logged in, but this module is not assigned to your current role permissions." />;
+  }
+
+  return element;
+};
+
+const StaffWorkspaceRoute = ({ moduleKey, action = "view", featureKey, element }) => {
+  const { auth } = useAuth();
+
+  if (!auth) return <Navigate to="/login" replace />;
+
+  if (auth.membership?.salonRole === "SALON_OWNER") {
+    return <AccessNotice title="Staff Workspace Only" message="This area is reserved for staff self-service pages, not the owner workspace." />;
+  }
 
   const permissions = auth.membership?.permissions || {};
   const featureFlags = auth.membership?.featureFlags || {};
@@ -497,12 +534,12 @@ export default function App() {
           <Route path="/admin/settings/:section" element={<OwnerRoute moduleKey="settings" action="edit" element={<SettingsPage />} />} />
           <Route path="/admin/website-editor" element={<OwnerRoute moduleKey="settings" action="edit" element={<WebsiteEditorPage />} />} />
           <Route path="/admin/manage" element={<OwnerRoute moduleKey="settings" action="edit" element={<ManagePage />} />} />
-          <Route path="/admin/my-dashboard" element={<OwnerRoute moduleKey="myDashboard" element={<MyDashboardPage />} />} />
-          <Route path="/admin/my-appointments" element={<OwnerRoute moduleKey="myAppointments" featureKey="appointments" element={<MyAppointmentsPage />} />} />
-          <Route path="/admin/my-schedule" element={<OwnerRoute moduleKey="mySchedule" featureKey="appointments" element={<MySchedulePage />} />} />
-          <Route path="/admin/my-commission" element={<OwnerRoute moduleKey="myCommission" element={<MyCommissionPage />} />} />
-          <Route path="/admin/my-payroll" element={<OwnerRoute moduleKey="myPayroll" element={<MyPayrollPage />} />} />
-          <Route path="/admin/my-profile" element={<OwnerRoute moduleKey="myProfile" element={<MyProfilePage />} />} />
+          <Route path="/admin/my-dashboard" element={<StaffWorkspaceRoute moduleKey="myDashboard" element={<MyDashboardPage />} />} />
+          <Route path="/admin/my-appointments" element={<StaffWorkspaceRoute moduleKey="myAppointments" featureKey="appointments" element={<MyAppointmentsPage />} />} />
+          <Route path="/admin/my-schedule" element={<StaffWorkspaceRoute moduleKey="mySchedule" featureKey="appointments" element={<MySchedulePage />} />} />
+          <Route path="/admin/my-commission" element={<StaffWorkspaceRoute moduleKey="myCommission" element={<MyCommissionPage />} />} />
+          <Route path="/admin/my-payroll" element={<StaffWorkspaceRoute moduleKey="myPayroll" element={<MyPayrollPage />} />} />
+          <Route path="/admin/my-profile" element={<StaffWorkspaceRoute moduleKey="myProfile" element={<MyProfilePage />} />} />
           <Route path="/branches" element={<Navigate to="/admin/branches" replace />} />
           <Route path="/services" element={<Navigate to="/admin/services" replace />} />
           <Route path="/customers" element={<Navigate to="/admin/customers" replace />} />

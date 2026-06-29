@@ -5,7 +5,7 @@ import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
 import { formatApiError } from "../../utils/apiError";
 
-const emptyForm = { name: "", phone: "", email: "", address: "", businessHours: "", weeklyOff: "" };
+const emptyForm = { name: "", phone: "", email: "", address: "", businessHours: "", weeklyOff: "", latitude: "", longitude: "", geofenceRadiusMeters: "75" };
 
 export default function BranchesPage() {
   const [rows, setRows] = useState([]);
@@ -54,12 +54,18 @@ export default function BranchesPage() {
   const submit = async (event) => {
     event.preventDefault();
     setStatus({ error: "", success: "" });
+    const payload = {
+      ...form,
+      latitude: form.latitude === "" ? null : Number(form.latitude),
+      longitude: form.longitude === "" ? null : Number(form.longitude),
+      geofenceRadiusMeters: form.geofenceRadiusMeters === "" ? null : Number(form.geofenceRadiusMeters)
+    };
     try {
       if (editingId) {
-        await api.patch(`/owner/branches/${editingId}`, form);
+        await api.patch(`/owner/branches/${editingId}`, payload);
         setStatus({ error: "", success: "Branch updated." });
       } else {
-        await api.post("/owner/branches", form);
+        await api.post("/owner/branches", payload);
         setStatus({ error: "", success: "Branch created." });
       }
       resetForm();
@@ -77,14 +83,17 @@ export default function BranchesPage() {
 
   const startEdit = (branch) => {
     setEditingId(branch.id);
-    setForm({
-      name: branch.name || "",
-      phone: branch.phone || "",
-      email: branch.email || "",
-      address: branch.address || "",
-      businessHours: branch.businessHours || "",
-      weeklyOff: branch.weeklyOff || ""
-    });
+      setForm({
+        name: branch.name || "",
+        phone: branch.phone || "",
+        email: branch.email || "",
+        address: branch.address || "",
+        businessHours: branch.businessHours || "",
+        weeklyOff: branch.weeklyOff || "",
+        latitude: branch.latitude ?? "",
+        longitude: branch.longitude ?? "",
+        geofenceRadiusMeters: branch.geofenceRadiusMeters ?? "75"
+      });
   };
 
   return (
@@ -154,8 +163,43 @@ export default function BranchesPage() {
                 <option value="Sunday">Sunday</option>
               </select>
             </label>
+            <label className="settings-input-group">
+              <span className="muted">Latitude</span>
+              <input value={form.latitude} placeholder="e.g. 24.8607" onChange={(event) => setForm({ ...form, latitude: event.target.value })} />
+            </label>
+            <label className="settings-input-group">
+              <span className="muted">Longitude</span>
+              <input value={form.longitude} placeholder="e.g. 67.0011" onChange={(event) => setForm({ ...form, longitude: event.target.value })} />
+            </label>
+            <label className="settings-input-group" style={{ gridColumn: "1 / -1" }}>
+              <span className="muted">Geofence radius (meters)</span>
+              <input type="number" min="10" max="1000" value={form.geofenceRadiusMeters} onChange={(event) => setForm({ ...form, geofenceRadiusMeters: event.target.value })} />
+            </label>
             <div className="form-actions" style={{ gridColumn: "1 / -1", marginTop: "16px" }}>
               <button type="submit">{editingId ? "Save Branch" : "Add Branch"}</button>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => {
+                  if (!navigator.geolocation) {
+                    setStatus({ error: "Location is not supported in this browser.", success: "", loading: false });
+                    return;
+                  }
+                  navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                      setForm((current) => ({
+                        ...current,
+                        latitude: String(position.coords.latitude),
+                        longitude: String(position.coords.longitude)
+                      }));
+                      setStatus((current) => ({ ...current, success: "Current branch location captured." }));
+                    },
+                    () => setStatus({ error: "Could not fetch current location.", success: "", loading: false })
+                  );
+                }}
+              >
+                Use Current Location
+              </button>
               {editingId && <button type="button" className="secondary-button" onClick={resetForm}>Cancel Edit</button>}
             </div>
           </form>
@@ -184,6 +228,9 @@ export default function BranchesPage() {
                 </div>
                 <div style={{ fontSize: "13px", color: "#475569" }}>
                   <strong>Hours:</strong> {branch.businessHours || "Not set"} | <strong>Off:</strong> {branch.weeklyOff || "None"}
+                </div>
+                <div style={{ fontSize: "13px", color: "#475569" }}>
+                  <strong>Geo:</strong> {branch.latitude != null && branch.longitude != null ? `${branch.latitude}, ${branch.longitude}` : "Not set"} | <strong>Radius:</strong> {branch.geofenceRadiusMeters || 75}m
                 </div>
                 <div className="badge-row" style={{ marginTop: 4 }}>
                   <span className="badge" style={{ fontSize: "11px" }}>Users: {branch._count?.users || 0}</span>

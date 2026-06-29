@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
 import { useSalonSettings } from "../../context/SalonSettingsContext";
+import { useBranch } from "../../context/BranchContext";
 import { formatApiError } from "../../utils/apiError";
 import PageLoader from "../../components/PageLoader";
 import VendorManagement from "./VendorManagement";
@@ -26,6 +27,7 @@ export default function InventoryPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { formatMoney } = useSalonSettings();
+  const { selectedBranchId } = useBranch();
 
   const [activeTab, setActiveTab] = useState(() => getInventoryTabFromPath(location.pathname));
   const [categories, setCategories] = useState([]);
@@ -238,6 +240,7 @@ export default function InventoryPage() {
 
   const loadAll = async () => {
     try {
+      const branchParams = selectedBranchId ? { branchId: selectedBranchId } : {};
       const [
         categoriesResponse,
         productsResponse,
@@ -248,14 +251,14 @@ export default function InventoryPage() {
         ordersResponse,
         topSellingResponse
       ] = await Promise.allSettled([
-        api.get("/owner/inventory/categories"),
-        api.get("/owner/inventory/products"),
-        api.get("/owner/inventory/stock-movements"),
-        api.get("/owner/inventory/low-stock"),
+        api.get("/owner/inventory/categories", { params: branchParams }),
+        api.get("/owner/inventory/products", { params: branchParams }),
+        api.get("/owner/inventory/stock-movements", { params: branchParams }),
+        api.get("/owner/inventory/low-stock", { params: branchParams }),
         api.get("/owner/branches"),
-        api.get("/owner/purchases/vendors"),
-        api.get("/owner/purchases/orders"),
-        api.get("/owner/inventory/top-selling-items")
+        api.get("/owner/purchases/vendors", { params: branchParams }),
+        api.get("/owner/purchases/orders", { params: branchParams }),
+        api.get("/owner/inventory/top-selling-items", { params: branchParams })
       ]);
 
       if (categoriesResponse.status === "fulfilled") setCategories(categoriesResponse.value.data);
@@ -288,7 +291,7 @@ export default function InventoryPage() {
 
   useEffect(() => {
     loadAll();
-  }, []);
+  }, [selectedBranchId]);
 
   useEffect(() => {
     setActiveTab(getInventoryTabFromPath(location.pathname));

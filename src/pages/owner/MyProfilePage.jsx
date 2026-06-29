@@ -8,6 +8,7 @@ import IndianPhoneInput from "../../components/IndianPhoneInput";
 export default function MyProfilePage() {
   const [form, setForm] = useState({ phone: "", profileNote: "", avatarUrl: "" });
   const [services, setServices] = useState([]);
+  const [attendanceHistory, setAttendanceHistory] = useState([]);
   const [profileMeta, setProfileMeta] = useState(null);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
@@ -20,6 +21,7 @@ export default function MyProfilePage() {
         avatarUrl: response.data?.avatarUrl || ""
       });
       setServices(response.data?.serviceAssignments || []);
+      setAttendanceHistory(response.data?.attendanceHistory || []);
       setProfileMeta(response.data);
       setLoading(false);
     });
@@ -80,6 +82,21 @@ export default function MyProfilePage() {
           <div className="badge-row">
             {services.map((item) => <span key={item.id} className="badge">{item.service?.name}</span>)}
             {!services.length && <EmptyState title="No service assignments yet" message="Assigned service specialties will appear here once linked to your staff profile." />}
+          </div>
+          <h3 style={{ marginTop: 18 }}>Recent Attendance</h3>
+          <div className="list-stack">
+            {attendanceHistory.slice(0, 5).map((row) => (
+              <div key={row.id} className="list-item">
+                <div className="item-head">
+                  <strong>{new Date(row.attendanceDate || row.checkInAt).toLocaleDateString()}</strong>
+                  <span className="badge">{row.status}</span>
+                </div>
+                <div className="item-meta">
+                  {new Date(row.checkInAt).toLocaleTimeString()} {row.checkOutAt ? `- ${new Date(row.checkOutAt).toLocaleTimeString()}` : ""}
+                </div>
+              </div>
+            ))}
+            {!attendanceHistory.length && <EmptyState title="No attendance yet" message="Your recent attendance history will appear here once you start checking in." />}
           </div>
         </div>
       </div>

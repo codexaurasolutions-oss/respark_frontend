@@ -8,6 +8,7 @@ import { downloadFromApi } from "../../utils/download";
 import { normalizeIndianPhoneInputDigits } from "../../utils/phone";
 import PageLoader from "../../components/PageLoader";
 import { useAuth } from "../../context/AuthContext";
+import { useBranch } from "../../context/BranchContext";
 import PosReceipt from "../../components/PosReceipt";
 
 
@@ -72,6 +73,7 @@ const isWithinDateRange = (value, start, end) => {
 export default function CustomersPage() {
   const { formatMoney, currencyCode, settings } = useSalonSettings();
   const { auth } = useAuth();
+  const { selectedBranchId } = useBranch();
   const [selectedBillInvoice, setSelectedBillInvoice] = useState(null);
   const [rows, setRows] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "desc" });
@@ -156,7 +158,9 @@ export default function CustomersPage() {
   const load = async (searchText = query, selectedFilter = filterType) => {
     setLoading(true);
     try {
-      const response = await api.get("/owner/customers", { params: { q: searchText, filter: selectedFilter } });
+      const params = { q: searchText, filter: selectedFilter };
+      if (selectedBranchId) params.branchId = selectedBranchId;
+      const response = await api.get("/owner/customers", { params });
       setRows(response.data || []);
     } catch (error) {
       console.error(error);
@@ -167,7 +171,7 @@ export default function CustomersPage() {
 
   useEffect(() => {
     load();
-  }, [filterType]);
+  }, [filterType, selectedBranchId]);
 
   useEffect(() => {
     if (!activeMenuRowId) return undefined;

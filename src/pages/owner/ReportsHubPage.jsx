@@ -1605,7 +1605,7 @@ export default function ReportsHubPage() {
         setDashboardData(null);
       })
       .finally(() => setLoading(false));
-  }, [activeReport, filters.end, filters.start, filterConfig, reportFilters]);
+  }, [activeReport, filters.end, filters.start, filterConfig, reportFilters, selectedBranchId]);
 
   const filteredReports = ALL_REPORTS.filter((report) => !search || report.label.toLowerCase().includes(search.toLowerCase()));
 

@@ -353,7 +353,7 @@ export default function PosPage() {
       const [contextResponse, closingResponse, catRes] = await Promise.all([
         api.get("/owner/pos/context", { params }),
         api.get("/owner/pos/day-closing", { params: branchId ? { branchId } : {} }),
-        api.get("/owner/service-categories")
+        api.get("/owner/service-categories", { params: branchId ? { branchId } : {} })
       ]);
       applyContext(contextResponse, closingResponse, catRes, customerId, branchId);
       setStatus((current) => ({ ...current, error: "" }));
@@ -373,7 +373,7 @@ export default function PosPage() {
         const [contextResponse, closingResponse, catRes] = await Promise.all([
           api.get("/owner/pos/context", { params }),
           api.get("/owner/pos/day-closing", { params: form.branchId ? { branchId: form.branchId } : {} }),
-          api.get("/owner/service-categories")
+          api.get("/owner/service-categories", { params: form.branchId ? { branchId: form.branchId } : {} })
         ]);
         if (!active) return;
         applyContext(contextResponse, closingResponse, catRes, form.customerId, form.branchId);

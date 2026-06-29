@@ -39,7 +39,7 @@ export default function ExpertsPage() {
   const load = async (branchId = selectedBranchId) => {
     const [usersResponse, servicesResponse, rolesResponse] = await Promise.all([
       api.get("/owner/users", { params: branchId ? { branchId } : {} }),
-      api.get("/owner/services"),
+      api.get("/owner/services", { params: branchId ? { branchId } : {} }),
       api.get("/owner/custom-roles").catch(() => ({ data: [] }))
     ]);
     const experts = (usersResponse.data || []).filter((row) => (row.serviceAssignments || []).length || row.showInCatalog || row.salonRole === "STAFF");

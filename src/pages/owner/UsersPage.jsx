@@ -7,6 +7,7 @@ import IndianPhoneInput from "../../components/IndianPhoneInput";
 import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
 import { formatApiError } from "../../utils/apiError";
+import { ensureSingleFaceInImage, loadFaceVerificationModels } from "../../utils/faceVerification";
 import {
   clonePermissions,
   countGrantedActions,
@@ -31,6 +32,8 @@ const makeEmptyForm = () => ({
   branchId: "",
   customRoleId: "",
   showInCatalog: false,
+  attendanceEnabled: false,
+  attendanceEnrollmentPhotoUrl: "",
   serviceIds: [],
   permissions: clonePermissions(DEFAULT_PERMISSIONS),
   joiningDate: "",
@@ -60,10 +63,21 @@ export default function UsersPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const deferredQuery = useDeferredValue(query.trim().toLowerCase());
 
+  const uploadEnrollmentImage = async (file) => {
+    if (!file) return "";
+    await ensureSingleFaceInImage(file);
+    const formData = new FormData();
+    formData.append("image", file);
+    const response = await api.post("/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" }
+    });
+    return response.data?.url || "";
+  };
+
   const load = async (branchId = selectedBranchId) => {
     const [usersResponse, servicesResponse, rolesResponse, settingsResponse] = await Promise.all([
       api.get("/owner/users", { params: branchId ? { branchId } : {} }),
-      api.get("/owner/services"),
+      api.get("/owner/services", { params: branchId ? { branchId } : {} }),
       api.get("/owner/custom-roles"),
       api.get("/owner/settings")
     ]);
@@ -83,6 +97,10 @@ export default function UsersPage() {
     load();
     return () => { active = false; };
   }, [selectedBranchId]);
+
+  useEffect(() => {
+    void loadFaceVerificationModels().catch(() => {});
+  }, []);
 
   const filteredRows = useMemo(() => {
     if (!deferredQuery) return rows;
@@ -172,6 +190,8 @@ export default function UsersPage() {
       branchId: row.branchId || "",
       customRoleId: row.customRoleId || "",
       showInCatalog: Boolean(row.showInCatalog),
+      attendanceEnabled: Boolean(row.attendanceEnabled),
+      attendanceEnrollmentPhotoUrl: row.attendanceEnrollmentPhotoUrl || "",
       serviceIds: Array.isArray(row.serviceAssignments) ? row.serviceAssignments.map((item) => item.serviceId) : [],
       permissions: clonePermissions(row.permissions || {}),
       joiningDate: row.joiningDate ? new Date(row.joiningDate).toISOString().split('T')[0] : "",
@@ -248,6 +268,8 @@ export default function UsersPage() {
         branchId: form.branchId || null,
         customRoleId: form.customRoleId || undefined,
         showInCatalog: Boolean(form.showInCatalog),
+        attendanceEnabled: Boolean(form.attendanceEnabled),
+        attendanceEnrollmentPhotoUrl: form.attendanceEnrollmentPhotoUrl || undefined,
         serviceIds: form.serviceIds,
         permissions: form.permissions,
         joiningDate: form.joiningDate || undefined,
@@ -359,7 +381,7 @@ export default function UsersPage() {
                     {row.roleTitle || row.customRole?.name || resolveRoleLabel(row.salonRole)}
                   </div>
                   <div style={{ fontSize: 12, color: '#94a3b8' }}>
-                    {row.branch?.name || "All branches"} • {moduleCount} enabled modules
+                    {row.branch?.name || "All branches"} • {moduleCount} enabled modules • {row.attendanceEnabled ? "Attendance Ready" : "Attendance Off"}
                   </div>
                 </div>
               );
@@ -503,6 +525,41 @@ export default function UsersPage() {
                         <div className="hub-toggle-group">
                           <input type="checkbox" checked={form.showInCatalog} onChange={(event) => setForm({ ...form, showInCatalog: event.target.checked })} />
                           <span>Show this staff member in salon catalog / expert listing</span>
+                        </div>
+                      </div>
+                      <div style={{ marginTop: 20, padding: 16, border: '1px solid #dbeafe', borderRadius: 10, background: '#f8fbff' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#1e3a8a', marginBottom: 10 }}>Owner-side Attendance Biometric</div>
+                        <div className="hub-toggle-group" style={{ marginBottom: 12 }}>
+                          <input type="checkbox" checked={form.attendanceEnabled} onChange={(event) => setForm({ ...form, attendanceEnabled: event.target.checked })} />
+                          <span>Enable selfie attendance for this staff account</span>
+                        </div>
+                        <label style={{ display: 'block', fontSize: 12, color: '#475569', marginBottom: 6 }}>Enrollment selfie captured by salon owner</label>
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                          <input type="text" className="hub-input" value={form.attendanceEnrollmentPhotoUrl} onChange={(event) => setForm({ ...form, attendanceEnrollmentPhotoUrl: event.target.value })} placeholder="Enrollment selfie URL" style={{ flex: 1, minWidth: 220 }} />
+                          <label className="secondary-button" style={{ cursor: 'pointer' }}>
+                            Upload Enrollment Selfie
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="user"
+                              style={{ display: 'none' }}
+                              onChange={async (event) => {
+                                const file = event.target.files?.[0];
+                                event.target.value = "";
+                                if (!file) return;
+                                try {
+                                  const url = await uploadEnrollmentImage(file);
+                                  setForm((current) => ({ ...current, attendanceEnrollmentPhotoUrl: url, attendanceEnabled: true }));
+                                  setStatus((current) => ({ ...current, success: "Enrollment selfie uploaded.", error: "" }));
+                                } catch (error) {
+                                  setStatus((current) => ({ ...current, error: formatApiError(error, "Could not upload enrollment selfie"), success: "" }));
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 8 }}>
+                          Staff can only use self check-in after owner enables attendance and uploads an enrollment selfie.
                         </div>
                       </div>
                     </div>
@@ -673,6 +730,43 @@ export default function UsersPage() {
                   <div className="hub-toggle-group">
                     <input type="checkbox" checked={form.showInCatalog} onChange={(event) => setForm({ ...form, showInCatalog: event.target.checked })} />
                     <span>Show this staff member in salon catalog / expert listing</span>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 16, padding: 16, border: '1px solid #dbeafe', borderRadius: 10, background: '#f8fbff' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#1e3a8a', marginBottom: 10 }}>Owner-side Attendance Biometric</div>
+                  <div className="hub-form-group" style={{ marginBottom: 10 }}>
+                    <div className="hub-toggle-group">
+                      <input type="checkbox" checked={form.attendanceEnabled} onChange={(event) => setForm({ ...form, attendanceEnabled: event.target.checked })} />
+                      <span>Enable selfie attendance for this staff account</span>
+                    </div>
+                  </div>
+                  <div className="hub-form-group" style={{ marginBottom: 0 }}>
+                    <label>Enrollment Selfie</label>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <input type="text" className="hub-input" value={form.attendanceEnrollmentPhotoUrl} onChange={(event) => setForm({ ...form, attendanceEnrollmentPhotoUrl: event.target.value })} placeholder="Enrollment selfie URL" style={{ flex: 1, minWidth: 220 }} />
+                      <label className="secondary-button" style={{ cursor: 'pointer' }}>
+                        Upload
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="user"
+                          style={{ display: 'none' }}
+                          onChange={async (event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = "";
+                            if (!file) return;
+                            try {
+                              const url = await uploadEnrollmentImage(file);
+                              setForm((current) => ({ ...current, attendanceEnrollmentPhotoUrl: url, attendanceEnabled: true }));
+                              setStatus((current) => ({ ...current, success: "Enrollment selfie uploaded.", error: "" }));
+                            } catch (error) {
+                              setStatus((current) => ({ ...current, error: formatApiError(error, "Could not upload enrollment selfie"), success: "" }));
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
                   </div>
                 </div>
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client";
+import { useBranch } from "../../context/BranchContext";
 import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
 
@@ -7,6 +8,7 @@ const emptySchedule = { userSalonId: "", branchId: "", weekday: 1, startTime: "0
 const emptyBreak = { userSalonId: "", weekday: 1, startTime: "13:00", endTime: "14:00" };
 
 export default function StaffSchedulePage() {
+  const { selectedBranchId, branches: contextBranches } = useBranch();
   const [schedules, setSchedules] = useState([]);
   const [staff, setStaff] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -16,11 +18,12 @@ export default function StaffSchedulePage() {
   const [loading, setLoading] = useState(true);
 
   const reload = async () => {
+    const branchParams = selectedBranchId ? { branchId: selectedBranchId } : {};
     const [scheduleResponse, usersResponse, branchesResponse, availabilityResponse] = await Promise.all([
-      api.get("/owner/staff-schedule"),
-      api.get("/owner/users"),
+      api.get("/owner/staff-schedule", { params: branchParams }),
+      api.get("/owner/users", { params: branchParams }),
       api.get("/owner/branches"),
-      api.get("/owner/staff-availability")
+      api.get("/owner/staff-availability", { params: branchParams })
     ]);
     setSchedules(scheduleResponse.data);
     setStaff(usersResponse.data);
@@ -31,11 +34,12 @@ export default function StaffSchedulePage() {
   useEffect(() => {
     let active = true;
     (async () => {
+      const branchParams = selectedBranchId ? { branchId: selectedBranchId } : {};
       const [scheduleResponse, usersResponse, branchesResponse, availabilityResponse] = await Promise.all([
-        api.get("/owner/staff-schedule"),
-        api.get("/owner/users"),
+        api.get("/owner/staff-schedule", { params: branchParams }),
+        api.get("/owner/users", { params: branchParams }),
         api.get("/owner/branches"),
-        api.get("/owner/staff-availability")
+        api.get("/owner/staff-availability", { params: branchParams })
       ]);
       if (!active) return;
       setSchedules(scheduleResponse.data);
@@ -47,7 +51,7 @@ export default function StaffSchedulePage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [selectedBranchId]);
 
   return (
     <div className="page-shell">
