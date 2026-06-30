@@ -3,12 +3,14 @@ import { X } from "lucide-react";
 import { api } from "../../api/client";
 import { formatApiError } from "../../utils/apiError";
 import { useSalonSettings } from "../../context/SalonSettingsContext";
+import { useBranch } from "../../context/BranchContext";
 import PageLoader from "../../components/PageLoader";
 import "./ServiceHubPage.css";
 
 const defaultProductForm = {
   name: "",
   categoryId: "",
+  branchId: "",
   featured: false,
   isActive: true,
   targetGroup: "BOTH",
@@ -34,6 +36,7 @@ const defaultProductForm = {
 
 export default function ProductCategoriesPage() {
   const { currencySymbol } = useSalonSettings();
+  const { selectedBranchId, branches } = useBranch();
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -52,9 +55,10 @@ export default function ProductCategoriesPage() {
 
   const loadData = useCallback(async () => {
     try {
+      const branchParams = selectedBranchId ? { branchId: selectedBranchId } : {};
       const [catRes, prodRes] = await Promise.all([
-        api.get("/owner/inventory/categories"),
-        api.get("/owner/inventory/products")
+        api.get("/owner/inventory/categories", { params: branchParams }),
+        api.get("/owner/inventory/products", { params: branchParams })
       ]);
       setCategories(catRes.data || []);
       setProducts(prodRes.data || []);
@@ -63,7 +67,7 @@ export default function ProductCategoriesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedBranchId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -91,7 +95,7 @@ export default function ProductCategoriesPage() {
 
   const openNewProduct = () => {
     setEditingProduct(null);
-    setProductForm({ ...defaultProductForm, categoryId: selectedCategory?.id || "" });
+    setProductForm({ ...defaultProductForm, categoryId: selectedCategory?.id || "", branchId: selectedBranchId || "" });
     setShowProductModal(true);
   };
 
@@ -100,6 +104,7 @@ export default function ProductCategoriesPage() {
     setProductForm({
       name: p.name || "",
       categoryId: p.categoryId || "",
+      branchId: p.branchId || "",
       featured: Boolean(p.featured),
       isActive: p.isActive !== false,
       targetGroup: p.targetGroup || "BOTH",
@@ -131,6 +136,7 @@ export default function ProductCategoriesPage() {
     try {
       const payload = {
         ...productForm,
+        branchId: productForm.branchId || selectedBranchId || null,
         costPrice: Number(productForm.costPrice),
         sellingPrice: Number(productForm.sellingPrice),
         salePrice: productForm.salePrice ? Number(productForm.salePrice) : null,
@@ -388,8 +394,15 @@ export default function ProductCategoriesPage() {
                   </div>
                 </div>
 
-                {/* Group + Hide from catalogue */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, padding: "12px 0", borderTop: "1px solid #f1f5f9" }}>
+                {/* Branch, Group + Hide from catalogue */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, padding: "12px 0", borderTop: "1px solid #f1f5f9", gap: 16, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Branch</label>
+                    <select value={productForm.branchId} onChange={e => setProductForm({...productForm, branchId: e.target.value})} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, background: "white" }}>
+                      <option value="">All Branches (salon-wide)</option>
+                      {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                  </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontSize: 14, fontWeight: 500, color: "#0f172a" }}>Group</span>
                     <div style={{ display: "flex", gap: 16, marginLeft: 12 }}>

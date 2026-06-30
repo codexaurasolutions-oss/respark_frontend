@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { api } from "../../api/client";
+import { useBranch } from "../../context/BranchContext";
 import { formatApiError } from "../../utils/apiError";
 import ModuleTabs from "../../components/ModuleTabs";
 import EmptyState from "../../components/EmptyState";
@@ -10,6 +11,7 @@ import PageLoader from "../../components/PageLoader";
 export default function OrdersPage() {
   const location = useLocation();
   const params = useParams();
+  const { selectedBranchId } = useBranch();
   const [rows, setRows] = useState([]);
   const [detail, setDetail] = useState(null);
   const [summary, setSummary] = useState(null);
@@ -28,9 +30,10 @@ export default function OrdersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const branchParams = selectedBranchId ? { branchId: selectedBranchId } : {};
       const [ordersResponse, summaryResponse] = await Promise.all([
-        api.get("/owner/orders", { params: filter ? { status: filter } : {} }),
-        api.get("/owner/orders/reports/summary")
+        api.get("/owner/orders", { params: { ...branchParams, ...(filter ? { status: filter } : {}) } }),
+        api.get("/owner/orders/reports/summary", { params: branchParams })
       ]);
       setRows(ordersResponse.data || []);
       setSummary(summaryResponse.data);
@@ -45,7 +48,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [filter, params.id]);
+  }, [filter, params.id, selectedBranchId]);
 
   useEffect(() => { void load(); }, [load]);
 

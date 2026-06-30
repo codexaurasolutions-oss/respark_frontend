@@ -85,15 +85,18 @@ export default function MyProfilePage() {
           </div>
           <h3 style={{ marginTop: 18 }}>Recent Attendance</h3>
           <div className="list-stack">
-            {attendanceHistory.slice(0, 5).map((row) => (
+            {attendanceHistory.slice(0, 10).map((row) => (
               <div key={row.id} className="list-item">
                 <div className="item-head">
-                  <strong>{new Date(row.attendanceDate || row.checkInAt).toLocaleDateString()}</strong>
-                  <span className="badge">{row.status}</span>
+                  <strong>{new Date(row.attendanceDate || row.checkInAt).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</strong>
+                  <span style={{ padding: "2px 8px", borderRadius: 8, fontSize: 11, fontWeight: 700, background: row.status === "PRESENT" || row.status === "COMPLETED_SHIFT" ? "#dcfce7" : row.status === "LATE" ? "#fef9c3" : row.status === "HALF_DAY" ? "#ffedd5" : row.status === "LEAVE" ? "#ede9fe" : row.status === "WORKING" ? "#e0f2fe" : "#fee2e2", color: row.status === "PRESENT" || row.status === "COMPLETED_SHIFT" ? "#166534" : row.status === "LATE" ? "#854d0e" : row.status === "HALF_DAY" ? "#9a3412" : row.status === "LEAVE" ? "#5b21b6" : row.status === "WORKING" ? "#0369a1" : "#991b1b" }}>{row.status}</span>
                 </div>
                 <div className="item-meta">
-                  {new Date(row.checkInAt).toLocaleTimeString()} {row.checkOutAt ? `- ${new Date(row.checkOutAt).toLocaleTimeString()}` : ""}
+                  {new Date(row.checkInAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} {row.checkOutAt ? `- ${new Date(row.checkOutAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}` : ""}
                 </div>
+                {row.workedMinutes != null && (
+                  <div className="item-meta" style={{ color: "#0ea5e9", fontWeight: 600 }}>Worked: {Math.floor(row.workedMinutes / 60)}h {row.workedMinutes % 60}m</div>
+                )}
               </div>
             ))}
             {!attendanceHistory.length && <EmptyState title="No attendance yet" message="Your recent attendance history will appear here once you start checking in." />}

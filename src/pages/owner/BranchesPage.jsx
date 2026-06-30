@@ -1,17 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api/client";
 import IndianPhoneInput from "../../components/IndianPhoneInput";
+import MapPicker from "../../components/MapPicker";
 import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
 import { formatApiError } from "../../utils/apiError";
+import { useBranch } from "../../context/BranchContext";
 
 const emptyForm = { name: "", phone: "", email: "", address: "", businessHours: "", weeklyOff: "", latitude: "", longitude: "", geofenceRadiusMeters: "75" };
 
 export default function BranchesPage() {
+  const { refetch: refetchBranches } = useBranch();
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState("");
   const [status, setStatus] = useState({ error: "", success: "", loading: true });
+  const [formKey, setFormKey] = useState(0);
 
   const heading = useMemo(() => (editingId ? "Update Branch" : "Create Branch"), [editingId]);
 
@@ -49,6 +53,7 @@ export default function BranchesPage() {
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId("");
+    setFormKey((k) => k + 1);
   };
 
   const submit = async (event) => {
@@ -70,7 +75,10 @@ export default function BranchesPage() {
       }
       resetForm();
       await load();
+      await refetchBranches();
     } catch (error) {
+      console.error("[BranchForm] submit failed:", error);
+      if (error?.response?.data) console.error("[BranchForm] server response:", error.response.data);
       setStatus({ error: formatApiError(error, "Could not save branch"), success: "" });
     }
   };
@@ -79,6 +87,7 @@ export default function BranchesPage() {
     await api.patch(`/owner/branches/${branchId}/archive`);
     if (editingId === branchId) resetForm();
     await load();
+    await refetchBranches();
   };
 
   const startEdit = (branch) => {
@@ -163,43 +172,23 @@ export default function BranchesPage() {
                 <option value="Sunday">Sunday</option>
               </select>
             </label>
-            <label className="settings-input-group">
-              <span className="muted">Latitude</span>
-              <input value={form.latitude} placeholder="e.g. 24.8607" onChange={(event) => setForm({ ...form, latitude: event.target.value })} />
-            </label>
-            <label className="settings-input-group">
-              <span className="muted">Longitude</span>
-              <input value={form.longitude} placeholder="e.g. 67.0011" onChange={(event) => setForm({ ...form, longitude: event.target.value })} />
-            </label>
+            <div className="settings-input-group" style={{ gridColumn: "1 / -1" }}>
+              <span className="muted">Branch Location</span>
+              <MapPicker
+                key={formKey}
+                latitude={form.latitude}
+                longitude={form.longitude}
+                onChange={({ latitude, longitude }) => setForm({ ...form, latitude, longitude })}
+                address={form.address}
+                onAddressChange={(addr) => setForm({ ...form, address: addr })}
+              />
+            </div>
             <label className="settings-input-group" style={{ gridColumn: "1 / -1" }}>
               <span className="muted">Geofence radius (meters)</span>
               <input type="number" min="10" max="1000" value={form.geofenceRadiusMeters} onChange={(event) => setForm({ ...form, geofenceRadiusMeters: event.target.value })} />
             </label>
             <div className="form-actions" style={{ gridColumn: "1 / -1", marginTop: "16px" }}>
               <button type="submit">{editingId ? "Save Branch" : "Add Branch"}</button>
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => {
-                  if (!navigator.geolocation) {
-                    setStatus({ error: "Location is not supported in this browser.", success: "", loading: false });
-                    return;
-                  }
-                  navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                      setForm((current) => ({
-                        ...current,
-                        latitude: String(position.coords.latitude),
-                        longitude: String(position.coords.longitude)
-                      }));
-                      setStatus((current) => ({ ...current, success: "Current branch location captured." }));
-                    },
-                    () => setStatus({ error: "Could not fetch current location.", success: "", loading: false })
-                  );
-                }}
-              >
-                Use Current Location
-              </button>
               {editingId && <button type="button" className="secondary-button" onClick={resetForm}>Cancel Edit</button>}
             </div>
           </form>

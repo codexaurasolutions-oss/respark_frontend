@@ -291,18 +291,19 @@
 .pos-search-guest input,
 .pos-search-guest select {
   flex: 1;
-  padding: 4px 8px;
+  padding: 8px 12px;
   border: 1px solid #cbd5e1;
-  border-radius: 4px;
-  font-size: 0.72rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
   outline: none;
   min-height: unset;
 }
 .pos-guest-error {
   color: #ef4444;
-  font-size: 0.68rem;
-  margin-top: 2px;
-  margin-left: 50px;
+  font-size: 0.72rem;
+  margin-top: 1px;
+  margin-left: 56px;
+  margin-bottom: -4px;
 }
 .pos-add-guest-btn {
   display: flex;

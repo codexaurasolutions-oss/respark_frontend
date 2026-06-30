@@ -6,6 +6,7 @@ import EmptyState from "../../components/EmptyState";
 import ModuleTabs from "../../components/ModuleTabs";
 import { formatApiError } from "../../utils/apiError";
 import PageLoader from "../../components/PageLoader";
+import { BarChart2, CalendarDays, CalendarOff, CheckCircle2, ChevronLeft, ChevronRight, Clock, Download, Edit3, Eye, FileText, Filter, History, LogIn, LogOut, MapPin, PlusCircle, Printer, RotateCcw, Save, Search, Timer, User, UserPlus, Users, X, XCircle } from "lucide-react";
 
 const emptyRun = {
   periodStart: new Date().toISOString().slice(0, 10),
@@ -19,6 +20,8 @@ const emptyAttendanceSettings = {
   lateAfterTime: "09:15",
   halfDayMinutes: 240,
   minimumWorkingMinutes: 480,
+  overtimeEnabled: false,
+  overtimeThresholdMinutes: 480,
   checkoutSelfieRequired: false,
   allowManualAttendanceEdits: true
 };
@@ -60,8 +63,26 @@ const emptyManualCreate = {
   adminRemark: ""
 };
 
-const toLocalDateInput = (value) => value ? new Date(value).toISOString().slice(0, 10) : "";
-const toLocalDateTimeInput = (value) => value ? new Date(value).toISOString().slice(0, 16) : "";
+const toLocalDateInput = (value) => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+const toLocalDateTimeInput = (value) => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const h = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${y}-${m}-${day}T${h}:${min}`;
+};
 const toMonthInput = (value) => {
   const date = value ? new Date(value) : new Date();
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -96,6 +117,8 @@ export default function PayrollPage() {
   const { selectedBranchId, selectedBranchName } = useBranch();
   const [runs, setRuns] = useState([]);
   const [attendance, setAttendance] = useState([]);
+  const [attendanceMeta, setAttendanceMeta] = useState({ total: 0, page: 1, limit: 50, totalPages: 1 });
+  const [attendancePage, setAttendancePage] = useState(1);
   const [leaves, setLeaves] = useState([]);
   const [incentives, setIncentives] = useState([]);
   const [report, setReport] = useState([]);
@@ -107,6 +130,7 @@ export default function PayrollPage() {
   const [attendanceCalendar, setAttendanceCalendar] = useState(emptyAttendanceCalendar);
   const [staffUsers, setStaffUsers] = useState([]);
   const [attendanceDaySheet, setAttendanceDaySheet] = useState([]);
+  const [daySheetDate, setDaySheetDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [filters, setFilters] = useState({ payrollStatus: "", attendanceQ: "", attendanceStatus: "", attendanceDate: "", leaveStatus: "", leaveQ: "", incentiveQ: "" });
   const [form, setForm] = useState(emptyRun);
   const [status, setStatus] = useState({ error: "", success: "" });
@@ -136,55 +160,43 @@ export default function PayrollPage() {
   const load = useCallback(async () => {
     try {
       const calendarDate = `${attendanceCalendarMonth}-01`;
-      const [runResponse, attendanceResponse, leaveResponse, incentiveResponse, reportResponse, summaryResponse, settingsResponse, staffUsersResponse, daySheetResponse, attendanceReportResponse, attendanceCalendarResponse] = await Promise.all([
-        api.get("/owner/payroll", { params: { ...(filters.payrollStatus ? { status: filters.payrollStatus } : {}), ...(selectedBranchId ? { branchId: selectedBranchId } : {}) } }),
-        api.get("/owner/attendance", {
-          params: {
-            ...(filters.attendanceQ ? { q: filters.attendanceQ } : {}),
-            ...(filters.attendanceStatus ? { status: filters.attendanceStatus } : {}),
-            ...(filters.attendanceDate ? { date: filters.attendanceDate } : {}),
-            ...(selectedBranchId ? { branchId: selectedBranchId } : {})
-          }
-        }),
-        api.get("/owner/leaves", { params: { ...(filters.leaveStatus ? { status: filters.leaveStatus } : {}), ...(filters.leaveQ ? { q: filters.leaveQ } : {}), ...(selectedBranchId ? { branchId: selectedBranchId } : {}) } }),
-        api.get("/owner/incentives", { params: { ...(filters.incentiveQ ? { q: filters.incentiveQ } : {}), ...(selectedBranchId ? { branchId: selectedBranchId } : {}) } }),
-        api.get("/owner/payroll/reports", { params: { ...(selectedBranchId ? { branchId: selectedBranchId } : {}) } }),
-        api.get("/owner/attendance/summary", { params: { ...(filters.attendanceDate ? { date: filters.attendanceDate } : {}), ...(selectedBranchId ? { branchId: selectedBranchId } : {}) } }),
-        api.get("/owner/attendance/settings"),
-        api.get("/owner/staff-users", { params: { ...(selectedBranchId ? { branchId: selectedBranchId } : {}) } }),
-        api.get("/owner/attendance/day-sheet", { params: { ...(filters.attendanceDate ? { date: filters.attendanceDate } : {}), ...(selectedBranchId ? { branchId: selectedBranchId } : {}) } }),
-        api.get("/owner/attendance/reports", {
-          params: {
-            period: attendanceReportPeriod,
-            ...(filters.attendanceDate ? { date: filters.attendanceDate } : {}),
-            ...(selectedBranchId ? { branchId: selectedBranchId } : {})
-          }
-        }),
-        api.get("/owner/attendance/reports", {
-          params: {
-            period: "monthly",
-            date: calendarDate,
-            ...(selectedBranchId ? { branchId: selectedBranchId } : {})
-          }
-        })
+      const branchParams = selectedBranchId ? { branchId: selectedBranchId } : {};
+
+      const safeGet = async (url, params = {}) => {
+        try { return (await api.get(url, { params })).data; } catch { return null; }
+      };
+
+      const [runData, attendanceData, leaveData, incentiveData, reportData, summaryData, settingsData, staffData, daySheetData, attendanceReportData, attendanceCalData] = await Promise.all([
+        safeGet("/owner/payroll", { ...branchParams, ...(filters.payrollStatus ? { status: filters.payrollStatus } : {}) }),
+        safeGet("/owner/attendance", { ...branchParams, page: attendancePage, limit: 50, ...(filters.attendanceQ ? { q: filters.attendanceQ } : {}), ...(filters.attendanceStatus ? { status: filters.attendanceStatus } : {}), ...(filters.attendanceDate ? { date: filters.attendanceDate } : {}) }),
+        safeGet("/owner/leaves", { ...branchParams, ...(filters.leaveStatus ? { status: filters.leaveStatus } : {}), ...(filters.leaveQ ? { q: filters.leaveQ } : {}) }),
+        safeGet("/owner/incentives", { ...branchParams, ...(filters.incentiveQ ? { q: filters.incentiveQ } : {}) }),
+        safeGet("/owner/payroll/reports", branchParams),
+        safeGet("/owner/attendance/summary", { ...branchParams, ...(filters.attendanceDate ? { date: filters.attendanceDate } : {}) }),
+        safeGet("/owner/attendance/settings"),
+        safeGet("/owner/staff-users", branchParams),
+        safeGet("/owner/attendance/day-sheet", { ...branchParams, date: daySheetDate }),
+        safeGet("/owner/attendance/reports", { ...branchParams, period: attendanceReportPeriod, ...(filters.attendanceDate ? { date: filters.attendanceDate } : {}) }),
+        safeGet("/owner/attendance/reports", { ...branchParams, period: "monthly", date: calendarDate })
       ]);
-      setRuns(runResponse.data || []);
-      setAttendance(attendanceResponse.data || []);
-      setLeaves(leaveResponse.data || []);
-      setIncentives(incentiveResponse.data || []);
-      setReport(reportResponse.data?.rows || []);
-      setAttendanceSummary(summaryResponse.data || {});
-      setAttendanceSettings((current) => ({ ...current, ...(settingsResponse.data || {}) }));
-      setStaffUsers(staffUsersResponse.data || []);
-      setAttendanceDaySheet(daySheetResponse.data?.rows || []);
-      setAttendanceReport(attendanceReportResponse.data || emptyAttendanceReport);
-      setAttendanceCalendar(attendanceCalendarResponse.data || emptyAttendanceCalendar);
+      setRuns(runData || []);
+      setAttendance(attendanceData?.rows || attendanceData || []);
+      setAttendanceMeta({ total: attendanceData?.total || 0, page: attendanceData?.page || 1, limit: attendanceData?.limit || 50, totalPages: attendanceData?.totalPages || 1 });
+      setLeaves(leaveData || []);
+      setIncentives(incentiveData || []);
+      setReport(reportData?.rows || []);
+      setAttendanceSummary(summaryData || {});
+      setAttendanceSettings((current) => ({ ...current, ...(settingsData || {}) }));
+      setStaffUsers(staffData || []);
+      setAttendanceDaySheet(daySheetData?.rows || []);
+      setAttendanceReport(attendanceReportData || emptyAttendanceReport);
+      setAttendanceCalendar(attendanceCalData || emptyAttendanceCalendar);
       setLoading(false);
     } catch (error) {
       setStatus({ error: formatApiError(error, "Could not load payroll workspace"), success: "" });
       setLoading(false);
     }
-  }, [attendanceCalendarMonth, attendanceReportPeriod, filters, selectedBranchId]);
+  }, [attendanceCalendarMonth, attendancePage, attendanceReportPeriod, filters, selectedBranchId, daySheetDate]);
 
   const downloadAttendanceReport = (format) => {
     const searchParams = new URLSearchParams({
@@ -311,6 +323,8 @@ export default function PayrollPage() {
   const saveManualEdit = async (event) => {
     event.preventDefault();
     if (!selectedAttendance) return;
+    const confirmMsg = `Confirm manual attendance update for ${selectedAttendance.userSalon?.user?.name || "staff"}?\n\nReason: ${manualEdit.reason}`;
+    if (!window.confirm(confirmMsg)) return;
     try {
       setManualSaving(true);
       await api.patch(`/owner/attendance/${selectedAttendance.id}/manual-update`, {
@@ -357,6 +371,27 @@ export default function PayrollPage() {
     }
   };
 
+  const fetchExistingAttendance = async (userSalonId, attendanceDate) => {
+    if (!userSalonId || !attendanceDate) return;
+    try {
+      const res = await api.get("/owner/attendance", { params: { userSalonId, date: attendanceDate, limit: 1 } });
+      const rows = res.data?.rows || res.data || [];
+      const existing = Array.isArray(rows) ? rows.find((r) => r.userSalonId === userSalonId) : null;
+      if (existing) {
+        setManualCreate((current) => ({
+          ...current,
+          checkInAt: toLocalDateTimeInput(existing.checkInAt) || current.checkInAt,
+          checkOutAt: toLocalDateTimeInput(existing.checkOutAt) || current.checkOutAt,
+          status: existing.status || current.status,
+          note: existing.note || current.note,
+          adminRemark: existing.adminRemark || current.adminRemark
+        }));
+      }
+    } catch {
+      // silent — form stays as-is
+    }
+  };
+
   const openManualCorrectionFromCell = async () => {
     if (!selectedCalendarCell) return;
     const attendanceId = selectedCalendarCell.record?.attendanceId;
@@ -383,15 +418,20 @@ export default function PayrollPage() {
     }, 100);
   };
 
+  const sanitizeHtml = (str) => {
+    if (!str) return "-";
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  };
+
   const printAttendanceDaySheet = () => {
-    const targetDate = filters.attendanceDate || new Date().toISOString().slice(0, 10);
+    const targetDate = daySheetDate;
     const printWindow = window.open("", "_blank", "noopener,noreferrer,width=1100,height=800");
-    if (!printWindow) return;
+    if (!printWindow) { setStatus({ error: "Pop-up was blocked. Please allow pop-ups for this site.", success: "" }); return; }
     const rowsHtml = attendanceDaySheet.map((row) => `
       <tr>
-        <td>${row.staffName || "-"}</td>
-        <td>${row.branchName || "-"}</td>
-        <td>${row.status || "-"}</td>
+        <td>${sanitizeHtml(row.staffName)}</td>
+        <td>${sanitizeHtml(row.branchName)}</td>
+        <td>${sanitizeHtml(row.status)}</td>
         <td>${row.checkInAt ? new Date(row.checkInAt).toLocaleString() : "No check-in"}</td>
         <td>${row.checkOutAt ? new Date(row.checkOutAt).toLocaleString() : "No check-out"}</td>
       </tr>
@@ -411,7 +451,7 @@ export default function PayrollPage() {
         </head>
         <body>
           <h1>Branch Attendance Sheet</h1>
-          <p>Branch: ${selectedBranchName || "All Branches"} | Date: ${targetDate}</p>
+          <p>Branch: ${sanitizeHtml(selectedBranchName) || "All Branches"} | Date: ${targetDate}</p>
           <table>
             <thead>
               <tr>
@@ -444,7 +484,7 @@ export default function PayrollPage() {
   const downloadDaySheetExport = (format) => {
     const searchParams = new URLSearchParams({
       period: "daily",
-      date: filters.attendanceDate || new Date().toISOString().slice(0, 10),
+      date: daySheetDate,
       ...(selectedBranchId ? { branchId: selectedBranchId } : {})
     });
     window.open(`/api/v1/owner/attendance/reports/export.${format}?${searchParams.toString()}`, "_blank", "noopener,noreferrer");
@@ -490,7 +530,7 @@ export default function PayrollPage() {
                 <option value="PAID">Paid</option>
               </select>
             </label>
-            <button type="button" className="secondary-button" onClick={() => setFilters((current) => ({ ...current, payrollStatus: "" }))}>Reset</button>
+            <button type="button" className="secondary-button" onClick={() => setFilters((current) => ({ ...current, payrollStatus: "" }))}><RotateCcw size={12} /> Reset</button>
           </div>
           <div className="list-stack" style={{ marginTop: 16 }}>
             {runs.map((row) => (
@@ -509,12 +549,13 @@ export default function PayrollPage() {
           <div className="panel-card">
             <h3>Attendance Dashboard</h3>
             <div className="stats-grid" style={{ marginBottom: 16 }}>
-              <div className="stat-card"><div className="stat-label">Total Staff</div><div className="stat-value">{attendanceSummary.totalStaff || 0}</div></div>
-              <div className="stat-card"><div className="stat-label">Present Today</div><div className="stat-value">{attendanceSummary.presentToday || 0}</div></div>
-              <div className="stat-card"><div className="stat-label">Absent Today</div><div className="stat-value">{attendanceSummary.absentToday || 0}</div></div>
-              <div className="stat-card"><div className="stat-label">Late Staff</div><div className="stat-value">{attendanceSummary.lateStaff || 0}</div></div>
-              <div className="stat-card"><div className="stat-label">Currently Working</div><div className="stat-value">{attendanceSummary.currentlyWorking || 0}</div></div>
-              <div className="stat-card"><div className="stat-label">Completed Shift</div><div className="stat-value">{attendanceSummary.completedShift || 0}</div></div>
+              <div className="stat-card"><div className="stat-label"><Users size={14} /> Total Staff</div><div className="stat-value">{attendanceSummary.totalStaff || 0}</div></div>
+              <div className="stat-card"><div className="stat-label"><CheckCircle2 size={14} /> Present Today</div><div className="stat-value">{attendanceSummary.presentToday || 0}</div></div>
+              <div className="stat-card"><div className="stat-label"><XCircle size={14} /> Absent Today</div><div className="stat-value">{attendanceSummary.absentToday || 0}</div></div>
+              <div className="stat-card"><div className="stat-label"><Clock size={14} /> Late Staff</div><div className="stat-value">{attendanceSummary.lateStaff || 0}</div></div>
+              <div className="stat-card"><div className="stat-label"><Timer size={14} /> Currently Working</div><div className="stat-value">{attendanceSummary.currentlyWorking || 0}</div></div>
+              <div className="stat-card"><div className="stat-label"><CheckCircle2 size={14} /> Completed Shift</div><div className="stat-value">{attendanceSummary.completedShift || 0}</div></div>
+              <div className="stat-card"><div className="stat-label"><CalendarOff size={14} /> On Leave</div><div className="stat-value">{attendanceSummary.onLeave || 0}</div></div>
             </div>
             <form className="form-grid" onSubmit={saveAttendanceSettings}>
               <label>
@@ -538,6 +579,16 @@ export default function PayrollPage() {
                 <input type="number" min="30" max="1440" value={attendanceSettings.minimumWorkingMinutes} onChange={(e) => setAttendanceSettings((current) => ({ ...current, minimumWorkingMinutes: e.target.value }))} />
               </label>
               <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
+                <input type="checkbox" checked={attendanceSettings.overtimeEnabled} onChange={(e) => setAttendanceSettings((current) => ({ ...current, overtimeEnabled: e.target.checked }))} />
+                <span>Enable overtime calculation</span>
+              </label>
+              {attendanceSettings.overtimeEnabled && (
+                <label>
+                  <span className="muted">Overtime Threshold (minutes)</span>
+                  <input type="number" min="60" max="720" value={attendanceSettings.overtimeThresholdMinutes} onChange={(e) => setAttendanceSettings((current) => ({ ...current, overtimeThresholdMinutes: e.target.value }))} />
+                </label>
+              )}
+              <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
                 <input type="checkbox" checked={attendanceSettings.checkoutSelfieRequired} onChange={(e) => setAttendanceSettings((current) => ({ ...current, checkoutSelfieRequired: e.target.checked }))} />
                 <span>Require selfie on check-out</span>
               </label>
@@ -546,141 +597,169 @@ export default function PayrollPage() {
                 <span>Allow manual attendance edits</span>
               </label>
               <div style={{ alignSelf: "end" }}>
-                <button type="submit" disabled={settingsSaving}>{settingsSaving ? "Saving..." : "Save Attendance Rules"}</button>
+                <button type="submit" disabled={settingsSaving}>{settingsSaving ? "Saving..." : <><Save size={12} /> Save Attendance Rules</>}</button>
               </div>
             </form>
           </div>
 
-          <div className="panel-card">
-            <div className="item-head" style={{ alignItems: "flex-end" }}>
+          <div className="panel-card" style={{ overflow: "visible" }}>
+            <style>{`
+              .att-cal-cell { transition: all 0.15s ease; }
+              .att-cal-cell:hover { transform: scale(1.15); z-index: 2; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+              .att-cal-staff:hover { background: #f8fafc; }
+              .att-cal-day-hdr { transition: background 0.15s; }
+              .att-cal-day-hdr.today { background: #6366f1 !important; color: white !important; border-radius: 10px; }
+              .att-cal-today-col { box-shadow: inset 0 0 0 2px #6366f1; border-radius: 12px; }
+            `}</style>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
               <div>
-                <h3 style={{ marginTop: 0, marginBottom: 6 }}>Attendance Calendar</h3>
-                <div className="item-meta">Owner-side monthly staff marking view. Branch filter from the top bar is applied automatically, and each verified staff attendance marks itself into the calendar.</div>
+                <h3 style={{ marginTop: 0, marginBottom: 4, fontSize: 20, display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 24 }}>📅</span> Attendance Calendar
+                </h3>
+                <p style={{ margin: 0, color: "#64748b", fontSize: 13 }}>Monthly staff attendance overview. Click any cell for details. Today is highlighted in indigo.</p>
               </div>
-              <label>
-                <span className="muted">Month</span>
-                <input type="month" value={attendanceCalendarMonth} onChange={(e) => setAttendanceCalendarMonth(e.target.value)} />
-              </label>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <button type="button" onClick={() => { const [y, m] = attendanceCalendarMonth.split("-").map(Number); const prev = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`; setAttendanceCalendarMonth(prev); }} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", display: "grid", placeItems: "center", fontSize: 14 }}><ChevronLeft size={14} /></button>
+                <input type="month" value={attendanceCalendarMonth} onChange={(e) => setAttendanceCalendarMonth(e.target.value)} style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, fontWeight: 600 }} />
+                <button type="button" onClick={() => { const [y, m] = attendanceCalendarMonth.split("-").map(Number); const next = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`; setAttendanceCalendarMonth(next); }} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", display: "grid", placeItems: "center", fontSize: 14 }}><ChevronRight size={14} /></button>
+                <div style={{ width: 1, height: 24, background: "#e2e8f0", margin: "0 4px" }} />
+                <button type="button" onClick={() => setAttendanceCalendarMonth(toMonthInput())} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #6366f1", background: "#6366f1", color: "white", cursor: "pointer", fontSize: 12, fontWeight: 700 }}><CalendarDays size={12} /> Today</button>
+                <button type="button" className="secondary-button" onClick={() => downloadCalendarExport("xlsx")} style={{ fontSize: 12 }}><Download size={12} /> Excel</button>
+                <button type="button" className="secondary-button" onClick={() => downloadCalendarExport("pdf")} style={{ fontSize: 12 }}><Download size={12} /> PDF</button>
+              </div>
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 14 }}>
               {Object.entries(statusTheme).filter(([key]) => key !== "OFF").map(([key, theme]) => (
-                <span key={key} className="badge" style={{ background: theme.bg, color: theme.color, border: "1px solid rgba(148, 163, 184, 0.25)" }}>
+                <span key={key} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 20, background: theme.bg, color: theme.color, fontSize: 11, fontWeight: 700, border: "1px solid rgba(0,0,0,0.06)" }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: theme.color, opacity: 0.7 }} />
                   {theme.label} = {key.replaceAll("_", " ")}
                 </span>
               ))}
-              <span className="badge" style={{ background: "#e2e8f0", color: "#334155", border: "1px solid rgba(148, 163, 184, 0.25)" }}>Weekend / Off Day</span>
             </div>
-            <div className="badge-row" style={{ marginTop: 12, justifyContent: "flex-end" }}>
-              <button type="button" className="secondary-button" onClick={() => downloadCalendarExport("xlsx")}>Monthly Excel</button>
-              <button type="button" className="secondary-button" onClick={() => downloadCalendarExport("pdf")}>Monthly PDF</button>
-            </div>
-            <div className="stats-grid" style={{ marginTop: 16 }}>
-              <div className="stat-card"><div className="stat-label">Monthly Rows</div><div className="stat-value">{attendanceCalendar.summary?.totalRows || 0}</div></div>
-              <div className="stat-card" style={{ background: "#dcfce7" }}><div className="stat-label">Present</div><div className="stat-value">{attendanceCalendar.summary?.present || 0}</div></div>
-              <div className="stat-card" style={{ background: "#fef3c7" }}><div className="stat-label">Late</div><div className="stat-value">{attendanceCalendar.summary?.late || 0}</div></div>
-              <div className="stat-card" style={{ background: "#fde68a" }}><div className="stat-label">Half Day</div><div className="stat-value">{attendanceCalendar.summary?.halfDay || 0}</div></div>
-              <div className="stat-card" style={{ background: "#fee2e2" }}><div className="stat-label">Absent</div><div className="stat-value">{attendanceCalendar.summary?.absent || 0}</div></div>
-              <div className="stat-card" style={{ background: "#dbeafe" }}><div className="stat-label">Leave</div><div className="stat-value">{attendanceCalendar.summary?.leave || 0}</div></div>
-            </div>
-            <div style={{ overflowX: "auto", marginTop: 16 }}>
-              <div style={{ minWidth: Math.max(1160, 320 + attendanceCalendarDays.length * 44) }}>
-                <div style={{ display: "grid", gridTemplateColumns: `320px repeat(${attendanceCalendarDays.length}, 44px)`, gap: 6, alignItems: "center", marginBottom: 8 }}>
-                  <div className="muted" style={{ fontWeight: 700 }}>Staff / Monthly Totals</div>
-                  {attendanceCalendarDays.map((day) => (
-                    <div
-                      key={day}
-                      className="muted"
-                      style={{
-                        textAlign: "center",
-                        fontSize: 12,
-                        fontWeight: 700,
-                        padding: "8px 0",
-                        borderRadius: 10,
-                        background: attendanceCalendarWeekendMap[day] ? "#e2e8f0" : "transparent"
-                      }}
-                    >
-                      {day}
-                    </div>
-                  ))}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginTop: 16 }}>
+              {[{ label: "Total", value: attendanceCalendar.summary?.totalRows || 0, bg: "#f1f5f9", color: "#334155" },
+                { label: "Present", value: attendanceCalendar.summary?.present || 0, bg: "#dcfce7", color: "#166534" },
+                { label: "Late", value: attendanceCalendar.summary?.late || 0, bg: "#fef3c7", color: "#92400e" },
+                { label: "Half Day", value: attendanceCalendar.summary?.halfDay || 0, bg: "#fef9c3", color: "#854d0e" },
+                { label: "Absent", value: attendanceCalendar.summary?.absent || 0, bg: "#fee2e2", color: "#b91c1c" },
+                { label: "Leave", value: attendanceCalendar.summary?.leave || 0, bg: "#dbeafe", color: "#1d4ed8" }
+              ].map((s) => (
+                <div key={s.label} style={{ background: s.bg, borderRadius: 12, padding: "12px 16px", textAlign: "center" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: s.color, textTransform: "uppercase", letterSpacing: 0.5 }}>{s.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: s.color, fontFamily: "monospace" }}>{s.value}</div>
                 </div>
-                {attendanceCalendarRows.map((row) => (
-                  <div key={row.staffCode} style={{ display: "grid", gridTemplateColumns: `320px repeat(${attendanceCalendarDays.length}, 44px)`, gap: 6, alignItems: "center", marginBottom: 8 }}>
-                    <div className="list-item" style={{ padding: "10px 12px" }}>
-                      <strong>{row.staffName}</strong>
-                      <div className="item-meta">{row.branchName || "No branch"}</div>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-                        {attendanceMetricKeys.map((metricKey) => row.totals[metricKey] ? (
-                          <span key={metricKey} className="badge" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                            {attendanceMetricLabel[metricKey]} {row.totals[metricKey]}
-                          </span>
-                        ) : null)}
-                      </div>
-                    </div>
-                    {attendanceCalendarDays.map((day) => {
-                      const cell = row.cells[day] || null;
-                      const isWeekend = attendanceCalendarWeekendMap[day];
-                      const theme = statusTheme[cell?.status] || (isWeekend ? { label: "-", bg: "#e2e8f0", color: "#475569" } : statusTheme.OFF);
-                      const title = cell
-                        ? `${row.staffName} | ${cell.status} | ${new Date(cell.date).toLocaleDateString()}`
-                        : `${row.staffName} | ${isWeekend ? "Weekend / Off Day" : "No mark"}`;
-                      return (
-                        <button
-                          key={`${row.staffCode}-${day}`}
-                          type="button"
-                          title={title}
-                          onClick={() => setSelectedCalendarCell({ staffName: row.staffName, branchName: row.branchName, staffCode: row.staffCode, record: cell, day, isWeekend })}
-                          style={{
-                            height: 40,
-                            borderRadius: 12,
-                            display: "grid",
-                            placeItems: "center",
-                            background: theme.bg,
-                            color: theme.color,
-                            border: "1px solid rgba(148, 163, 184, 0.25)",
-                            fontSize: 12,
-                            fontWeight: 800,
-                            cursor: "pointer"
-                          }}
-                        >
-                          {theme.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
-                {!attendanceCalendarRows.length && !loading ? (
-                  <EmptyState title="No attendance calendar rows" message="Pick a month and branch to see automatic staff attendance markings in calendar format." />
-                ) : null}
-              </div>
+              ))}
+            </div>
+            <div style={{ overflow: "auto", maxHeight: "65vh", marginTop: 16, borderRadius: 12, border: "1px solid #e2e8f0" }}>
+              {(() => {
+                const today = new Date();
+                const todayDay = today.getMonth() + 1 === parseInt(attendanceCalendarMonth.split("-")[1]) && today.getFullYear() === parseInt(attendanceCalendarMonth.split("-")[0]) ? today.getDate() : null;
+                return (
+                  <table style={{ borderCollapse: "collapse", minWidth: Math.max(900, 280 + attendanceCalendarDays.length * 40) }}>
+                    <thead>
+                      <tr>
+                        <th style={{ position: "sticky", top: 0, zIndex: 5, background: "#f8fafc", padding: "10px 14px", fontWeight: 800, fontSize: 12, color: "#475569", textTransform: "uppercase", letterSpacing: 0.5, textAlign: "left", borderBottom: "2px solid #e2e8f0", borderRight: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>Staff Member</th>
+                        {attendanceCalendarDays.map((day) => (
+                          <th key={day} className={`att-cal-day-hdr${todayDay === day ? " today" : ""}`} style={{ position: "sticky", top: 0, zIndex: 4, background: todayDay === day ? undefined : attendanceCalendarWeekendMap[day] ? "#f1f5f9" : "#f8fafc", textAlign: "center", padding: "8px 0", fontSize: 11, fontWeight: 700, color: todayDay === day ? "white" : attendanceCalendarWeekendMap[day] ? "#94a3b8" : "#475569", borderBottom: "2px solid #e2e8f0", minWidth: 40, whiteSpace: "nowrap" }}>
+                            {day}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {attendanceCalendarRows.map((row, rowIdx) => (
+                        <tr key={row.staffCode} style={{ background: rowIdx % 2 === 0 ? "white" : "#fafbfc" }}>
+                          <td style={{ padding: "10px 14px", borderRight: "1px solid #e2e8f0", borderBottom: "1px solid #f1f5f9", verticalAlign: "middle", background: "inherit" }}>
+                            <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a" }}>{row.staffName}</div>
+                            <div style={{ fontSize: 11, color: "#94a3b8" }}>{row.branchName || "No branch"}</div>
+                            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
+                              {attendanceMetricKeys.filter((k) => row.totals[k] > 0).map((metricKey) => (
+                                <span key={metricKey} style={{ fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 6, background: statusTheme[metricKey.toUpperCase()]?.bg || "#f1f5f9", color: statusTheme[metricKey.toUpperCase()]?.color || "#475569" }}>
+                                  {attendanceMetricLabel[metricKey]}: {row.totals[metricKey]}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          {attendanceCalendarDays.map((day) => {
+                            const cell = row.cells[day] || null;
+                            const isWeekend = attendanceCalendarWeekendMap[day];
+                            const isToday = todayDay === day;
+                            const theme = statusTheme[cell?.status] || (isWeekend ? { label: "-", bg: "#f1f5f9", color: "#94a3b8" } : statusTheme.OFF);
+                            return (
+                              <td key={`${row.staffCode}-${day}`} style={{ textAlign: "center", padding: "4px 0", borderBottom: "1px solid #f1f5f9", borderLeft: "1px solid #f8fafc", background: "inherit" }}>
+                                <button
+                                  type="button"
+                                  title={cell ? `${row.staffName} | ${cell.status} | ${new Date(cell.date).toLocaleDateString()}` : `${row.staffName} | ${isWeekend ? "Weekend" : "No mark"}`}
+                                  onClick={() => setSelectedCalendarCell({ staffName: row.staffName, branchName: row.branchName, staffCode: row.staffCode, record: cell, day, isWeekend })}
+                                  className="att-cal-cell"
+                                  style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 8,
+                                    display: "inline-grid",
+                                    placeItems: "center",
+                                    background: theme.bg,
+                                    color: theme.color,
+                                    border: isToday ? "2px solid #6366f1" : "1px solid rgba(0,0,0,0.04)",
+                                    fontSize: 11,
+                                    fontWeight: 800,
+                                    cursor: "pointer",
+                                    lineHeight: 1
+                                  }}
+                                >
+                                  {theme.label}
+                                </button>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                );
+              })()}
             </div>
           </div>
 
           {selectedCalendarCell ? (
-            <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.68)", display: "grid", placeItems: "center", zIndex: 60, padding: 16 }}>
-              <div className="panel-card" style={{ width: "min(100%, 480px)", display: "grid", gap: 12 }}>
-                <div className="item-head">
+            <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.68)", display: "grid", placeItems: "center", zIndex: 60, padding: 16, backdropFilter: "blur(4px)" }} onClick={() => setSelectedCalendarCell(null)}>
+              <div className="panel-card" style={{ width: "min(100%, 500px)", maxHeight: "90vh", overflowY: "auto", display: "grid", gap: 14, animation: "fadeIn 0.2s ease-out" }} onClick={(e) => e.stopPropagation()}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>
-                    <h3 style={{ margin: 0 }}>Attendance Cell Detail</h3>
-                    <div className="item-meta">{selectedCalendarCell.staffName} | Day {selectedCalendarCell.day}</div>
+                    <h3 style={{ margin: 0, fontSize: 18 }}>Attendance Detail</h3>
+                    <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>{selectedCalendarCell.staffName} — Day {selectedCalendarCell.day}, {attendanceCalendarMonth}</div>
                   </div>
-                  <button type="button" className="secondary-button" onClick={() => setSelectedCalendarCell(null)}>Close</button>
+                  <button type="button" onClick={() => setSelectedCalendarCell(null)} style={{ width: 28, height: 28, borderRadius: 8, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", display: "grid", placeItems: "center", fontSize: 14 }}>✕</button>
                 </div>
-                <div className="item-meta"><strong>Branch:</strong> {selectedCalendarCell.branchName || "No branch"}</div>
-                <div className="item-meta"><strong>Status:</strong> {selectedCalendarCell.record?.status || "No mark"}</div>
-                <div className="item-meta"><strong>Date:</strong> {selectedCalendarCell.record?.date ? new Date(selectedCalendarCell.record.date).toLocaleDateString() : `${attendanceCalendarMonth}-${String(selectedCalendarCell.day).padStart(2, "0")}`}</div>
-                <div className="item-meta"><strong>Check-In:</strong> {selectedCalendarCell.record?.checkInAt ? new Date(selectedCalendarCell.record.checkInAt).toLocaleString() : "No check-in"}</div>
-                <div className="item-meta"><strong>Check-Out:</strong> {selectedCalendarCell.record?.checkOutAt ? new Date(selectedCalendarCell.record.checkOutAt).toLocaleString() : "No check-out"}</div>
-                <div className="item-meta"><strong>Worked Hours:</strong> {selectedCalendarCell.record?.workedHours || "-"}</div>
-                <div className="item-meta"><strong>Geo Status:</strong> {selectedCalendarCell.record?.geoStatus || "-"}</div>
-                <div className="item-meta"><strong>Verification:</strong> {selectedCalendarCell.record?.verificationMethod || "-"}</div>
-                <div className="item-meta"><strong>GPS:</strong> {selectedCalendarCell.record?.gpsLocation || "-"}</div>
-                <div className="item-meta"><strong>Note:</strong> {selectedCalendarCell.record?.note || "None"}</div>
-                <div className="item-meta"><strong>Admin Remark:</strong> {selectedCalendarCell.record?.adminRemark || "None"}</div>
-                {selectedCalendarCell.record?.selfie ? <img src={selectedCalendarCell.record.selfie} alt="Attendance selfie" style={{ width: "100%", borderRadius: 12, border: "1px solid #e2e8f0" }} /> : null}
-                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 20px" }}>
+                  {[
+                    ["Branch", selectedCalendarCell.branchName || "No branch"],
+                    ["Status", selectedCalendarCell.record?.status || "No mark"],
+                    ["Date", selectedCalendarCell.record?.date ? new Date(selectedCalendarCell.record.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : `${attendanceCalendarMonth}-${String(selectedCalendarCell.day).padStart(2, "0")}`],
+                    ["Worked Hours", selectedCalendarCell.record?.workedHours || "-"],
+                    ["Check-In", selectedCalendarCell.record?.checkInAt ? new Date(selectedCalendarCell.record.checkInAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "—"],
+                    ["Check-Out", selectedCalendarCell.record?.checkOutAt ? new Date(selectedCalendarCell.record.checkOutAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "—"],
+                    ["Geo Status", selectedCalendarCell.record?.geoStatus || "-"],
+                    ["Verification", selectedCalendarCell.record?.verificationMethod || "-"],
+                    ["GPS", selectedCalendarCell.record?.gpsLocation || "-"],
+                    ["Note", selectedCalendarCell.record?.note || "None"]
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+                      <div style={{ fontSize: 13, color: "#0f172a", fontWeight: 500, marginTop: 2 }}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+                {selectedCalendarCell.record?.adminRemark && (
+                  <div style={{ padding: "8px 12px", background: "#fff7ed", borderRadius: 8, border: "1px solid #fed7aa", fontSize: 12, color: "#9a3412" }}>
+                    <strong>Admin Remark:</strong> {selectedCalendarCell.record.adminRemark}
+                  </div>
+                )}
+                {selectedCalendarCell.record?.selfie ? <img src={selectedCalendarCell.record.selfie.startsWith("http") ? selectedCalendarCell.record.selfie : `${api.defaults.baseURL?.replace("/api/v1", "") || ""}${selectedCalendarCell.record.selfie}`} alt="Attendance selfie" style={{ width: "100%", borderRadius: 12, border: "1px solid #e2e8f0" }} /> : null}
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
                   <button type="button" className="secondary-button" onClick={() => setSelectedCalendarCell(null)}>Close</button>
                   <button type="button" onClick={() => void openManualCorrectionFromCell()}>
-                    {selectedCalendarCell.record?.attendanceId ? "Open Manual Correction" : "Create Manual Entry"}
+                    {selectedCalendarCell.record?.attendanceId ? <><Edit3 size={12} /> Edit</> : <><PlusCircle size={12} /> Create Entry</>}
                   </button>
                 </div>
               </div>
@@ -694,8 +773,8 @@ export default function PayrollPage() {
                 <div className="item-meta">Generate daily, weekly, or monthly attendance reports and export them in Excel or PDF.</div>
               </div>
               <div className="badge-row">
-                <button type="button" className="secondary-button" onClick={() => downloadAttendanceReport("xlsx")}>Export Excel</button>
-                <button type="button" className="secondary-button" onClick={() => downloadAttendanceReport("pdf")}>Export PDF</button>
+                <button type="button" className="secondary-button" onClick={() => downloadAttendanceReport("xlsx")}><Download size={12} /> Export Excel</button>
+                <button type="button" className="secondary-button" onClick={() => downloadAttendanceReport("pdf")}><Download size={12} /> Export PDF</button>
               </div>
             </div>
             <div className="form-grid" style={{ marginTop: 16 }}>
@@ -737,7 +816,11 @@ export default function PayrollPage() {
             <form className="form-grid" onSubmit={saveManualCreate}>
               <label>
                 <span className="muted">Staff member</span>
-                <select required value={manualCreate.userSalonId} onChange={(e) => setManualCreate((current) => ({ ...current, userSalonId: e.target.value }))}>
+                <select required value={manualCreate.userSalonId} onChange={(e) => {
+                  const val = e.target.value;
+                  setManualCreate((current) => ({ ...current, userSalonId: val }));
+                  fetchExistingAttendance(val, manualCreate.attendanceDate);
+                }}>
                   <option value="">Select staff</option>
                   {staffUsers.map((row) => (
                     <option key={row.id} value={row.id}>{row.user?.name || row.name || row.id}</option>
@@ -746,7 +829,11 @@ export default function PayrollPage() {
               </label>
               <label>
                 <span className="muted">Attendance date</span>
-                <input type="date" required value={manualCreate.attendanceDate} onChange={(e) => setManualCreate((current) => ({ ...current, attendanceDate: e.target.value }))} />
+                <input type="date" required value={manualCreate.attendanceDate} onChange={(e) => {
+                  const val = e.target.value;
+                  setManualCreate((current) => ({ ...current, attendanceDate: val }));
+                  fetchExistingAttendance(manualCreate.userSalonId, val);
+                }} />
               </label>
               <label>
                 <span className="muted">Check-in</span>
@@ -778,12 +865,12 @@ export default function PayrollPage() {
                 <textarea rows={2} value={manualCreate.adminRemark} onChange={(e) => setManualCreate((current) => ({ ...current, adminRemark: e.target.value }))} placeholder="Reason or context for the manual entry" />
               </label>
               <div>
-                <button type="submit" disabled={manualCreateSaving}>{manualCreateSaving ? "Saving..." : "Create Manual Entry"}</button>
+                <button type="submit" disabled={manualCreateSaving}>{manualCreateSaving ? "Saving..." : <><UserPlus size={12} /> Create Manual Entry</>}</button>
               </div>
             </form>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1.25fr 0.95fr", gap: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, alignItems: "start" }}>
             <div className="panel-card">
               <h3>Attendance Records</h3>
               <div className="form-grid" style={{ marginBottom: 16 }}>
@@ -809,7 +896,7 @@ export default function PayrollPage() {
                   <input type="date" value={filters.attendanceDate} onChange={(e) => setFilters((current) => ({ ...current, attendanceDate: e.target.value }))} />
                 </label>
                 <div style={{ alignSelf: "end", display: "flex", gap: 8 }}>
-                  <button type="button" className="secondary-button" onClick={() => setFilters((current) => ({ ...current, attendanceQ: "", attendanceStatus: "", attendanceDate: "" }))}>Reset</button>
+                  <button type="button" className="secondary-button" onClick={() => setFilters((current) => ({ ...current, attendanceQ: "", attendanceStatus: "", attendanceDate: "" }))}><RotateCcw size={12} /> Reset</button>
                 </div>
               </div>
               <div className="list-stack">
@@ -819,18 +906,29 @@ export default function PayrollPage() {
                     type="button"
                     className="list-item"
                     onClick={() => loadAttendanceDetail(row.id)}
-                    style={{ textAlign: "left", width: "100%", background: selectedAttendanceId === row.id ? "#eff6ff" : "white", border: "1px solid #e2e8f0", borderRadius: 12 }}
+                    style={{ textAlign: "left", width: "100%", background: selectedAttendanceId === row.id ? "#eff6ff" : "white", border: "1px solid #e2e8f0", borderRadius: 12, display: "flex", gap: 12, alignItems: "flex-start", color: "#0f172a", cursor: "pointer" }}
                   >
-                    <strong>{row.userSalon?.user?.name || row.userSalonId}</strong>
-                    <div className="item-meta">{new Date(row.checkInAt).toLocaleString()} {row.checkOutAt ? `- ${new Date(row.checkOutAt).toLocaleString()}` : ""}</div>
-                    <div className="item-meta">{row.status} | {row.branch?.name || "No branch"} | {row.workedMinutes != null ? `${row.workedMinutes} min` : "Open shift"}</div>
+                    {row.checkInSelfieUrl ? <img src={row.checkInSelfieUrl.startsWith("http") ? row.checkInSelfieUrl : `${api.defaults.baseURL?.replace("/api/v1", "") || ""}${row.checkInSelfieUrl}`} alt="" style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover", border: "1px solid #e2e8f0", flexShrink: 0 }} onError={(e) => { e.target.style.display = "none"; }} /> : <div style={{ width: 40, height: 40, borderRadius: 8, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#94a3b8", flexShrink: 0 }}>--</div>}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <strong style={{ color: "#0f172a" }}>{row.userSalon?.user?.name || row.userSalonId}</strong>
+                      <div className="item-meta">{row.checkInAt ? new Date(row.checkInAt).toLocaleString() : "No check-in"} {row.checkOutAt ? `- ${new Date(row.checkOutAt).toLocaleString()}` : ""}</div>
+                      <div className="item-meta">{row.status} | {row.branch?.name || "No branch"} | {row.workedMinutes != null ? `${Math.floor(row.workedMinutes / 60)}h ${row.workedMinutes % 60}m` : "Open shift"}</div>
+                      {row.checkInLatitude ? <div className="item-meta" style={{ fontSize: 11 }}>GPS: {Number(row.checkInLatitude).toFixed(4)}, {Number(row.checkInLongitude).toFixed(4)}</div> : null}
+                    </div>
                   </button>
                 ))}
                 {!loading && !attendance.length && <EmptyState title="No attendance records yet" message="Attendance check-ins and check-outs will appear here once recorded." />}
+                {attendanceMeta.totalPages > 1 && (
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, padding: "12px 0", borderTop: "1px solid #e2e8f0", marginTop: 8 }}>
+                    <button type="button" className="secondary-button" disabled={attendanceMeta.page <= 1} onClick={() => setAttendancePage((p) => p - 1)}><ChevronLeft size={12} /> Previous</button>
+                    <span style={{ fontSize: 13, color: "#64748b" }}>Page {attendanceMeta.page} of {attendanceMeta.totalPages} ({attendanceMeta.total} records)</span>
+                    <button type="button" className="secondary-button" disabled={attendanceMeta.page >= attendanceMeta.totalPages} onClick={() => setAttendancePage((p) => p + 1)}>Next <ChevronRight size={12} /></button>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="panel-card" ref={detailPanelRef}>
+            <div className="panel-card" ref={detailPanelRef} style={{ maxHeight: "80vh", overflowY: "auto", position: "sticky", top: 16 }}>
               <h3>Attendance Detail</h3>
               {detailLoading ? <PageLoader compact title="Loading attendance detail" message="Fetching record, GPS evidence, and audit history." /> : null}
               {!detailLoading && !selectedAttendance && (
@@ -838,16 +936,28 @@ export default function PayrollPage() {
               )}
               {selectedAttendance ? (
                 <div style={{ display: "grid", gap: 16 }}>
-                  <div className="item-meta"><strong>Staff:</strong> {selectedAttendance.userSalon?.user?.name || "-"}</div>
-                  <div className="item-meta"><strong>Date:</strong> {new Date(selectedAttendance.attendanceDate || selectedAttendance.checkInAt).toLocaleDateString()}</div>
-                  <div className="item-meta"><strong>Status:</strong> {selectedAttendance.status}</div>
-                  <div className="item-meta"><strong>Check-In GPS:</strong> {selectedAttendance.checkInLatitude || "-"}, {selectedAttendance.checkInLongitude || "-"}</div>
-                  <div className="item-meta"><strong>Check-Out GPS:</strong> {selectedAttendance.checkOutLatitude || "-"}, {selectedAttendance.checkOutLongitude || "-"}</div>
-                  <div className="item-meta"><strong>Geo Status:</strong> {selectedAttendance.geoStatus}</div>
-                  <div className="item-meta"><strong>Admin Remark:</strong> {selectedAttendance.adminRemark || "None"}</div>
-                  {selectedAttendance.checkInSelfieUrl ? <img src={selectedAttendance.checkInSelfieUrl} alt="Check-in selfie" style={{ width: "100%", borderRadius: 12, border: "1px solid #e2e8f0" }} /> : null}
-                  {selectedAttendance.checkOutSelfieUrl ? <img src={selectedAttendance.checkOutSelfieUrl} alt="Check-out selfie" style={{ width: "100%", borderRadius: 12, border: "1px solid #e2e8f0" }} /> : null}
+                  <div className="item-meta"><strong><User size={12} /> Staff:</strong> {selectedAttendance.userSalon?.user?.name || "-"}</div>
+                  <div className="item-meta"><strong>Branch:</strong> {selectedAttendance.branch?.name || "-"}</div>
+                  <div className="item-meta"><strong><CalendarDays size={12} /> Date:</strong> {new Date(selectedAttendance.attendanceDate || selectedAttendance.checkInAt).toLocaleDateString()}</div>
+                  <div className="item-meta"><strong><CheckCircle2 size={12} /> Status:</strong> <span style={{ padding: "2px 8px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: selectedAttendance.status === "PRESENT" || selectedAttendance.status === "COMPLETED_SHIFT" ? "#dcfce7" : selectedAttendance.status === "LATE" ? "#fef9c3" : selectedAttendance.status === "HALF_DAY" ? "#ffedd5" : selectedAttendance.status === "LEAVE" ? "#ede9fe" : selectedAttendance.status === "WORKING" ? "#e0f2fe" : "#fee2e2", color: selectedAttendance.status === "PRESENT" || selectedAttendance.status === "COMPLETED_SHIFT" ? "#166534" : selectedAttendance.status === "LATE" ? "#854d0e" : selectedAttendance.status === "HALF_DAY" ? "#9a3412" : selectedAttendance.status === "LEAVE" ? "#5b21b6" : selectedAttendance.status === "WORKING" ? "#0369a1" : "#991b1b" }}>{selectedAttendance.status}</span></div>
+                  <div className="item-meta"><strong><LogIn size={12} /> Check-In:</strong> {selectedAttendance.checkInAt ? new Date(selectedAttendance.checkInAt).toLocaleString() : "-"}</div>
+                  <div className="item-meta"><strong><LogOut size={12} /> Check-Out:</strong> {selectedAttendance.checkOutAt ? new Date(selectedAttendance.checkOutAt).toLocaleString() : "-"}</div>
+                  <div className="item-meta"><strong><Clock size={12} /> Worked Hours:</strong> {selectedAttendance.workedMinutes != null ? `${Math.floor(selectedAttendance.workedMinutes / 60)}h ${selectedAttendance.workedMinutes % 60}m` : "-"}</div>
+                  {selectedAttendance.overtimeMinutes > 0 && <div className="item-meta" style={{ color: "#ea580c", fontWeight: 600 }}><strong><Timer size={12} /> Overtime:</strong> {Math.floor(selectedAttendance.overtimeMinutes / 60)}h {selectedAttendance.overtimeMinutes % 60}m</div>}
+                  <div className="item-meta"><strong><MapPin size={12} /> Check-In GPS:</strong> {selectedAttendance.checkInLatitude ? `${Number(selectedAttendance.checkInLatitude).toFixed(4)}, ${Number(selectedAttendance.checkInLongitude).toFixed(4)}` : "Not captured"} {selectedAttendance.checkInAccuracyMeters ? `(${Math.round(selectedAttendance.checkInAccuracyMeters)}m accuracy)` : ""}</div>
+                  <div className="item-meta"><strong><MapPin size={12} /> Check-Out GPS:</strong> {selectedAttendance.checkOutLatitude ? `${Number(selectedAttendance.checkOutLatitude).toFixed(4)}, ${Number(selectedAttendance.checkOutLongitude).toFixed(4)}` : "Not captured"} {selectedAttendance.checkOutAccuracyMeters ? `(${Math.round(selectedAttendance.checkOutAccuracyMeters)}m accuracy)` : ""}</div>
+                  <div className="item-meta"><strong>Geo Status:</strong> {selectedAttendance.geoStatus || "-"}</div>
+                  <div className="item-meta"><strong>Verification:</strong> {selectedAttendance.verificationMethod || "-"}</div>
+                  <div className="item-meta"><strong><FileText size={12} /> Admin Remark:</strong> {selectedAttendance.adminRemark || "None"}</div>
+                  <div className="item-meta"><strong><FileText size={12} /> Note:</strong> {selectedAttendance.note || "None"}</div>
+                  {selectedAttendance.checkInSelfieUrl ? <div><strong style={{ fontSize: 12, color: "#64748b" }}>Check-In Selfie</strong><img src={selectedAttendance.checkInSelfieUrl.startsWith("http") ? selectedAttendance.checkInSelfieUrl : `${api.defaults.baseURL?.replace("/api/v1", "") || ""}${selectedAttendance.checkInSelfieUrl}`} alt="Check-in selfie" style={{ width: "100%", borderRadius: 12, border: "1px solid #e2e8f0", marginTop: 4 }} /></div> : null}
+                  {selectedAttendance.checkOutSelfieUrl ? <div><strong style={{ fontSize: 12, color: "#64748b" }}>Check-Out Selfie</strong><img src={selectedAttendance.checkOutSelfieUrl.startsWith("http") ? selectedAttendance.checkOutSelfieUrl : `${api.defaults.baseURL?.replace("/api/v1", "") || ""}${selectedAttendance.checkOutSelfieUrl}`} alt="Check-out selfie" style={{ width: "100%", borderRadius: 12, border: "1px solid #e2e8f0", marginTop: 4 }} /></div> : null}
 
+                  {!attendanceSettings.allowManualAttendanceEdits ? (
+                    <div style={{ padding: "10px 16px", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 10, fontSize: 13, color: "#92400e" }}>
+                      Manual attendance edits are currently disabled in Attendance Settings. Enable them to make corrections.
+                    </div>
+                  ) : (
                   <form onSubmit={saveManualEdit} style={{ display: "grid", gap: 10, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
                     <h4 style={{ margin: 0 }}>Manual Correction</h4>
                     <input type="date" value={manualEdit.attendanceDate} onChange={(e) => setManualEdit((current) => ({ ...current, attendanceDate: e.target.value }))} />
@@ -865,18 +975,38 @@ export default function PayrollPage() {
                     </select>
                     <input value={manualEdit.note} placeholder="Attendance note" onChange={(e) => setManualEdit((current) => ({ ...current, note: e.target.value }))} />
                     <textarea rows={2} value={manualEdit.adminRemark} placeholder="Admin remark" onChange={(e) => setManualEdit((current) => ({ ...current, adminRemark: e.target.value }))} />
-                    <textarea rows={2} required value={manualEdit.reason} placeholder="Reason for manual correction" onChange={(e) => setManualEdit((current) => ({ ...current, reason: e.target.value }))} />
-                    <button type="submit" disabled={manualSaving}>{manualSaving ? "Saving..." : "Save Manual Update"}</button>
+                    <textarea rows={2} required value={manualEdit.reason} placeholder="Reason for manual correction (minimum 3 characters)" onChange={(e) => setManualEdit((current) => ({ ...current, reason: e.target.value }))} />
+                    <button type="submit" disabled={manualSaving}>{manualSaving ? "Saving..." : <><Save size={12} /> Save Manual Update</>}</button>
                   </form>
+                  )}
 
                   <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
-                    <h4 style={{ marginTop: 0 }}>Audit Log</h4>
+                    <h4 style={{ marginTop: 0 }}><History size={14} /> Audit Log</h4>
                     <div className="list-stack">
                       {(selectedAttendance.auditLogs || []).map((log) => (
-                        <div key={log.id} className="list-item">
-                          <strong>{log.action}</strong>
-                          <div className="item-meta">{log.actorMembership?.user?.name || "Admin"} | {new Date(log.createdAt).toLocaleString()}</div>
-                          <div className="item-meta">{log.metadata?.reason || log.summary || "No extra detail"}</div>
+                        <div key={log.id} className="list-item" style={{ borderLeft: "3px solid #6366f1", paddingLeft: 12 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <strong style={{ fontSize: 13 }}>{log.action?.replace(/_/g, " ")}</strong>
+                            <span className="muted" style={{ fontSize: 11 }}>{new Date(log.createdAt).toLocaleString()}</span>
+                          </div>
+                          <div className="item-meta" style={{ fontSize: 12 }}>{log.actorMembership?.user?.name || "Admin"}</div>
+                          {log.metadata?.reason && <div className="item-meta" style={{ fontSize: 12, fontStyle: "italic" }}>"{log.metadata.reason}"</div>}
+                          {log.metadata?.previousValue && log.metadata?.updatedValue ? (
+                            <div style={{ marginTop: 6, fontSize: 11, background: "#f8fafc", borderRadius: 8, padding: 8, border: "1px solid #e2e8f0" }}>
+                              {Object.keys(log.metadata.updatedValue).filter((key) => {
+                                const oldVal = log.metadata.previousValue[key];
+                                const newVal = log.metadata.updatedValue[key];
+                                return JSON.stringify(oldVal) !== JSON.stringify(newVal);
+                              }).map((key) => (
+                                <div key={key} style={{ marginBottom: 3 }}>
+                                  <span style={{ fontWeight: 700, color: "#475569", textTransform: "uppercase" }}>{key}:</span>{" "}
+                                  <span style={{ color: "#991b1b", textDecoration: "line-through" }}>{typeof log.metadata.previousValue[key] === "object" ? JSON.stringify(log.metadata.previousValue[key]) : String(log.metadata.previousValue[key] ?? "-")}</span>
+                                  {" → "}
+                                  <span style={{ color: "#166534", fontWeight: 600 }}>{typeof log.metadata.updatedValue[key] === "object" ? JSON.stringify(log.metadata.updatedValue[key]) : String(log.metadata.updatedValue[key] ?? "-")}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : log.summary ? <div className="item-meta" style={{ fontSize: 12 }}>{log.summary}</div> : null}
                         </div>
                       ))}
                       {!selectedAttendance.auditLogs?.length && <span className="muted">No manual edits yet.</span>}
@@ -894,22 +1024,37 @@ export default function PayrollPage() {
                 <div className="item-meta">Printable branch-wise daily sheet for the selected date and branch filter.</div>
               </div>
               <div className="badge-row">
-                <button type="button" className="secondary-button" onClick={printAttendanceDaySheet}>Print Sheet</button>
-                <button type="button" className="secondary-button" onClick={() => downloadDaySheetExport("xlsx")}>Daily Excel</button>
-                <button type="button" className="secondary-button" onClick={() => downloadDaySheetExport("pdf")}>Daily PDF</button>
+                <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span className="muted" style={{ fontSize: 12 }}>Date:</span>
+                  <input type="date" value={daySheetDate} onChange={(e) => setDaySheetDate(e.target.value)} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                </label>
+                <button type="button" className="secondary-button" onClick={printAttendanceDaySheet}><Printer size={12} /> Print Sheet</button>
+                <button type="button" className="secondary-button" onClick={() => downloadDaySheetExport("xlsx")}><Download size={12} /> Daily Excel</button>
+                <button type="button" className="secondary-button" onClick={() => downloadDaySheetExport("pdf")}><Download size={12} /> Daily PDF</button>
               </div>
             </div>
             <div className="list-stack">
-              {attendanceDaySheet.map((row) => (
-                <div key={`${row.userSalonId}-${row.status}`} className="list-item">
-                  <strong>{row.staffName}</strong>
-                  <div className="item-meta">{row.status} | {row.branchName || "No branch"}</div>
-                  <div className="item-meta">
-                    {row.checkInAt ? new Date(row.checkInAt).toLocaleString() : "No check-in"}
-                    {row.checkOutAt ? ` - ${new Date(row.checkOutAt).toLocaleString()}` : ""}
+              {attendanceDaySheet.map((row) => {
+                const statusColors = { PRESENT: { bg: "#dcfce7", color: "#166534" }, COMPLETED_SHIFT: { bg: "#dcfce7", color: "#166534" }, LATE: { bg: "#fef9c3", color: "#854d0e" }, HALF_DAY: { bg: "#ffedd5", color: "#9a3412" }, ABSENT: { bg: "#fee2e2", color: "#991b1b" }, LEAVE: { bg: "#ede9fe", color: "#5b21b6" }, WORKING: { bg: "#e0f2fe", color: "#0369a1" } };
+                const sc = statusColors[row.status] || { bg: "#f1f5f9", color: "#475569" };
+                return (
+                  <div key={`${row.userSalonId}-${row.status}`} className="list-item" style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <strong>{row.staffName}</strong>
+                      <div className="item-meta">
+                        <span style={{ display: "inline-block", padding: "1px 8px", borderRadius: 8, fontSize: 11, fontWeight: 700, background: sc.bg, color: sc.color, marginRight: 8 }}>{row.status}</span>
+                        {row.branchName || "No branch"}
+                      </div>
+                      <div className="item-meta">
+                        {row.checkInAt ? new Date(row.checkInAt).toLocaleString() : "No check-in"}
+                        {row.checkOutAt ? ` - ${new Date(row.checkOutAt).toLocaleString()}` : ""}
+                        {row.workedMinutes != null ? ` (${Math.floor(row.workedMinutes / 60)}h ${row.workedMinutes % 60}m)` : ""}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
+              {!attendanceDaySheet.length && <EmptyState title="No day sheet rows" message="Pick a date above and ensure branch filter matches. Staff day sheet will show present, leave, and absent projection for the selected date." />}
               {!attendanceDaySheet.length && <EmptyState title="No day sheet rows" message="Staff day sheet will show present, leave, and absent projection for the selected date." />}
             </div>
           </div>
@@ -933,7 +1078,7 @@ export default function PayrollPage() {
                 <option value="REJECTED">Rejected</option>
               </select>
             </label>
-            <button type="button" className="secondary-button" onClick={() => setFilters((current) => ({ ...current, leaveQ: "", leaveStatus: "" }))}>Reset</button>
+            <button type="button" className="secondary-button" onClick={() => setFilters((current) => ({ ...current, leaveQ: "", leaveStatus: "" }))}><RotateCcw size={12} /> Reset</button>
           </div>
           <div className="list-stack">
             {leaves.map((row) => (
@@ -955,7 +1100,7 @@ export default function PayrollPage() {
               <span className="muted">Search rule name, target type, or note</span>
               <input value={filters.incentiveQ} placeholder="Search rule name, target type, or note" onChange={(e) => setFilters((current) => ({ ...current, incentiveQ: e.target.value }))} />
             </label>
-            <button type="button" className="secondary-button" onClick={() => setFilters((current) => ({ ...current, incentiveQ: "" }))}>Reset</button>
+            <button type="button" className="secondary-button" onClick={() => setFilters((current) => ({ ...current, incentiveQ: "" }))}><RotateCcw size={12} /> Reset</button>
           </div>
           <div className="list-stack">
             {incentives.map((row) => (

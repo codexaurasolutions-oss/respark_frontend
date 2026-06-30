@@ -193,9 +193,9 @@ export default function CustomersPage() {
     setActiveMenuRowId("");
   };
 
-  const openCustomerDetail = async (row) => {
+  const openCustomerDetail = async (row, initialTab = "profile") => {
     setSelectedCustomer(row);
-    setDetailTab("profile");
+    setDetailTab(initialTab);
     setCustomerDetail(null);
     setCustomerDetailLoading(true);
     setShowAssignMembershipModal(false);
@@ -728,7 +728,7 @@ export default function CustomersPage() {
   const handleExport = async (format) => {
     setShowExportMenu(false);
     try {
-      await downloadFromApi(`/owner/customers/export`, { params: { format }, fallbackFilename: `Customers.${format === "csv" ? "csv" : format}` });
+      await downloadFromApi(`/owner/customers/export`, { params: { format, ...(selectedBranchId ? { branchId: selectedBranchId } : {}) }, fallbackFilename: `Customers.${format === "csv" ? "csv" : format}` });
     } catch {
       alert("Could not export customers");
     }
@@ -769,7 +769,7 @@ export default function CustomersPage() {
     setSavingMessage("Creating Customer Profile...");
     setSaving(true);
     try {
-      await api.post("/owner/customers", formData);
+      await api.post("/owner/customers", { ...formData, branchId: selectedBranchId || undefined });
       setShowAddGuest(false);
       setFormData({
         phone: "",
@@ -1514,6 +1514,9 @@ export default function CustomersPage() {
                       </button>
                       {activeMenuRowId === row.id && (
                         <div className="crm-row-menu" ref={actionMenuRef}>
+                          <button onClick={(e) => { e.stopPropagation(); setActiveMenuRowId(""); openCustomerDetail(row, "updateprofile"); }}>
+                            <Edit3 size={16} /> Edit
+                          </button>
                           <button className="danger" onClick={(e) => { e.stopPropagation(); handleDeleteCustomer(row); }} disabled={actionBusy === row.id}>
                             <Trash2 size={16} /> {actionBusy === row.id ? "Working..." : "Delete"}
                           </button>

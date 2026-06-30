@@ -37,14 +37,17 @@ export const BranchProvider = ({ children }) => {
   useEffect(() => {
     if (!auth?.accessToken) return;
     let active = true;
+    let stopped = false;
     setLoading(true);
     api.get("/owner/branches")
       .then((res) => {
-        if (active) setBranches(res.data || []);
+        if (active && !stopped) setBranches(res.data || []);
       })
-      .catch(() => {})
+      .catch((err) => {
+        if (err?.__sessionBlocked || err?.response?.status === 401) stopped = true;
+      })
       .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+    return () => { active = false; stopped = true; };
   }, [auth?.accessToken]);
 
   const selectedBranchName = useMemo(() => {
@@ -53,13 +56,22 @@ export const BranchProvider = ({ children }) => {
     return found?.name || "All Branches";
   }, [branches, selectedBranchId]);
 
+  const refetch = useCallback(async () => {
+    if (!auth?.accessToken) return;
+    try {
+      const res = await api.get("/owner/branches");
+      setBranches(res.data || []);
+    } catch {}
+  }, [auth?.accessToken]);
+
   const value = useMemo(() => ({
     branches,
     selectedBranchId,
     selectedBranchName,
     setSelectedBranchId,
+    refetch,
     loading
-  }), [branches, selectedBranchId, selectedBranchName, setSelectedBranchId, loading]);
+  }), [branches, selectedBranchId, selectedBranchName, setSelectedBranchId, refetch, loading]);
 
   return <BranchCtx.Provider value={value}>{children}</BranchCtx.Provider>;
 };

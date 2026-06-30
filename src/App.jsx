@@ -48,6 +48,7 @@ const MembershipsPage = lazyWithRetry(() => import("./pages/owner/MembershipsPag
 const MyAppointmentsPage = lazyWithRetry(() => import("./pages/owner/MyAppointmentsPage.jsx"));
 const MyCommissionPage = lazyWithRetry(() => import("./pages/owner/MyCommissionPage.jsx"));
 const MyDashboardPage = lazyWithRetry(() => import("./pages/owner/MyDashboardPage.jsx"));
+const MyAttendanceHistoryPage = lazyWithRetry(() => import("./pages/owner/MyAttendanceHistoryPage.jsx"));
 const MyPayrollPage = lazyWithRetry(() => import("./pages/owner/MyPayrollPage.jsx"));
 const MyProfilePage = lazyWithRetry(() => import("./pages/owner/MyProfilePage.jsx"));
 const MySchedulePage = lazyWithRetry(() => import("./pages/owner/MySchedulePage.jsx"));
@@ -107,14 +108,16 @@ const Protected = () => {
   const salonRole = auth.membership?.salonRole || "";
   const can = (key, action = "view") => Array.isArray(perms[key]) && perms[key].includes(action);
   const enabled = (key) => flags[key] !== false;
-  const shouldShowMyWorkspace = salonRole && salonRole !== "SALON_OWNER";
+  const isOwner = salonRole === "SALON_OWNER";
+  const shouldShowMyWorkspace = salonRole && !isOwner;
   const myWorkspaceItems = [
-    can("myDashboard") && { label: "My Dashboard", to: "/admin/my-dashboard" },
-    can("myAppointments") && enabled("appointments") && { label: "My Appointments", to: "/admin/my-appointments" },
-    can("mySchedule") && enabled("appointments") && { label: "My Schedule", to: "/admin/my-schedule" },
-    can("myCommission") && { label: "My Commission", to: "/admin/my-commission" },
-    can("myProfile") && { label: "My Profile", to: "/admin/my-profile" }
-  ].filter(Boolean);
+    { label: "My Dashboard", to: "/admin/my-dashboard" },
+    { label: "My Attendance", to: "/admin/my-attendance" },
+    { label: "My Appointments", to: "/admin/my-appointments" },
+    { label: "My Schedule", to: "/admin/my-schedule" },
+    { label: "My Commission", to: "/admin/my-commission" },
+    { label: "My Profile", to: "/admin/my-profile" }
+  ];
   const groups = [
         {
           label: "Operations",
@@ -265,7 +268,7 @@ const Protected = () => {
           items: myWorkspaceItems
         }]
       : []),
-    ...groups
+    ...(isOwner ? groups : [])
   ];
 
   return (
@@ -326,17 +329,11 @@ const StaffWorkspaceRoute = ({ moduleKey, action = "view", featureKey, element }
     return <AccessNotice title="Staff Workspace Only" message="This area is reserved for staff self-service pages, not the owner workspace." />;
   }
 
-  const permissions = auth.membership?.permissions || {};
   const featureFlags = auth.membership?.featureFlags || {};
-  const allowed = Array.isArray(permissions[moduleKey]) && permissions[moduleKey].includes(action);
   const enabled = featureKey ? featureFlags[featureKey] !== false : true;
 
   if (!enabled) {
     return <AccessNotice title="Module Disabled" message="This module is currently turned off in business settings." />;
-  }
-
-  if (!allowed) {
-    return <AccessNotice title="Access Restricted" message="You are logged in, but this module is not assigned to your current role permissions." />;
   }
 
   return element;
@@ -535,6 +532,7 @@ export default function App() {
           <Route path="/admin/website-editor" element={<OwnerRoute moduleKey="settings" action="edit" element={<WebsiteEditorPage />} />} />
           <Route path="/admin/manage" element={<OwnerRoute moduleKey="settings" action="edit" element={<ManagePage />} />} />
           <Route path="/admin/my-dashboard" element={<StaffWorkspaceRoute moduleKey="myDashboard" element={<MyDashboardPage />} />} />
+          <Route path="/admin/my-attendance" element={<StaffWorkspaceRoute moduleKey="myAttendance" featureKey="attendance" element={<MyAttendanceHistoryPage />} />} />
           <Route path="/admin/my-appointments" element={<StaffWorkspaceRoute moduleKey="myAppointments" featureKey="appointments" element={<MyAppointmentsPage />} />} />
           <Route path="/admin/my-schedule" element={<StaffWorkspaceRoute moduleKey="mySchedule" featureKey="appointments" element={<MySchedulePage />} />} />
           <Route path="/admin/my-commission" element={<StaffWorkspaceRoute moduleKey="myCommission" element={<MyCommissionPage />} />} />

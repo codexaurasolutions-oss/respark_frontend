@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { api } from '../../api/client';
 import EmptyState from '../../components/EmptyState';
 import { formatApiError } from '../../utils/apiError';
+import { useBranch } from '../../context/BranchContext';
 import PageLoader from '../../components/PageLoader';
 import './ServiceHubPage.css';
 
@@ -18,6 +19,7 @@ const DURATION_OPTIONS = [
 ];
 
 export default function ServiceHubPage() {
+  const { selectedBranchId, branches: ctxBranches } = useBranch();
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -63,11 +65,12 @@ export default function ServiceHubPage() {
   const loadData = async () => {
     setLoading(true);
     try {
+      const branchParams = selectedBranchId ? { branchId: selectedBranchId } : {};
       const [catRes, srvRes, branchRes, prodRes] = await Promise.allSettled([
-        api.get('/owner/service-categories'),
-        api.get('/owner/services'),
+        api.get('/owner/service-categories', { params: branchParams }),
+        api.get('/owner/services', { params: branchParams }),
         api.get('/owner/branches'),
-        api.get('/owner/products')
+        api.get('/owner/products', { params: branchParams })
       ]);
       if (catRes.status === "fulfilled") setCategories(catRes.value.data || []);
       else throw catRes.reason;
@@ -84,7 +87,7 @@ export default function ServiceHubPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [selectedBranchId]);
 
   const categoryCounts = useMemo(() => {
     const counts = new Map();
@@ -135,7 +138,7 @@ export default function ServiceHubPage() {
     setEditingId('');
     setSrvForm({
       name: '',
-      branchId: '',
+      branchId: selectedBranchId || '',
       categoryId: selectedCategory || '',
       gender: 'UNISEX',
       price: 0,

@@ -45,8 +45,10 @@ export const SalonSettingsProvider = ({ children }) => {
     }
 
     let active = true;
+    let stopped = false;
 
     const syncSettings = async () => {
+      if (stopped) return;
       try {
         const response = await api.get("/owner/settings");
         if (!active || !response.data) return;
@@ -54,8 +56,10 @@ export const SalonSettingsProvider = ({ children }) => {
         setCurrencyCode(nextCode);
         setSettings(response.data);
         writeSalonSettingsCache(salonId, response.data);
-      } catch {
-        // Keep cached currency if settings fetch fails.
+      } catch (err) {
+        if (err?.__sessionBlocked || err?.response?.status === 401) {
+          stopped = true;
+        }
       }
     };
 
@@ -72,6 +76,7 @@ export const SalonSettingsProvider = ({ children }) => {
     window.addEventListener(SETTINGS_UPDATED_EVENT, onSettingsUpdated);
     return () => {
       active = false;
+      stopped = true;
       window.removeEventListener(SETTINGS_UPDATED_EVENT, onSettingsUpdated);
     };
   }, [auth, salonId]);

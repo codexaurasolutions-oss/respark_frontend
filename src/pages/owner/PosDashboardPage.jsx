@@ -6,6 +6,7 @@ import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
 import PosReceipt from "../../components/PosReceipt";
 import { useAuth } from "../../context/AuthContext";
+import { useBranch } from "../../context/BranchContext";
 import { useSalonSettings } from "../../context/SalonSettingsContext";
 import { downloadFromApi } from "../../utils/download";
 import { formatApiError } from "../../utils/apiError";
@@ -39,6 +40,7 @@ const toAmount = (value, fallback = 0) => {
 
 export default function PosDashboardPage() {
   const { auth } = useAuth();
+  const { selectedBranchId } = useBranch();
   const { formatMoney, currencyCode } = useSalonSettings();
   const location = useLocation();
   const navigate = useNavigate();
@@ -214,9 +216,10 @@ export default function PosDashboardPage() {
 
   const loadPosContext = useCallback(async () => {
     try {
+      const branchParams = selectedBranchId ? { branchId: selectedBranchId } : {};
       const [contextResponse, categoryResponse, settingsResponse] = await Promise.all([
-        api.get("/owner/pos/context"),
-        api.get("/owner/service-categories"),
+        api.get("/owner/pos/context", { params: branchParams }),
+        api.get("/owner/service-categories", { params: branchParams }),
         api.get("/owner/settings")
       ]);
       setPosContext({
@@ -227,17 +230,18 @@ export default function PosDashboardPage() {
     } catch (error) {
       console.error(error);
     }
-  }, []);
+  }, [selectedBranchId]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const queryParams = { startDate, endDate };
       if (statusFilter) queryParams.status = statusFilter;
+      if (selectedBranchId) queryParams.branchId = selectedBranchId;
 
       const [invoiceResponse, summaryResponse] = await Promise.all([
         api.get("/owner/invoices", { params: queryParams }),
-        api.get("/owner/invoices/reports/summary", { params: { startDate, endDate } })
+        api.get("/owner/invoices/reports/summary", { params: { startDate, endDate, ...(selectedBranchId ? { branchId: selectedBranchId } : {}) } })
       ]);
 
       setRows(invoiceResponse.data || []);
@@ -257,7 +261,7 @@ export default function PosDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [endDate, loadInvoiceDetail, params.id, startDate, statusFilter]);
+  }, [endDate, loadInvoiceDetail, params.id, startDate, statusFilter, selectedBranchId]);
 
   useEffect(() => {
     void load();

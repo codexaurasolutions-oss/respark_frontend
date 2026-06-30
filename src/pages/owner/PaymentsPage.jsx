@@ -1,35 +1,46 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import ModuleTabs from "../../components/ModuleTabs";
 import PageLoader from "../../components/PageLoader";
 import { useBranch } from '../../context/BranchContext';
+import { Eye, RotateCcw } from "lucide-react";
+import { formatApiError } from "../../utils/apiError";
 
 export default function PaymentsPage() {
   const { selectedBranchId } = useBranch();
+  const navigate = useNavigate();
   const [tab, setTab] = useState("summary");
   const [rows, setRows] = useState([]);
   const [filters, setFilters] = useState({ q: "", mode: "", type: "" });
   const [refundForm, setRefundForm] = useState({ invoiceId: "", amount: 0, note: "" });
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState({ error: "", success: "" });
   const [loading, setLoading] = useState(true);
+  const [refundLoading, setRefundLoading] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      const params = {
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
+        ...(filters.q ? { q: filters.q } : {}),
+        ...(filters.mode ? { mode: filters.mode } : {}),
+        ...(filters.type ? { type: filters.type } : {})
+      };
+      const response = await api.get("/owner/payments", { params });
+      setRows(response.data);
+    } catch (err) {
+      setStatus({ error: formatApiError(err, "Could not load payments"), success: "" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
-    const params = {
-      ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
-      ...(filters.q ? { q: filters.q } : {}),
-      ...(filters.mode ? { mode: filters.mode } : {}),
-      ...(filters.type ? { type: filters.type } : {})
-    };
-    api.get("/owner/payments", { params }).then((response) => {
-      if (!active) return;
-      setRows(response.data);
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
+    setLoading(true);
+    fetchData().then(() => {});
+    return () => { active = false; };
   }, [selectedBranchId, filters]);
 
   const summary = useMemo(() => rows.reduce((acc, row) => {
@@ -37,6 +48,28 @@ export default function PaymentsPage() {
     acc[row.mode] = (acc[row.mode] || 0) + Number(row.amount || 0);
     return acc;
   }, { total: 0 }), [rows]);
+
+  const handleRefund = async (e) => {
+    e.preventDefault();
+    const amount = Number(refundForm.amount);
+    if (!refundForm.invoiceId || !amount || amount <= 0) {
+      setStatus({ error: "Please enter a valid invoice ID and refund amount.", success: "" });
+      return;
+    }
+    try {
+      setRefundLoading(true);
+      setStatus({ error: "", success: "" });
+      await api.post("/owner/payments/refund", { ...refundForm, amount });
+      setStatus({ error: "", success: "Refund posted successfully." });
+      setTimeout(() => setStatus({ error: "", success: "" }), 4000);
+      setRefundForm({ invoiceId: "", amount: 0, note: "" });
+      await fetchData();
+    } catch (err) {
+      setStatus({ error: formatApiError(err, "Could not post refund"), success: "" });
+    } finally {
+      setRefundLoading(false);
+    }
+  };
 
   return (
     <div className="page-shell">
@@ -88,6 +121,9 @@ export default function PaymentsPage() {
         }
       />
 
+      {status.error && <div className="panel-card"><p className="error-text">{status.error}</p></div>}
+      {status.success && <div className="panel-card"><p className="success-text">{status.success}</p></div>}
+
       <div className="stats-grid" style={{ marginBottom: 18 }}>
         <div className="stat-card"><div className="stat-label">Payments</div><div className="stat-value">{rows.length}</div></div>
         <div className="stat-card"><div className="stat-label">Total Collected</div><div className="stat-value">{summary.total.toFixed(2)}</div></div>
@@ -101,30 +137,21 @@ export default function PaymentsPage() {
 
       {(tab === "summary" || tab === "refunds") && <div className="panel-card" style={{ marginBottom: 18 }}>
         <h3>Refund Invoice</h3>
-        <form onSubmit={async (event) => {
-          event.preventDefault();
-          await api.post("/owner/payments/refund", { ...refundForm, amount: Number(refundForm.amount) });
-          setStatus("Refund posted.");
-          setRefundForm({ invoiceId: "", amount: 0, note: "" });
-          const params = selectedBranchId ? { branchId: selectedBranchId } : {};
-          const paymentResponse = await api.get("/owner/payments", { params });
-          setRows(paymentResponse.data);
-        }} className="form-grid">
+        <form onSubmit={handleRefund} className="form-grid">
           <label>
               <span className="muted">Invoice ID</span>
               <input value={refundForm.invoiceId} placeholder="Invoice ID" onChange={(event) => setRefundForm((current) => ({ ...current, invoiceId: event.target.value }))} />
             </label>
           <label>
               <span className="muted">Refund amount</span>
-              <input type="number" min="0" value={refundForm.amount} placeholder="Refund amount" onChange={(event) => setRefundForm((current) => ({ ...current, amount: event.target.value }))} />
+              <input type="number" min="0.01" step="0.01" value={refundForm.amount} placeholder="Refund amount" onChange={(event) => setRefundForm((current) => ({ ...current, amount: event.target.value }))} />
             </label>
           <label>
               <span className="muted">Refund note</span>
               <input value={refundForm.note} placeholder="Refund note" onChange={(event) => setRefundForm((current) => ({ ...current, note: event.target.value }))} />
             </label>
-          <button>Post Refund</button>
+          <button disabled={refundLoading}>{refundLoading ? "Posting..." : "Post Refund"}</button>
         </form>
-        {status && <p className="success-text">{status}</p>}
       </div>}
 
       <div className="panel-card">
@@ -141,6 +168,7 @@ export default function PaymentsPage() {
                 <th>Amount</th>
                 <th>Note</th>
                 <th>Date</th>
+                <th style={{ textAlign: "right" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -156,6 +184,28 @@ export default function PaymentsPage() {
                   <td>{Number(row.amount || 0).toFixed(2)}</td>
                   <td>{row.note || "-"}</td>
                   <td>{new Date(row.createdAt).toLocaleString()}</td>
+                  <td style={{ textAlign: "right" }}>
+                    <div style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+                      {row.invoiceId && (
+                        <button
+                          title="View Invoice"
+                          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6, background: "#eff6ff", border: "1px solid #bfdbfe", color: "#2563eb", cursor: "pointer" }}
+                          onClick={() => navigate(`/admin/invoices/${row.invoiceId}`)}
+                        >
+                          <Eye size={14} />
+                        </button>
+                      )}
+                      {tab !== "audit" && row.type !== "REFUND" && row.invoiceId && (
+                        <button
+                          title="Refund this payment"
+                          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6, background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", cursor: "pointer" }}
+                          onClick={() => { setRefundForm({ invoiceId: row.invoiceId, amount: Number(row.amount || 0), note: `Refund for ${row.invoice?.invoiceNumber || row.id}` }); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                        >
+                          <RotateCcw size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

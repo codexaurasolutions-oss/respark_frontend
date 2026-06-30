@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { api } from "../../api/client";
+import { useBranch } from "../../context/BranchContext";
 import EmptyState from "../../components/EmptyState";
 import IndianPhoneInput from "../../components/IndianPhoneInput";
 import ModuleTabs from "../../components/ModuleTabs";
@@ -62,6 +63,7 @@ const emptyForm = {
 
 export default function EnquiriesPage() {
   const location = useLocation();
+  const { selectedBranchId } = useBranch();
   const [rows, setRows] = useState([]);
   const [followUps, setFollowUps] = useState([]);
   const [report, setReport] = useState(null);
@@ -113,10 +115,11 @@ export default function EnquiriesPage() {
     try {
       setLoading(true);
       const params = {};
+      if (selectedBranchId) params.branchId = selectedBranchId;
       const [listResponse, reportResponse, followUpResponse] = await Promise.all([
         api.get("/owner/enquiries", { params }),
-        api.get("/owner/enquiries/reports"),
-        api.get("/owner/enquiries/follow-ups").catch(() => ({ data: [] }))
+        api.get("/owner/enquiries/reports", { params }),
+        api.get("/owner/enquiries/follow-ups", { params }).catch(() => ({ data: [] }))
       ]);
       
       setRows(listResponse.data || []);
@@ -127,12 +130,12 @@ export default function EnquiriesPage() {
       setStatus({ error: formatApiError(error, "Could not load enquiries module"), success: "" });
       setLoading(false);
     }
-  }, []);
+  }, [selectedBranchId]);
 
   useEffect(() => {
     void loadOptions();
     void load();
-  }, [load, loadOptions]);
+  }, [load, loadOptions, selectedBranchId]);
 
   // Handle Save
   const save = async (event) => {

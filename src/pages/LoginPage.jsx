@@ -26,8 +26,13 @@ export default function LoginPage() {
         password: form.password,
         loginAccessToken: access || undefined
       };
-      await login(payload);
-      nav("/admin/dashboard");
+      const result = await login(payload);
+      const role = result.membership?.salonRole;
+      if (role && role !== "SALON_OWNER") {
+        nav("/admin/my-dashboard");
+      } else {
+        nav("/admin/pos");
+      }
     } catch (error) {
       setErr(formatApiError(error, "Login failed"));
     } finally {

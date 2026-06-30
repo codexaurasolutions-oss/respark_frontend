@@ -6,7 +6,7 @@ import PageLoader from "../../components/PageLoader";
 import { useAuth } from "../../context/AuthContext";
 import { useSalonSettings } from "../../context/SalonSettingsContext";
 import { getMyWorkspaceTabs } from "../../utils/myWorkspaceTabs";
-import { Wallet, Landmark, TrendingUp, DollarSign, CalendarCheck, TrendingDown, CheckCircle2, Sparkles } from "lucide-react";
+import { Wallet, Landmark, TrendingUp, DollarSign, CalendarCheck, TrendingDown, CheckCircle2, Sparkles, Clock, MapPin } from "lucide-react";
 
 export default function MyPayrollPage() {
   const { auth } = useAuth();
@@ -15,26 +15,31 @@ export default function MyPayrollPage() {
     summary: { itemCount: 0, totalBaseSalary: 0, totalCommission: 0, totalIncentive: 0, totalAdjustments: 0, totalDeductions: 0, totalNet: 0 },
     items: []
   });
+  const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
   const myTabs = getMyWorkspaceTabs(auth?.membership?.permissions || {});
   const money = (value) => formatMoney(value || 0, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   useEffect(() => {
-    api.get("/owner/my-payroll").then((response) => {
+    Promise.all([
+      api.get("/owner/my-payroll").catch(() => ({ data: { summary: {}, items: [] } })),
+      api.get("/owner/my-attendance").catch(() => ({ data: [] }))
+    ]).then(([payrollRes, attendanceRes]) => {
       setData({
         summary: {
-          itemCount: response.data?.summary?.itemCount || 0,
-          totalBaseSalary: response.data?.summary?.totalBaseSalary || 0,
-          totalCommission: response.data?.summary?.totalCommission || 0,
-          totalIncentive: response.data?.summary?.totalIncentive || 0,
-          totalAdjustments: response.data?.summary?.totalAdjustments || 0,
-          totalDeductions: response.data?.summary?.totalDeductions || 0,
-          totalNet: response.data?.summary?.totalNet || 0
+          itemCount: payrollRes.data?.summary?.itemCount || 0,
+          totalBaseSalary: payrollRes.data?.summary?.totalBaseSalary || 0,
+          totalCommission: payrollRes.data?.summary?.totalCommission || 0,
+          totalIncentive: payrollRes.data?.summary?.totalIncentive || 0,
+          totalAdjustments: payrollRes.data?.summary?.totalAdjustments || 0,
+          totalDeductions: payrollRes.data?.summary?.totalDeductions || 0,
+          totalNet: payrollRes.data?.summary?.totalNet || 0
         },
-        items: response.data?.items || []
+        items: payrollRes.data?.items || []
       });
+      setAttendance(Array.isArray(attendanceRes.data) ? attendanceRes.data : []);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   return (
@@ -95,6 +100,34 @@ export default function MyPayrollPage() {
             <div className="stat-box" style={{ background: "#fff1f2", borderColor: "#fecdd3" }}>
               <span className="label" style={{ display: "flex", alignItems: "center", gap: 6, color: "#e11d48" }}><TrendingDown size={14} /> Deductions</span>
               <span className="value" style={{ color: "#9f1239" }}>- {money(data.summary.totalDeductions)}</span>
+            </div>
+          </div>
+
+          <div className="p-card" style={{ padding: 0, overflow: "hidden", marginBottom: 24 }}>
+            <div style={{ padding: 24, borderBottom: "1px solid #e2e8f0", background: "#f8fafc" }}>
+              <h3 style={{ margin: 0, fontSize: 18, color: "#0f172a", display: "flex", alignItems: "center", gap: 10 }}><Clock size={20} color="#0ea5e9" /> Recent Attendance</h3>
+            </div>
+            <div style={{ padding: 24 }}>
+              {attendance.slice(0, 14).map((row) => (
+                <div key={row.id} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 0", borderBottom: "1px solid #f1f5f9" }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: row.status === "PRESENT" || row.status === "COMPLETED_SHIFT" ? "#dcfce7" : row.status === "LATE" ? "#fef9c3" : row.status === "HALF_DAY" ? "#ffedd5" : row.status === "LEAVE" ? "#ede9fe" : row.status === "WORKING" ? "#e0f2fe" : row.status === "ABSENT" ? "#fee2e2" : "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <CalendarCheck size={18} color={row.status === "PRESENT" || row.status === "COMPLETED_SHIFT" ? "#16a34a" : row.status === "LATE" ? "#ca8a04" : row.status === "HALF_DAY" ? "#ea580c" : row.status === "LEAVE" ? "#7c3aed" : row.status === "WORKING" ? "#0ea5e9" : row.status === "ABSENT" ? "#e11d48" : "#94a3b8"} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <strong style={{ fontSize: 14 }}>{new Date(row.attendanceDate || row.checkInAt).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</strong>
+                      <span style={{ padding: "2px 8px", background: row.status === "PRESENT" || row.status === "COMPLETED_SHIFT" ? "#dcfce7" : row.status === "LATE" ? "#fef9c3" : row.status === "HALF_DAY" ? "#ffedd5" : row.status === "LEAVE" ? "#ede9fe" : row.status === "WORKING" ? "#e0f2fe" : row.status === "ABSENT" ? "#fee2e2" : "#f1f5f9", color: row.status === "PRESENT" || row.status === "COMPLETED_SHIFT" ? "#166534" : row.status === "LATE" ? "#854d0e" : row.status === "HALF_DAY" ? "#9a3412" : row.status === "LEAVE" ? "#5b21b6" : row.status === "WORKING" ? "#0369a1" : row.status === "ABSENT" ? "#991b1b" : "#475569", borderRadius: 8, fontSize: 11, fontWeight: 700 }}>{row.status}</span>
+                    </div>
+                    <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
+                      {row.checkInAt ? `In: ${new Date(row.checkInAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                      {row.checkOutAt ? ` → Out: ${new Date(row.checkOutAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                    </div>
+                    {row.workedMinutes != null && <div style={{ fontSize: 12, color: "#0ea5e9", fontWeight: 600, marginTop: 2 }}>Worked: {Math.floor(row.workedMinutes / 60)}h {row.workedMinutes % 60}m</div>}
+                    {row.branch?.name && <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}><MapPin size={10} style={{ display: "inline" }} /> {row.branch.name}</div>}
+                  </div>
+                </div>
+              ))}
+              {!attendance.length && <EmptyState title="No attendance records" message="Your check-in and check-out history will appear here." />}
             </div>
           </div>
 

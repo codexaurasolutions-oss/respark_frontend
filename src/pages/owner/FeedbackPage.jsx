@@ -15,10 +15,11 @@ export default function FeedbackPage() {
   const [filters, setFilters] = useState({ status: "" });
   const [status, setStatus] = useState({ error: "", success: "" });
   const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState(null);
 
-  const mode = location.pathname.includes("/reports")
+  const mode = location.pathname.endsWith("/feedback/reports")
     ? "reports"
-    : location.pathname.includes("/settings")
+    : location.pathname.endsWith("/feedback/settings")
       ? "settings"
       : "feedback";
 
@@ -28,13 +29,16 @@ export default function FeedbackPage() {
         ...(filters.status ? { status: filters.status } : {}),
         ...(selectedBranchId ? { branchId: selectedBranchId } : {})
       };
-      const [listResponse, reportResponse, settingsResponse] = await Promise.all([
+      const [listResult, reportResult, settingsResult] = await Promise.allSettled([
         api.get("/owner/feedback", { params }),
         api.get("/owner/feedback/reports", { params }),
         api.get("/owner/feedback/settings")
       ]);
-      setRows(listResponse.data || []);
-      setReport({ ...(reportResponse.data || {}), settings: settingsResponse.data || {} });
+      if (listResult.status === "fulfilled") setRows(listResult.value.data || []);
+      if (reportResult.status === "fulfilled") {
+        const settings = settingsResult.status === "fulfilled" ? settingsResult.value.data || {} : {};
+        setReport({ ...(reportResult.value.data || {}), settings });
+      }
       setLoading(false);
     } catch (error) {
       setStatus({ error: formatApiError(error, "Could not load feedback module"), success: "" });
@@ -49,12 +53,49 @@ export default function FeedbackPage() {
     return () => clearTimeout(timeoutId);
   }, [load]);
 
-  const markReviewed = async (id) => {
+  const updateStatus = async (id, newStatus) => {
     try {
-      await api.patch(`/owner/feedback/${id}/status`, { status: "REVIEWED" });
+      setProcessingId(id);
+      setStatus({ error: "", success: "" });
+      await api.patch(`/owner/feedback/${id}/status`, { status: newStatus });
+      setStatus({ error: "", success: `Feedback marked as ${newStatus.toLowerCase()}.` });
+      setTimeout(() => setStatus({ error: "", success: "" }), 3000);
       await load();
     } catch (error) {
       setStatus({ error: formatApiError(error, "Could not update feedback"), success: "" });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const deleteFeedback = async (id) => {
+    if (!window.confirm("Delete this feedback entry?")) return;
+    try {
+      setProcessingId(id);
+      setStatus({ error: "", success: "" });
+      await api.delete(`/owner/feedback/${id}`);
+      setStatus({ error: "", success: "Feedback deleted." });
+      setTimeout(() => setStatus({ error: "", success: "" }), 3000);
+      await load();
+    } catch (error) {
+      setStatus({ error: formatApiError(error, "Could not delete feedback"), success: "" });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const getVisibleButtons = (currentStatus) => {
+    switch (currentStatus) {
+      case "NEW":
+        return { reviewed: true, contacted: true, resolved: true };
+      case "REVIEWED":
+        return { reviewed: false, contacted: true, resolved: true };
+      case "CONTACTED":
+        return { reviewed: false, contacted: false, resolved: true };
+      case "RESOLVED":
+        return { reviewed: false, contacted: false, resolved: false };
+      default:
+        return { reviewed: true, contacted: true, resolved: true };
     }
   };
 
@@ -85,21 +126,43 @@ export default function FeedbackPage() {
         )}
       />
       {status.error && <div className="panel-card"><p className="error-text">{status.error}</p></div>}
+      {status.success && <div className="panel-card"><p className="success-text">{status.success}</p></div>}
 
       {mode === "feedback" && (
         <div className="panel-card">
           <h3>Feedback Inbox</h3>
           {loading ? <PageLoader compact title="Loading feedback inbox" message="Preparing ratings, branch filters, and customer comments for review." /> : null}
           <div className="list-stack">
-            {rows.map((row) => (
-              <div key={row.id} className="list-item">
-                <strong>{row.customer?.name || "Customer"} | Rating {row.rating}/5</strong>
-                <div className="item-meta">{row.status} | {row.message || "No comment"}</div>
-                <div className="inline-actions" style={{ marginTop: 10 }}>
-                  <button type="button" className="secondary-button" onClick={() => markReviewed(row.id)}>Mark Reviewed</button>
+            {rows.map((row) => {
+              const buttons = getVisibleButtons(row.status);
+              const isBusy = processingId === row.id;
+              return (
+                <div key={row.id} className="list-item">
+                  <strong>{row.customer?.name || "Customer"} | Rating {row.rating}/5</strong>
+                  <div className="item-meta">{row.status} | {row.message || "No comment"}</div>
+                  <div className="inline-actions" style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {buttons.reviewed && (
+                      <button type="button" className="secondary-button" disabled={isBusy} onClick={() => updateStatus(row.id, "REVIEWED")}>
+                        {isBusy ? "..." : "Mark Reviewed"}
+                      </button>
+                    )}
+                    {buttons.contacted && (
+                      <button type="button" className="secondary-button" disabled={isBusy} onClick={() => updateStatus(row.id, "CONTACTED")}>
+                        {isBusy ? "..." : "Mark Contacted"}
+                      </button>
+                    )}
+                    {buttons.resolved && (
+                      <button type="button" className="secondary-button" style={{ background: "#16a34a", color: "#fff", border: "none" }} disabled={isBusy} onClick={() => updateStatus(row.id, "RESOLVED")}>
+                        {isBusy ? "..." : "Mark Resolved"}
+                      </button>
+                    )}
+                    <button type="button" className="secondary-button" style={{ background: "#dc2626", color: "#fff", border: "none" }} disabled={isBusy} onClick={() => deleteFeedback(row.id)}>
+                      {isBusy ? "..." : "Delete"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {!loading && !rows.length && <EmptyState title="No feedback yet" message="Customer ratings and review responses will appear here once feedback starts coming in." />}
           </div>
         </div>

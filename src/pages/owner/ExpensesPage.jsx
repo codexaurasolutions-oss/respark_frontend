@@ -50,6 +50,7 @@ export default function ExpensesPage() {
   const [accountInjections, setAccountInjections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState({ error: "", success: "" });
+  const [approvingId, setApprovingId] = useState(null);
 
   // Filters & selection
   const [filters, setFilters] = useState({
@@ -93,7 +94,7 @@ export default function ExpensesPage() {
         api.get("/owner/expenses", { params: branchParams }),
         api.get("/owner/expense-categories", { params: branchParams }),
         api.get("/owner/payments", { params: branchParams }).catch(() => ({ data: [] })),
-        api.get("/owner/expenses/accounts").catch(() => ({ data: { injections: [] } }))
+        api.get("/owner/expenses/accounts", { params: branchParams }).catch(() => ({ data: { injections: [] } }))
       ]);
 
       setRows(expenseRes.data || []);
@@ -300,7 +301,7 @@ export default function ExpensesPage() {
         paymentMode: form.paymentMode,
         notes: form.notes || null,
         categoryId: form.categoryId || null,
-        branchId: form.branchId || null
+        branchId: form.branchId || selectedBranchId || null
       };
 
       if (editingExpenseId) {
@@ -354,23 +355,29 @@ export default function ExpensesPage() {
   // Approve/Reject Expense Actions
   const handleApproveExpense = async (id) => {
     try {
+      setApprovingId(id);
       await api.patch(`/owner/expenses/${id}/approve`, { approvalNote: "Approved via dashboard" });
       setStatus({ error: "", success: "Expense approved successfully!" });
       setTimeout(() => setStatus({ error: "", success: "" }), 3000);
       await loadData();
     } catch (err) {
       setStatus({ error: formatApiError(err, "Could not approve expense"), success: "" });
+    } finally {
+      setApprovingId(null);
     }
   };
 
   const handleRejectExpense = async (id) => {
     try {
+      setApprovingId(id);
       await api.patch(`/owner/expenses/${id}/reject`, { approvalNote: "Rejected via dashboard" });
-      setStatus({ error: "", success: "Expense status updated to Rejected" });
+      setStatus({ error: "", success: "Expense rejected successfully!" });
       setTimeout(() => setStatus({ error: "", success: "" }), 3000);
       await loadData();
     } catch (err) {
       setStatus({ error: formatApiError(err, "Could not reject expense"), success: "" });
+    } finally {
+      setApprovingId(null);
     }
   };
 
@@ -956,7 +963,7 @@ export default function ExpensesPage() {
                     <button className="blue-btn-secondary" onClick={loadData}>
                       <Search size={14} /> Show Expenses
                     </button>
-                    <button className="blue-btn" onClick={() => { setEditingExpenseId(null); setForm(emptyForm); setShowAddModal(true); }}>
+                    <button className="blue-btn" onClick={() => { setEditingExpenseId(null); setForm({ ...emptyForm, branchId: selectedBranchId || "" }); setShowAddModal(true); }}>
                       <Plus size={16} /> Add Expenses
                     </button>
                   </div>
@@ -972,6 +979,7 @@ export default function ExpensesPage() {
                         <th>Title</th>
                         <th>Amount</th>
                         <th>Payment Mode</th>
+                        <th>Status</th>
                         <th style={{ textAlign: "right" }}>Actions</th>
                       </tr>
                     </thead>
@@ -988,8 +996,39 @@ export default function ExpensesPage() {
                             <td>{row.title}</td>
                             <td style={{ fontWeight: 700, fontFamily: "monospace" }}>{formatMoney(row.amount || 0)}</td>
                             <td style={{ fontWeight: 600, fontSize: 12 }}>{row.paymentMode || "CASH"}</td>
+                            <td>
+                              <span style={{
+                                padding: "3px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600,
+                                background: row.status === "APPROVED" ? "#dcfce7" : row.status === "REJECTED" ? "#fef2f2" : row.status === "PAID" ? "#dbeafe" : "#fef9c3",
+                                color: row.status === "APPROVED" ? "#166534" : row.status === "REJECTED" ? "#991b1b" : row.status === "PAID" ? "#1e40af" : "#854d0e"
+                              }}>
+                                {row.status || "PENDING"}
+                              </span>
+                            </td>
                             <td style={{ textAlign: "right" }}>
-                              <div style={{ display: "inline-flex", gap: 6 }}>
+                              <div style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                                {canApproveExpenses && row.status === "PENDING" && (
+                                  <>
+                                    <button 
+                                      className="blue-btn" 
+                                      style={{ padding: "4px 8px", borderRadius: 4, background: "#16a34a" }} 
+                                      onClick={() => handleApproveExpense(row.id)}
+                                      disabled={approvingId === row.id}
+                                      title="Approve"
+                                    >
+                                      {approvingId === row.id ? "..." : <Check size={14} />}
+                                    </button>
+                                    <button 
+                                      className="blue-btn" 
+                                      style={{ padding: "4px 8px", borderRadius: 4, background: "#ea580c" }} 
+                                      onClick={() => handleRejectExpense(row.id)}
+                                      disabled={approvingId === row.id}
+                                      title="Reject"
+                                    >
+                                      {approvingId === row.id ? "..." : <X size={14} />}
+                                    </button>
+                                  </>
+                                )}
                                 <button 
                                   className="blue-btn" 
                                   style={{ padding: "4px 8px", borderRadius: 4 }} 
@@ -1013,7 +1052,7 @@ export default function ExpensesPage() {
                       })}
                       {filteredExpenses.length === 0 && (
                         <tr>
-                          <td colSpan={6} style={{ padding: 40, textAlign: "center" }}>
+                          <td colSpan={7} style={{ padding: 40, textAlign: "center" }}>
                             <EmptyState 
                               title="No Expenses Recorded" 
                               message="Adjust filters or click 'Add Expenses' to record standard expenses." 
@@ -1389,20 +1428,6 @@ export default function ExpensesPage() {
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label">Branch Store</label>
-                    <select 
-                      className="filter-select"
-                      style={{ width: "100%" }}
-                      value={form.branchId}
-                      onChange={(e) => setForm({ ...form, branchId: e.target.value })}
-                    >
-                      <option value="">Select Store Branch</option>
-                      {branches.map(b => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
-                  </div>
                 </div>
 
                 <div className="form-group" style={{ margin: 0 }}>

@@ -10,6 +10,12 @@ let updateSession = () => {};
 let clearSession = () => {};
 let refreshPromise = null;
 
+let sessionBlocked = false;
+
+export const unblockSession = () => {
+  sessionBlocked = false;
+};
+
 export const setToken = (token) => {
   if (token) api.defaults.headers.common.Authorization = `Bearer ${token}`;
   else delete api.defaults.headers.common.Authorization;
@@ -22,6 +28,12 @@ export const setAuthSessionHandlers = ({ getCurrentSession, onRefreshSuccess, on
 };
 
 api.interceptors.request.use((config) => {
+  const url = config.url || "";
+  const isAuthEndpoint = url.includes("/auth/login") || url.includes("/auth/register") || url.includes("/auth/forgot-password") || url.includes("/auth/reset-password");
+  if (sessionBlocked && !isAuthEndpoint) {
+    return Promise.reject(Object.assign(new Error("Session expired"), { __sessionBlocked: true }));
+  }
+
   const session = getSession?.();
   const accessToken = session?.accessToken;
   config.headers = config.headers || {};
@@ -38,14 +50,23 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    if (error?.__sessionBlocked) {
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config;
     if (!error.response || error.response.status !== 401 || originalRequest?._retry) {
+      if (error.response?.status === 401 && !originalRequest?._retry) {
+        sessionBlocked = true;
+        clearSession?.();
+      }
       return Promise.reject(error);
     }
 
     const session = getSession?.();
     const refreshToken = session?.refreshToken;
     if (!refreshToken) {
+      sessionBlocked = true;
       clearSession?.();
       return Promise.reject(error);
     }
@@ -65,6 +86,7 @@ api.interceptors.response.use(
       return api(originalRequest);
     } catch (refreshError) {
       refreshPromise = null;
+      sessionBlocked = true;
       clearSession?.();
       return Promise.reject(refreshError);
     }

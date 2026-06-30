@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState } from "react";
-import { api, setAuthSessionHandlers, setToken } from "../api/client";
+import { api, setAuthSessionHandlers, setToken, unblockSession } from "../api/client";
 
 const AuthCtx = createContext(null);
 const STORAGE_KEY = "respark_auth";
@@ -28,6 +28,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (payload) => {
     const { data } = await api.post("/auth/login", payload);
     const state = { ...data, salonId: data.membership?.salonId || null };
+    unblockSession();
     persistState(state);
     return data;
   };

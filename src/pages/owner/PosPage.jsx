@@ -253,37 +253,58 @@ export default function PosPage() {
   };
 
   const applyPackageService = async (customerPkg, serviceEntry) => {
-    const matchedItemIndex = form.items.findIndex(item =>
-      (item.serviceId === serviceEntry.serviceId || item.serviceId === serviceEntry.service?.id) && Number(item.unitPrice || 0) > 0
-    );
-    if (matchedItemIndex === -1) {
-      setToastMessage({ type: "error", title: "Service Not Found", message: `"${serviceEntry.service?.name || serviceEntry.serviceId}" not found in cart or already free.` });
-      return;
-    }
-    const remaining = (serviceEntry.sessions || 0) - (serviceEntry.sessionsUsed || 0);
+    const svcId = serviceEntry.serviceId || serviceEntry.service?.id;
+    const remaining = (serviceEntry.sessions || 0) - (serviceEntry.sessionsUsed || 0) - form.packageRedemptions.filter(r => r.customerPackageId === customerPkg.id && r.serviceId === svcId).length;
     if (remaining <= 0) {
       setToastMessage({ type: "error", title: "No Sessions Left", message: `No remaining sessions for "${serviceEntry.service?.name || serviceEntry.serviceId}".` });
       return;
     }
-    const item = form.items[matchedItemIndex];
-    const discountAmt = Number(item.unitPrice || 0);
-    const nextItems = [...form.items];
-    nextItems[matchedItemIndex] = {
-      ...nextItems[matchedItemIndex],
-      unitPrice: 0,
-      originalUnitPrice: Number(item.originalUnitPrice || item.unitPrice || 0),
-      discountPct: 0,
-      discountAmt: discountAmt
-    };
+
+    const svcObj = serviceEntry.service || {};
+    const matchedItemIndex = form.items.findIndex(item => item.serviceId === svcId);
+    let nextItems = [...form.items];
+
+    if (matchedItemIndex >= 0) {
+      const item = form.items[matchedItemIndex];
+      if (Number(item.unitPrice || 0) <= 0) {
+        setToastMessage({ type: "info", title: "Already Applied", message: `"${svcObj.name || serviceEntry.serviceId}" is already free.` });
+        return;
+      }
+      const discountAmt = Number(item.unitPrice || 0);
+      nextItems[matchedItemIndex] = {
+        ...nextItems[matchedItemIndex],
+        unitPrice: 0,
+        originalUnitPrice: Number(item.originalUnitPrice || item.unitPrice || 0),
+        discountPct: 0,
+        discountAmt: discountAmt
+      };
+    } else {
+      nextItems = [
+        ...form.items,
+        {
+          itemType: "SERVICE",
+          serviceId: svcId,
+          staffUserId: "",
+          qty: 1,
+          unitPrice: 0,
+          originalUnitPrice: toAmount(svcObj.price || 0),
+          discountPct: 0,
+          discountAmt: toAmount(svcObj.price || 0),
+          taxPct: svcObj.taxPct || svcObj.taxRate || 0,
+          consumableItems: []
+        }
+      ];
+    }
+
     setForm(c => ({
       ...c,
       items: nextItems,
       packageRedemptions: [
         ...c.packageRedemptions,
-        { customerPackageId: customerPkg.id, serviceId: serviceEntry.serviceId || serviceEntry.service?.id, sessionsUsed: 1 }
+        { customerPackageId: customerPkg.id, serviceId: svcId, sessionsUsed: 1 }
       ]
     }));
-    setToastMessage({ type: "success", title: "Package Applied", message: `${serviceEntry.service?.name || "Service"} applied from package.` });
+    setToastMessage({ type: "success", title: "Package Applied", message: `${svcObj.name || "Service"} applied from package.` });
 
     try {
       const response = await api.get(`/owner/customers/${form.customerId}/packages`);
@@ -1108,7 +1129,7 @@ export default function PosPage() {
     e.preventDefault();
     setStatus({ error: "", success: "" });
     try {
-      const res = await api.post("/owner/customers", newGuestForm);
+      const res = await api.post("/owner/customers", { ...newGuestForm, branchId: form.branchId || undefined });
       setGuestSearchInput(res.data.name);
       setForm(c => ({ ...c, customerId: res.data.id }));
       setShowAddGuestModal(false);
@@ -2567,15 +2588,19 @@ export default function PosPage() {
                             const pendingUsed = form.packageRedemptions.filter(r => r.customerPackageId === cp.id && r.serviceId === svcId).length;
                             const totalUsed = (svc.sessionsUsed || 0) + pendingUsed;
                             const available = Math.max(0, (svc.sessions || 0) - totalUsed);
-                            const isInCart = form.items.some(item => item.serviceId === svcId && Number(item.unitPrice || 0) > 0);
+                            const isInCart = form.items.some(item => item.serviceId === svcId);
+                            const isFree = form.items.some(item => item.serviceId === svcId && Number(item.unitPrice || 0) <= 0);
                             return (
                               <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                                <td style={{ padding: "8px 0", color: isInCart ? "#16a34a" : "#0f172a" }}>{svc.service?.name || svc.serviceId}</td>
+                                <td style={{ padding: "8px 0", color: isFree ? "#16a34a" : isInCart ? "#2563eb" : "#0f172a" }}>{svc.service?.name || svc.serviceId}</td>
                                 <td style={{ padding: "8px 0", textAlign: "right", color: "#16a34a", fontWeight: 600 }}>{available}</td>
                                 <td style={{ padding: "8px 0", textAlign: "right", color: "#64748b" }}>{totalUsed}</td>
                                 <td style={{ padding: "8px 0", textAlign: "right" }}>
-                                  {available > 0 && isInCart && (
+                                  {available > 0 && !isFree && (
                                     <button type="button" onClick={() => applyPackageService(cp, svc)} style={{ padding: "4px 12px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: "0.8rem" }}>Apply</button>
+                                  )}
+                                  {isFree && (
+                                    <span style={{ padding: "4px 12px", background: "#dcfce7", color: "#16a34a", borderRadius: 6, fontWeight: 600, fontSize: "0.8rem" }}>Applied</span>
                                   )}
                                 </td>
                               </tr>

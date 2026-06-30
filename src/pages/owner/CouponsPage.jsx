@@ -5,6 +5,7 @@ import ModuleTabs from "../../components/ModuleTabs";
 import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
 import { formatApiError } from "../../utils/apiError";
+import { useBranch } from "../../context/BranchContext";
 
 const defaultCouponForm = {
   code: "",
@@ -29,6 +30,7 @@ const emptyGiftCard = {
 
 export default function CouponsPage() {
   const location = useLocation();
+  const { selectedBranchId } = useBranch();
   const [coupons, setCoupons] = useState([]);
   const [giftCards, setGiftCards] = useState([]);
   const [reports, setReports] = useState(null);
@@ -73,9 +75,9 @@ export default function CouponsPage() {
     setLoading(true);
     try {
       const [couponResponse, giftCardResponse, reportResponse] = await Promise.all([
-        api.get("/owner/coupons"),
-        api.get("/owner/gift-cards"),
-        api.get("/owner/coupons/reports")
+        api.get("/owner/coupons", { params: { branchId: selectedBranchId } }),
+        api.get("/owner/gift-cards", { params: { branchId: selectedBranchId } }),
+        api.get("/owner/coupons/reports", { params: { branchId: selectedBranchId } })
       ]);
       setCoupons(couponResponse.data || []);
       setGiftCards(giftCardResponse.data || []);
@@ -85,7 +87,7 @@ export default function CouponsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedBranchId]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {

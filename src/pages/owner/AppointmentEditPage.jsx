@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../../api/client";
+import { useBranch } from "../../context/BranchContext";
 import { formatApiError } from "../../utils/apiError";
 import EmptyState from "../../components/EmptyState";
 import ModuleTabs from "../../components/ModuleTabs";
@@ -9,6 +10,7 @@ import PageLoader from "../../components/PageLoader";
 export default function AppointmentEditPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { selectedBranchId } = useBranch();
   const [context, setContext] = useState({ customers: [], branches: [], services: [], staffUsers: [] });
   const [form, setForm] = useState(null);
   const [status, setStatus] = useState({ loading: true, error: "", success: "" });
@@ -20,7 +22,7 @@ export default function AppointmentEditPage() {
       try {
         const [appointmentResponse, contextResponse] = await Promise.all([
           api.get(`/owner/appointments/${id}`),
-          api.get("/owner/pos/context")
+          api.get("/owner/pos/context", { params: selectedBranchId ? { branchId: selectedBranchId } : {} })
         ]);
         if (!active) return;
         const appointment = appointmentResponse.data;

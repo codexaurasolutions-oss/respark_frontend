@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { Bell, CalendarCheck, Camera, CameraOff, CheckCircle2, Clock, LogIn, LogOut, MapPin, Send, Shield, Timer, Upload, X } from "lucide-react";
 import { api } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import ModuleTabs from "../../components/ModuleTabs";
 import PageLoader from "../../components/PageLoader";
 import { formatApiError } from "../../utils/apiError";
-import { compareFaceSources, loadFaceVerificationModels, verifyFaceMatch } from "../../utils/faceVerification";
+import { compareFaceSources, loadFaceVerificationModels } from "../../utils/faceVerification";
 
 const uploadImage = async (file, filename = "attendance-selfie.jpg") => {
   if (!file) return "";
@@ -26,22 +27,20 @@ const haversineDistanceMeters = (lat1, lon1, lat2, lon2) => {
   return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-const emptyFlow = {
-  open: false,
-  action: "",
-  step: "gps",
-  busy: false,
-  error: "",
-  success: "",
-  coords: null
+const STEPS = {
+  PERMISSIONS: "permissions",
+  GPS: "gps",
+  CAPTURE: "capture",
+  SUBMITTING: "submitting",
+  SUCCESS: "success"
 };
 
 const flowAccent = {
-  gps: { tone: "#0f766e", surface: "linear-gradient(135deg, rgba(15,118,110,0.12), rgba(14,165,233,0.10))", border: "rgba(15,118,110,0.18)" },
-  camera: { tone: "#1d4ed8", surface: "linear-gradient(135deg, rgba(29,78,216,0.12), rgba(56,189,248,0.10))", border: "rgba(29,78,216,0.18)" },
-  capture: { tone: "#7c2d12", surface: "linear-gradient(135deg, rgba(249,115,22,0.13), rgba(250,204,21,0.10))", border: "rgba(249,115,22,0.18)" },
-  submitting: { tone: "#6d28d9", surface: "linear-gradient(135deg, rgba(109,40,217,0.12), rgba(14,165,233,0.10))", border: "rgba(109,40,217,0.18)" },
-  success: { tone: "#166534", surface: "linear-gradient(135deg, rgba(34,197,94,0.14), rgba(16,185,129,0.10))", border: "rgba(34,197,94,0.18)" }
+  [STEPS.PERMISSIONS]: { tone: "#7c3aed", surface: "linear-gradient(135deg, rgba(124,58,237,0.12), rgba(139,92,246,0.10))", border: "rgba(124,58,237,0.18)" },
+  [STEPS.GPS]: { tone: "#0f766e", surface: "linear-gradient(135deg, rgba(15,118,110,0.12), rgba(14,165,233,0.10))", border: "rgba(15,118,110,0.18)" },
+  [STEPS.CAPTURE]: { tone: "#1d4ed8", surface: "linear-gradient(135deg, rgba(29,78,216,0.12), rgba(56,189,248,0.10))", border: "rgba(29,78,216,0.18)" },
+  [STEPS.SUBMITTING]: { tone: "#6d28d9", surface: "linear-gradient(135deg, rgba(109,40,217,0.12), rgba(14,165,233,0.10))", border: "rgba(109,40,217,0.18)" },
+  [STEPS.SUCCESS]: { tone: "#166534", surface: "linear-gradient(135deg, rgba(34,197,94,0.14), rgba(16,185,129,0.10))", border: "rgba(34,197,94,0.18)" }
 };
 
 export default function MyDashboardPage() {
@@ -56,13 +55,16 @@ export default function MyDashboardPage() {
   });
   const [loading, setLoading] = useState(true);
   const [attendanceStatus, setAttendanceStatus] = useState({ loading: false, error: "", success: "" });
-  const [flow, setFlow] = useState(emptyFlow);
-  const [liveFaceStatus, setLiveFaceStatus] = useState({ checking: false, ready: false, matched: false, message: "" });
+  const [flow, setFlow] = useState({ open: false, action: "", step: "", busy: false, error: "", success: "", coords: null, warning: "" });
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
-  const previewCanvasRef = useRef(null);
-  const liveCheckTimerRef = useRef(null);
+  const flowIdRef = useRef(0);
+
+  const [loadError, setLoadError] = useState("");
+  const [faceReady, setFaceReady] = useState(false);
+  const [streamReady, setStreamReady] = useState(false);
+  const autoOpenedRef = useRef(false);
 
   const load = async () => {
     const response = await api.get("/owner/my-dashboard");
@@ -71,353 +73,459 @@ export default function MyDashboardPage() {
   };
 
   useEffect(() => {
-    load().catch(() => setLoading(false));
+    load().catch((err) => {
+      setLoadError(formatApiError(err, "Failed to load dashboard data."));
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => {
-    void loadFaceVerificationModels().catch(() => {});
-  }, []);
+    if (data.profile?.attendanceEnrollmentPhotoUrl) {
+      loadFaceVerificationModels().then(() => setFaceReady(true)).catch(() => setFaceReady(false));
+    }
+  }, [data.profile?.attendanceEnrollmentPhotoUrl]);
+
+  useEffect(() => {
+    if (!loading && !loadError && data.profile && !data.todayAttendance && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      handleStartCheckIn();
+    }
+  }, [loading, loadError, data.profile, data.todayAttendance]);
 
   const stopCameraStream = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
+    setStreamReady(false);
   };
 
   useEffect(() => () => {
     stopCameraStream();
+    if (videoRef.current) videoRef.current.srcObject = null;
   }, []);
 
   useEffect(() => {
-    if (!flow.open || flow.step !== "capture" || !videoRef.current || !streamRef.current) return;
-    videoRef.current.srcObject = streamRef.current;
-    void videoRef.current.play().catch(() => {});
-  }, [flow.open, flow.step]);
+    if (!flow.open || flow.step !== STEPS.CAPTURE || !videoRef.current || !streamRef.current) return;
+    const video = videoRef.current;
+    video.srcObject = streamRef.current;
+    const playPromise = video.play();
+    if (playPromise) playPromise.catch(() => {});
+    return () => {
+      video.srcObject = null;
+    };
+  }, [flow.open, flow.step, streamReady]);
 
-  const requiresSelfieForAction = (action) =>
-    action === "check-in" || (action === "check-out" && Boolean(data.attendanceSettings?.checkoutSelfieRequired));
+  const closeFlow = () => {
+    stopCameraStream();
+    setStreamReady(false);
+    setFlow({ open: false, action: "", step: "", busy: false, error: "", success: "", coords: null, warning: "" });
+  };
 
-  const getCurrentPosition = async () => new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("Location permission is required."));
-      return;
-    }
+  const getCurrentPosition = () => new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject(Object.assign(new Error("Geolocation not supported"), { code: 0 })); return; }
     navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
   });
 
+  const requestCameraStream = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("Camera not available.");
+    return navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+  };
+
   const getBranchGeofenceValidation = (coords) => {
     const branch = data.profile?.branch;
-    const latitude = Number(branch?.latitude);
-    const longitude = Number(branch?.longitude);
+    const lat = Number(branch?.latitude);
+    const lng = Number(branch?.longitude);
     const radius = Number(branch?.geofenceRadiusMeters || 75);
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-      return { valid: false, error: "Salon geofence is not configured for this branch." };
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) {
+      return { valid: true, distance: 0, warning: "Branch GPS coordinates are not set. Geofence check skipped. Please ask your manager to set the branch location." };
     }
-    const distance = haversineDistanceMeters(latitude, longitude, coords.latitude, coords.longitude);
+    const distance = haversineDistanceMeters(lat, lng, coords.latitude, coords.longitude);
     if (distance > radius) {
-      return { valid: false, error: "You are outside the salon premises." };
+      return { valid: false, error: `You are ${Math.round(distance)}m from the salon (${Math.round(distance - radius)}m outside the allowed ${radius}m radius). Please move closer to the salon.` };
     }
     return { valid: true, distance };
   };
 
-  const requestCameraStream = async () => {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      throw new Error("Camera permission is required.");
-    }
-    return navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+  const formatGeoError = (error) => {
+    if (error?.code === 1) return "Location permission denied. Please grant location access in your browser settings and try again.";
+    if (error?.code === 2) return "Location information is unavailable. Please check your device settings.";
+    if (error?.code === 3) return "Location request timed out. Please try again or move to an open area.";
+    return formatApiError(error, "Failed to get your location.");
   };
 
-  const closeFlow = () => {
-    stopCameraStream();
-    if (liveCheckTimerRef.current) {
-      clearInterval(liveCheckTimerRef.current);
-      liveCheckTimerRef.current = null;
-    }
-    setLiveFaceStatus({ checking: false, ready: false, matched: false, message: "" });
-    setFlow(emptyFlow);
+  const formatCameraError = (error) => {
+    if (error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError") return "Camera permission denied. Please allow camera access in your browser settings.";
+    if (error?.name === "NotFoundError" || error?.name === "DevicesNotFoundError") return "No camera found. Please connect a camera and try again.";
+    if (error?.name === "NotReadableError" || error?.name === "TrackStartError") return "Camera is already in use by another application. Please close other camera apps.";
+    return formatApiError(error, "Camera permission is required.");
   };
 
-  const openFlow = (action) => {
-    setAttendanceStatus({ loading: false, error: "", success: "" });
-    setFlow({
-      open: true,
-      action,
-      step: "gps",
-      busy: false,
-      error: "",
-      success: "",
-      coords: null
-    });
-  };
-
-  const submitAttendanceAction = async ({ action, coords, selfieBlob = null }) => {
-    setFlow((current) => ({ ...current, step: "submitting", busy: true, error: "" }));
+  const submitAttendance = async ({ action, coords, selfieBlob }) => {
+    setFlow((c) => ({ ...c, step: STEPS.SUBMITTING, busy: true, error: "" }));
     setAttendanceStatus({ loading: true, error: "", success: "" });
     try {
-      let verificationNote = "";
-      if (selfieBlob && data.profile?.attendanceEnrollmentPhotoUrl) {
-        const faceMatch = await verifyFaceMatch({
-          enrollmentImageUrl: data.profile.attendanceEnrollmentPhotoUrl,
-          liveImageBlob: selfieBlob
-        });
-        if (!faceMatch.matched) {
-          throw new Error(`Live selfie did not match the enrollment face. Match distance: ${faceMatch.distance.toFixed(3)}`);
-        }
-        verificationNote = `Face matched (${faceMatch.distance.toFixed(3)})`;
+      let selfieUrl = "";
+      if (selfieBlob) {
+        selfieUrl = await uploadImage(selfieBlob, `${action}-selfie.jpg`);
       }
-      const selfieUrl = selfieBlob
-        ? await uploadImage(selfieBlob, action === "check-in" ? "check-in-selfie.jpg" : "check-out-selfie.jpg")
-        : "";
       const endpoint = action === "check-in" ? "/owner/attendance/check-in-self" : "/owner/attendance/check-out-self";
-      await api.post(endpoint, {
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        accuracyMeters: coords.accuracyMeters,
-        selfieUrl,
-        note: verificationNote || undefined
-      });
-      await load();
-      const successMessage = action === "check-in" ? "Check-in successful." : "Check-out successful.";
-      setAttendanceStatus({ loading: false, error: "", success: successMessage });
-      setFlow((current) => ({ ...current, step: "success", busy: false, success: successMessage }));
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      try {
+        await api.post(endpoint, {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          accuracyMeters: coords.accuracyMeters,
+          selfieUrl: selfieUrl || undefined
+        }, { signal: controller.signal });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+      stopCameraStream();
+      const msg = action === "check-in" ? "Attendance marked successfully." : "Check-out completed successfully.";
+      setAttendanceStatus({ loading: false, error: "", success: msg });
+      setFlow((c) => ({ ...c, step: STEPS.SUCCESS, busy: false, success: msg }));
+      load().catch(() => {});
     } catch (error) {
-      const message = formatApiError(error, "Attendance action failed");
+      const message = error?.name === "CanceledError" || error?.name === "AbortError"
+        ? "Request timed out. Please check your network and try again."
+        : formatApiError(error, "Attendance action failed.");
+      stopCameraStream();
       setAttendanceStatus({ loading: false, error: message, success: "" });
-      setFlow((current) => ({
-        ...current,
-        busy: false,
-        error: message,
-        step: current.action === "check-in" || requiresSelfieForAction(current.action) ? "capture" : "gps"
-      }));
+      setFlow((c) => ({ ...c, busy: false, error: message, step: "" }));
     }
   };
 
-  const handleRequestGps = async () => {
-    setFlow((current) => ({ ...current, busy: true, error: "" }));
+  const handleCaptureAndSubmit = async () => {
+    if (!videoRef.current || !canvasRef.current || !flow.coords) {
+      setFlow((c) => ({ ...c, error: "Camera not ready. Please close and try again." }));
+      return;
+    }
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    canvas.width = video.videoWidth || 720;
+    canvas.height = video.videoHeight || 960;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      setFlow((c) => ({ ...c, error: "Failed to access camera capture. Please try again." }));
+      return;
+    }
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+    if (!blob) {
+      setFlow((c) => ({ ...c, error: "Failed to capture selfie. Please try again." }));
+      return;
+    }
+    const enrollmentUrl = data.profile?.attendanceEnrollmentPhotoUrl;
+    if (enrollmentUrl && faceReady) {
+      setFlow((c) => ({ ...c, busy: true, error: "" }));
+      try {
+        const result = await compareFaceSources({ enrollmentSource: enrollmentUrl, liveSource: blob });
+        if (!result.matched) {
+          setFlow((c) => ({ ...c, busy: false, error: `Face does not match enrollment photo. Distance: ${result.distance.toFixed(2)} (threshold: ${result.threshold}). Please ensure you are the enrolled staff member.` }));
+          return;
+        }
+      } catch (err) {
+        setFlow((c) => ({ ...c, busy: false, error: formatApiError(err, "Face verification failed.") }));
+        return;
+      }
+    }
+    await submitAttendance({ action: flow.action, coords: flow.coords, selfieBlob: blob });
+  };
+
+  const handleSkipSelfie = async () => {
+    if (!flow.coords) return;
+    stopCameraStream();
+    await submitAttendance({ action: flow.action, coords: flow.coords, selfieBlob: null });
+  };
+
+  const handleStartCheckIn = async () => {
+    const thisFlowId = ++flowIdRef.current;
+    setFlow({ open: true, action: "check-in", step: STEPS.PERMISSIONS, busy: true, error: "", success: "", coords: null });
+    setAttendanceStatus({ loading: false, error: "", success: "" });
+
     try {
-      const position = await getCurrentPosition();
+      let savedPosition = null;
+      const [locPerm, camPerm] = await Promise.allSettled([
+        new Promise((resolve, reject) => {
+          if (!navigator.geolocation) { reject(Object.assign(new Error("Geolocation not supported"), { code: 0 })); return; }
+          navigator.geolocation.getCurrentPosition(
+            (pos) => { savedPosition = pos; resolve("granted"); },
+            (err) => reject(err),
+            { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+          );
+        }),
+        navigator.mediaDevices?.getUserMedia
+          ? navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then((s) => { s.getTracks().forEach((t) => t.stop()); return "granted"; })
+          : Promise.reject(new Error("Camera not available"))
+      ]);
+
+      if (locPerm.status === "rejected") {
+        const msg = formatGeoError(locPerm.reason);
+        setFlow((c) => ({ ...c, busy: false, error: msg }));
+        return;
+      }
+      if (camPerm.status === "rejected") {
+        const msg = formatCameraError(camPerm.reason);
+        setFlow((c) => ({ ...c, busy: false, error: msg }));
+        return;
+      }
+
+      setFlow((c) => ({ ...c, step: STEPS.GPS, busy: true, error: "" }));
+
+      const position = savedPosition || await getCurrentPosition();
+
       const coords = {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
         accuracyMeters: position.coords.accuracy
       };
+
+      if (coords.accuracyMeters > 100) {
+        setFlow((c) => ({ ...c, busy: false, error: `GPS accuracy is low (${Math.round(coords.accuracyMeters)}m). Please move to an open area and try again.` }));
+        return;
+      }
+
       const geofence = getBranchGeofenceValidation(coords);
       if (!geofence.valid) {
-        setFlow((current) => ({ ...current, busy: false, error: geofence.error }));
+        setFlow((c) => ({ ...c, busy: false, error: geofence.error }));
         return;
       }
-      if (requiresSelfieForAction(flow.action)) {
-        setFlow((current) => ({ ...current, busy: false, coords, step: "camera", error: "" }));
-        return;
+
+      setFlow((c) => ({ ...c, step: STEPS.CAPTURE, busy: true, coords, error: "", warning: geofence.warning || "" }));
+
+      if (flowIdRef.current !== thisFlowId) return;
+      try {
+        stopCameraStream();
+        streamRef.current = await requestCameraStream();
+        if (flowIdRef.current !== thisFlowId) { stopCameraStream(); return; }
+        setStreamReady(true);
+        setFlow((c) => ({ ...c, busy: false }));
+      } catch (err) {
+        setFlow((c) => ({ ...c, busy: false, error: formatCameraError(err) }));
       }
-      await submitAttendanceAction({ action: flow.action, coords });
-    } catch (error) {
-      let message = formatApiError(error, "Attendance action failed");
-      if (error?.code === 1) message = "Location permission is required.";
-      if (error?.code === 2 || error?.code === 3) message = "Location permission is required.";
-      setFlow((current) => ({ ...current, busy: false, error: message }));
+    } catch (err) {
+      setFlow((c) => ({ ...c, busy: false, error: formatApiError(err, "Failed to start attendance flow.") }));
     }
   };
 
-  const handleRequestCamera = async () => {
-    setFlow((current) => ({ ...current, busy: true, error: "" }));
+  const handleStartCheckOut = async () => {
+    const thisFlowId = ++flowIdRef.current;
+    setFlow({ open: true, action: "check-out", step: STEPS.PERMISSIONS, busy: true, error: "", success: "", coords: null });
+    setAttendanceStatus({ loading: false, error: "", success: "" });
+
     try {
-      streamRef.current = await requestCameraStream();
-      setFlow((current) => ({ ...current, busy: false, step: "capture", error: "" }));
-    } catch (error) {
-      let message = formatApiError(error, "Camera permission is required.");
-      if (error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError") {
-        message = "Camera permission is required.";
-      }
-      setFlow((current) => ({ ...current, busy: false, error: message }));
-    }
-  };
+      const locPerm = await new Promise((resolve, reject) => {
+        if (!navigator.geolocation) { reject(Object.assign(new Error("Geolocation not supported"), { code: 0 })); return; }
+        navigator.geolocation.getCurrentPosition(
+          () => resolve("granted"),
+          (err) => reject(err),
+          { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+        );
+      }).catch((err) => { throw err; });
 
-  const captureAndSubmitSelfie = async () => {
-    if (!videoRef.current || !canvasRef.current || !flow.coords || !liveFaceStatus.ready) return;
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    canvas.width = video.videoWidth || 720;
-    canvas.height = video.videoHeight || 960;
-    const context = canvas.getContext("2d");
-    context?.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
-    stopCameraStream();
-    await submitAttendanceAction({ action: flow.action, coords: flow.coords, selfieBlob: blob });
+      setFlow((c) => ({ ...c, step: STEPS.GPS, busy: true, error: "" }));
+
+      let position;
+      try {
+        position = await getCurrentPosition();
+      } catch (err) {
+        setFlow((c) => ({ ...c, busy: false, error: formatGeoError(err) }));
+        return;
+      }
+
+      const coords = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracyMeters: position.coords.accuracy
+      };
+
+      if (coords.accuracyMeters > 100) {
+        setFlow((c) => ({ ...c, busy: false, error: `GPS accuracy is low (${Math.round(coords.accuracyMeters)}m). Please move to an open area and try again.` }));
+        return;
+      }
+
+      const geofence = getBranchGeofenceValidation(coords);
+      if (!geofence.valid) {
+        setFlow((c) => ({ ...c, busy: false, error: geofence.error }));
+        return;
+      }
+
+      setFlow((c) => ({ ...c, step: STEPS.CAPTURE, busy: true, coords, error: "", warning: geofence.warning || "" }));
+
+      if (flowIdRef.current !== thisFlowId) return;
+      try {
+        stopCameraStream();
+        streamRef.current = await requestCameraStream();
+        if (flowIdRef.current !== thisFlowId) { stopCameraStream(); return; }
+        setStreamReady(true);
+        setFlow((c) => ({ ...c, busy: false }));
+      } catch (err) {
+        setFlow((c) => ({ ...c, busy: false, coords, error: formatCameraError(err) }));
+      }
+    } catch (err) {
+      setFlow((c) => ({ ...c, busy: false, error: formatApiError(err, "Failed to start check-out flow.") }));
+    }
   };
 
   const todayAttendance = data.todayAttendance;
   const isCheckedIn = todayAttendance && !todayAttendance.checkOutAt;
-  const currentFlowAccent = flowAccent[flow.step] || flowAccent.gps;
-  const liveFaceTone = liveFaceStatus.matched
-    ? { background: "linear-gradient(135deg, rgba(220,252,231,0.95), rgba(236,253,245,0.95))", border: "1px solid rgba(34,197,94,0.22)", color: "#166534" }
-    : { background: "linear-gradient(135deg, rgba(255,247,237,0.96), rgba(254,243,199,0.92))", border: "1px solid rgba(245,158,11,0.2)", color: "#92400e" };
-
-  useEffect(() => {
-    if (!flow.open || flow.step !== "capture" || !data.profile?.attendanceEnrollmentPhotoUrl) {
-      if (liveCheckTimerRef.current) {
-        clearInterval(liveCheckTimerRef.current);
-        liveCheckTimerRef.current = null;
-      }
-      setLiveFaceStatus((current) => current.ready || current.message
-        ? { checking: false, ready: false, matched: false, message: "" }
-        : current);
-      return undefined;
-    }
-
-    let active = true;
-    let busy = false;
-
-    const runLiveCheck = async () => {
-      if (!active || busy || !videoRef.current) return;
-      const video = videoRef.current;
-      if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) return;
-      busy = true;
-      setLiveFaceStatus((current) => ({ ...current, checking: true, message: current.ready ? current.message : "Checking live face match..." }));
-      try {
-        const canvas = previewCanvasRef.current || document.createElement("canvas");
-        previewCanvasRef.current = canvas;
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const context = canvas.getContext("2d");
-        context?.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
-        const match = await compareFaceSources({
-          enrollmentSource: data.profile.attendanceEnrollmentPhotoUrl,
-          liveSource: blob
-        });
-        if (!active) return;
-        setLiveFaceStatus({
-          checking: false,
-          ready: match.matched,
-          matched: match.matched,
-          message: match.matched
-            ? `Face matched live (${match.distance.toFixed(3)})`
-            : `Face detected but match failed (${match.distance.toFixed(3)})`
-        });
-      } catch (error) {
-        if (!active) return;
-        setLiveFaceStatus({
-          checking: false,
-          ready: false,
-          matched: false,
-          message: error?.message || "Live face verification failed."
-        });
-      } finally {
-        busy = false;
-      }
-    };
-
-    void runLiveCheck();
-    liveCheckTimerRef.current = setInterval(() => {
-      void runLiveCheck();
-    }, 1800);
-
-    return () => {
-      active = false;
-      if (liveCheckTimerRef.current) {
-        clearInterval(liveCheckTimerRef.current);
-        liveCheckTimerRef.current = null;
-      }
-    };
-  }, [flow.open, flow.step, data.profile?.attendanceEnrollmentPhotoUrl]);
+  const accent = flowAccent[flow.step] || flowAccent[STEPS.PERMISSIONS];
 
   const renderFlowBody = () => {
     if (!flow.open) return null;
-    if (flow.step === "gps") {
+
+    if (flow.step === STEPS.PERMISSIONS) {
       return (
         <>
-          <div style={{ padding: 18, borderRadius: 18, background: currentFlowAccent.surface, border: `1px solid ${currentFlowAccent.border}`, display: "grid", gap: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: currentFlowAccent.tone }}>
-              Attendance Gate
+          <div style={{ padding: 18, borderRadius: 18, background: accent.surface, border: `1px solid ${accent.border}`, display: "grid", gap: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: accent.tone }}>
+              <Shield size={12} /> Step 1 of 3 — Permissions
             </div>
-            <h3 style={{ margin: 0 }}>{flow.action === "check-in" ? "Location Access" : "Confirm Current Location"}</h3>
-            <div className="item-meta">Click continue to allow location access and validate your salon geofence before attendance is saved.</div>
-          </div>
-          <button type="button" onClick={() => void handleRequestGps()} disabled={flow.busy}>
-            {flow.busy ? "Checking Location..." : "Continue"}
-          </button>
-        </>
-      );
-    }
-    if (flow.step === "camera") {
-      return (
-        <>
-          <div style={{ padding: 18, borderRadius: 18, background: currentFlowAccent.surface, border: `1px solid ${currentFlowAccent.border}`, display: "grid", gap: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: currentFlowAccent.tone }}>
-              Camera Ready
-            </div>
-            <h3 style={{ margin: 0 }}>{flow.action === "check-in" ? "Camera Access" : "Selfie Verification"}</h3>
+            <h3 style={{ margin: 0 }}>{flow.action === "check-in" ? "Requesting Access" : "Confirming Access"}</h3>
             <div className="item-meta">
-              {flow.action === "check-in"
-                ? "Camera permission is required before opening the selfie capture step."
-                : "Camera permission is enabled for this check-out flow before selfie capture."}
+              {flow.busy
+                ? "Requesting location and camera permissions..."
+                : flow.error
+                  ? "Both location and camera permissions are required for attendance."
+                  : "Permissions granted. Verifying your location..."}
             </div>
           </div>
-          <button type="button" onClick={() => void handleRequestCamera()} disabled={flow.busy}>
-            {flow.busy ? "Opening Camera..." : "Open Camera"}
-          </button>
+          {flow.busy && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+              <div style={{ width: 32, height: 32, border: "3px solid #e2e8f0", borderTopColor: "#7c3aed", borderRadius: "50%", animation: "spinAround 0.8s linear infinite" }} />
+            </div>
+          )}
         </>
       );
     }
-    if (flow.step === "capture") {
+
+    if (flow.step === STEPS.GPS) {
       return (
         <>
-          <div style={{ padding: 18, borderRadius: 18, background: currentFlowAccent.surface, border: `1px solid ${currentFlowAccent.border}`, display: "grid", gap: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: currentFlowAccent.tone }}>
-              Live Verification
+          <div style={{ padding: 18, borderRadius: 18, background: accent.surface, border: `1px solid ${accent.border}`, display: "grid", gap: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: accent.tone }}>
+              <MapPin size={12} /> Step 2 of 3 — Location
             </div>
-            <h3 style={{ margin: 0 }}>Capture Selfie</h3>
-            <div className="item-meta">Align your face clearly inside the frame. Capture stays locked until the live face check is valid.</div>
-          </div>
-          <div style={{ position: "relative", overflow: "hidden", borderRadius: 22, border: "1px solid rgba(148,163,184,0.18)", background: "#0f172a" }}>
-            <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", borderRadius: 22, background: "#0f172a", display: "block", minHeight: 280, objectFit: "cover" }} />
-            <div style={{ position: "absolute", inset: 16, borderRadius: 18, border: "2px dashed rgba(255,255,255,0.45)", pointerEvents: "none" }} />
-            <div style={{ position: "absolute", left: 14, top: 14, padding: "8px 10px", borderRadius: 999, background: "rgba(15,23,42,0.72)", color: "#e2e8f0", fontSize: 12, fontWeight: 700 }}>
-              {liveFaceStatus.ready ? "Face Ready" : liveFaceStatus.checking ? "Checking Face" : "Align Face"}
+            <h3 style={{ margin: 0 }}>Verifying Geofence</h3>
+            <div className="item-meta">
+              {flow.busy ? "Fetching your GPS coordinates and checking salon radius..." : "Location verified. Opening camera..."}
             </div>
           </div>
-          <canvas ref={canvasRef} style={{ display: "none" }} />
-          {data.profile?.attendanceEnrollmentPhotoUrl ? (
-            <div style={{ padding: "12px 14px", borderRadius: 16, ...liveFaceTone }}>
-              {liveFaceStatus.message || "Checking live face match..."}
+          {flow.busy && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+              <div style={{ width: 32, height: 32, border: "3px solid #e2e8f0", borderTopColor: "#0f766e", borderRadius: "50%", animation: "spinAround 0.8s linear infinite" }} />
             </div>
-          ) : null}
-          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <button type="button" className="secondary-button" onClick={closeFlow}>Cancel</button>
-            <button type="button" onClick={() => void captureAndSubmitSelfie()} disabled={!liveFaceStatus.ready && Boolean(data.profile?.attendanceEnrollmentPhotoUrl)}>
-              {liveFaceStatus.checking ? "Checking Face..." : "Capture Selfie"}
-            </button>
-          </div>
+          )}
+          {flow.warning && !flow.busy && (
+            <div style={{ fontSize: 13, color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: "8px 12px", marginTop: 4 }}>{flow.warning}</div>
+          )}
         </>
       );
     }
-    if (flow.step === "submitting") {
+
+    if (flow.step === STEPS.CAPTURE) {
+      const hasCamera = streamReady && Boolean(streamRef.current);
+      const isCheckOut = flow.action === "check-out";
       return (
         <>
-          <div style={{ padding: 18, borderRadius: 18, background: currentFlowAccent.surface, border: `1px solid ${currentFlowAccent.border}`, display: "grid", gap: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: currentFlowAccent.tone }}>
-              Finalizing
+          <div style={{ padding: 18, borderRadius: 18, background: accent.surface, border: `1px solid ${accent.border}`, display: "grid", gap: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: accent.tone }}>
+              <Camera size={12} /> Step 3 of 3 — Selfie {isCheckOut ? "(Optional)" : ""}
+            </div>
+            <h3 style={{ margin: 0 }}>{hasCamera ? "Capture Selfie" : "Selfie Capture"}</h3>
+            <div className="item-meta">
+              {hasCamera
+                ? "Align your face clearly inside the frame and click the capture button below."
+                : isCheckOut
+                  ? "Camera is not available. You can skip the selfie and submit with GPS coordinates only."
+                  : "Camera is required for check-in. Please allow camera access and try again."}
+            </div>
+          </div>
+          {hasCamera ? (
+            <>
+              <div style={{ position: "relative", overflow: "hidden", borderRadius: 22, border: "1px solid rgba(148,163,184,0.18)", background: "#0f172a" }}>
+                <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", borderRadius: 22, background: "#0f172a", display: "block", minHeight: 280, objectFit: "cover" }} />
+                <div style={{ position: "absolute", inset: 16, borderRadius: 18, border: "2px dashed rgba(255,255,255,0.45)", pointerEvents: "none" }} />
+                <div style={{ position: "absolute", left: 14, top: 14, padding: "8px 10px", borderRadius: 999, background: "rgba(15,23,42,0.72)", color: "#e2e8f0", fontSize: 12, fontWeight: 700 }}>
+                  Front Camera Active
+                </div>
+              </div>
+              <canvas ref={canvasRef} style={{ display: "none" }} />
+              <div style={{ padding: "12px 14px", borderRadius: 16, background: isCheckOut ? "linear-gradient(135deg, rgba(254,243,199,0.95), rgba(253,230,138,0.92))" : "linear-gradient(135deg, rgba(239,246,255,0.95), rgba(219,234,254,0.92))", border: isCheckOut ? "1px solid rgba(234,179,8,0.2)" : "1px solid rgba(59,130,246,0.2)", color: isCheckOut ? "#92400e" : "#1e40af", fontSize: 13 }}>
+                {isCheckOut
+                  ? "Selfie is optional for check-out. Your GPS coordinates will be recorded."
+                  : data.profile?.attendanceEnrollmentPhotoUrl
+                    ? "Face verification is active. Your selfie will be compared with your enrollment photo."
+                    : "Selfie is mandatory. Your photo will be uploaded along with GPS coordinates."}
+              </div>
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <button type="button" className="secondary-button" onClick={closeFlow}><X size={14} /> Cancel</button>
+                {isCheckOut && (
+                  <button type="button" className="secondary-button" onClick={() => void handleSkipSelfie()} disabled={flow.busy}>
+                    <CameraOff size={14} /> Skip Selfie
+                  </button>
+                )}
+                <button type="button" onClick={() => void handleCaptureAndSubmit()} disabled={flow.busy}>
+                  {flow.busy ? (data.profile?.attendanceEnrollmentPhotoUrl ? "Verifying Face..." : "Capturing...") : <><Camera size={14} /> Capture & Submit</>}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <canvas ref={canvasRef} style={{ display: "none" }} />
+              {isCheckOut ? (
+                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                  <button type="button" className="secondary-button" onClick={closeFlow}><X size={14} /> Cancel</button>
+                  <button type="button" onClick={() => void handleSkipSelfie()} disabled={flow.busy}>
+                    <Send size={14} /> Submit Without Selfie
+                  </button>
+                </div>
+              ) : (
+                <div style={{ padding: "12px 14px", borderRadius: 16, background: "linear-gradient(135deg, rgba(254,226,226,0.95), rgba(254,202,202,0.92))", border: "1px solid rgba(239,68,68,0.25)", color: "#991b1b", fontSize: 13 }}>
+                  Camera is required for check-in. Please allow camera access in your browser settings and try again.
+                </div>
+              )}
+            </>
+          )}
+        </>
+      );
+    }
+
+    if (flow.step === STEPS.SUBMITTING) {
+      return (
+        <>
+          <div style={{ padding: 18, borderRadius: 18, background: accent.surface, border: `1px solid ${accent.border}`, display: "grid", gap: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: accent.tone }}>
+              <Upload size={12} /> Uploading
             </div>
             <h3 style={{ margin: 0 }}>{flow.action === "check-in" ? "Saving Attendance" : "Completing Attendance"}</h3>
+            <div className="item-meta">{flow.action === "check-in" ? "Uploading selfie and GPS coordinates to the server..." : "Submitting GPS coordinates and check-out time..."}</div>
           </div>
-          <PageLoader compact title="Uploading selfie + GPS coordinates" message="Saving your attendance record and calculating working hours." />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <div style={{ width: 32, height: 32, border: "3px solid #e2e8f0", borderTopColor: "#6d28d9", borderRadius: "50%", animation: "spinAround 0.8s linear infinite" }} />
+          </div>
         </>
       );
     }
-    return (
-      <>
-        <div style={{ padding: 18, borderRadius: 18, background: currentFlowAccent.surface, border: `1px solid ${currentFlowAccent.border}`, display: "grid", gap: 10 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: currentFlowAccent.tone }}>
-            Verified
+
+    if (flow.step === STEPS.SUCCESS) {
+      return (
+        <>
+          <div style={{ padding: 18, borderRadius: 18, background: accent.surface, border: `1px solid ${accent.border}`, display: "grid", gap: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: accent.tone }}>
+              <CheckCircle2 size={12} /> Done
+            </div>
+            <h3 style={{ margin: 0 }}>{flow.action === "check-in" ? "Attendance Marked Successfully" : "Check-Out Successful"}</h3>
+            <div className="success-text" style={{ margin: 0 }}>{flow.success}</div>
           </div>
-          <h3 style={{ margin: 0 }}>Attendance Completed</h3>
-          <div className="success-text" style={{ margin: 0 }}>{flow.success}</div>
-        </div>
-        <button type="button" onClick={closeFlow}>Done</button>
-      </>
-    );
+          <button type="button" onClick={closeFlow}><CheckCircle2 size={14} /> Done</button>
+        </>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -435,12 +543,12 @@ export default function MyDashboardPage() {
       />
       {flow.open ? (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.78)", display: "grid", placeItems: "center", zIndex: 50, padding: 16 }}>
-          <div className="panel-card" style={{ width: "min(100%, 620px)", display: "grid", gap: 14, padding: 18, background: "linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,250,252,0.96))" }}>
+          <div className="panel-card" style={{ width: "min(100%, 620px)", maxHeight: "92vh", overflowY: "auto", display: "grid", gap: 14, padding: 18, background: "linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,250,252,0.96))" }}>
             {renderFlowBody()}
             {flow.error ? <div className="error-text">{flow.error}</div> : null}
-            {flow.step !== "capture" && flow.step !== "success" && flow.step !== "submitting" ? (
+            {flow.error && flow.step !== STEPS.SUBMITTING && flow.step !== STEPS.SUCCESS ? (
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button type="button" className="secondary-button" onClick={closeFlow}>Close</button>
+                <button type="button" className="secondary-button" onClick={closeFlow}><X size={14} /> Close</button>
               </div>
             ) : null}
           </div>
@@ -453,14 +561,15 @@ export default function MyDashboardPage() {
             <p style={{ marginBottom: 0 }}>Your staff-scoped overview for bookings, attendance, service assignments, and daily alerts.</p>
           </div>
           <div className="badge-row">
-            <span className="badge">Today {data.todayAppointments.length}</span>
-            <span className="badge">Recent {data.recentAppointments.length}</span>
-            <span className="badge">Notifications {data.notifications.length}</span>
+            <span className="badge"><CalendarCheck size={13} /> Today {data.todayAppointments.length}</span>
+            <span className="badge"><Clock size={13} /> Recent {data.recentAppointments.length}</span>
+            <span className="badge"><Bell size={13} /> Notifications {data.notifications.length}</span>
           </div>
         </div>
       </div>
+      {loadError ? <div style={{ padding: "10px 14px", borderRadius: 12, background: "linear-gradient(135deg, rgba(254,226,226,0.95), rgba(254,202,202,0.92))", border: "1px solid rgba(239,68,68,0.25)", color: "#991b1b", fontSize: 13, marginBottom: 14 }}>{loadError}</div> : null}
       {loading ? <PageLoader title="Loading your workspace" message="Preparing your bookings, services, attendance, and daily notification context." /> : <>
-        <div className="panel-card" style={{ marginBottom: 18, overflow: "hidden" }}>
+        <div className="panel-card" style={{ marginBottom: 18 }}>
           <div style={{ height: 5, background: isCheckedIn ? "linear-gradient(90deg, #16a34a, #10b981)" : "linear-gradient(90deg, #0f766e, #0ea5e9)" }} />
           <div className="item-head" style={{ alignItems: "flex-start" }}>
             <div>
@@ -476,35 +585,35 @@ export default function MyDashboardPage() {
               ) : null}
             </div>
             <div className="badge-row" style={{ gap: 12 }}>
-              <button type="button" onClick={() => openFlow("check-in")} disabled={attendanceStatus.loading || Boolean(todayAttendance)} style={{ minWidth: 140 }}>
-                {attendanceStatus.loading ? "Processing..." : "Check In"}
+              <button type="button" onClick={() => void handleStartCheckIn()} disabled={attendanceStatus.loading || Boolean(todayAttendance)} style={{ minWidth: 140 }}>
+                {attendanceStatus.loading ? "Processing..." : <><LogIn size={14} /> Check In</>}
               </button>
-              <button type="button" className="secondary-button" onClick={() => openFlow("check-out")} disabled={attendanceStatus.loading || !isCheckedIn} style={{ minWidth: 140 }}>
-                {attendanceStatus.loading ? "Processing..." : "Check Out"}
+              <button type="button" className="secondary-button" onClick={() => void handleStartCheckOut()} disabled={attendanceStatus.loading || !isCheckedIn} style={{ minWidth: 140 }}>
+                {attendanceStatus.loading ? "Processing..." : <><LogOut size={14} /> Check Out</>}
               </button>
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 16 }}>
             <div style={{ padding: 14, borderRadius: 16, background: "linear-gradient(135deg, rgba(15,118,110,0.08), rgba(255,255,255,0.92))", border: "1px solid rgba(15,118,110,0.14)" }}>
-              <div className="stat-label">Branch Verified</div>
-              <div className="item-meta" style={{ marginTop: 4 }}>GPS and salon radius must match before attendance is accepted.</div>
+              <div className="stat-label"><MapPin size={14} /> Location Verified</div>
+              <div className="item-meta" style={{ marginTop: 4 }}>GPS coordinates checked against salon geofence radius.</div>
             </div>
             <div style={{ padding: 14, borderRadius: 16, background: "linear-gradient(135deg, rgba(29,78,216,0.08), rgba(255,255,255,0.92))", border: "1px solid rgba(29,78,216,0.14)" }}>
-              <div className="stat-label">Face Verified</div>
-              <div className="item-meta" style={{ marginTop: 4 }}>Live selfie is checked against the owner-enrolled attendance face.</div>
+              <div className="stat-label"><Camera size={14} /> Selfie Captured</div>
+              <div className="item-meta" style={{ marginTop: 4 }}>Live selfie uploaded with GPS coordinates for attendance proof.</div>
             </div>
             <div style={{ padding: 14, borderRadius: 16, background: "linear-gradient(135deg, rgba(249,115,22,0.08), rgba(255,255,255,0.92))", border: "1px solid rgba(249,115,22,0.14)" }}>
-              <div className="stat-label">Shift Status</div>
+              <div className="stat-label"><Timer size={14} /> Shift Status</div>
               <div className="item-meta" style={{ marginTop: 4 }}>{todayAttendance ? todayAttendance.status : "Waiting for first check-in today."}</div>
             </div>
           </div>
           {attendanceStatus.error ? <p className="error-text" style={{ marginTop: 12 }}>{attendanceStatus.error}</p> : null}
           {attendanceStatus.success ? <p className="success-text" style={{ marginTop: 12 }}>{attendanceStatus.success}</p> : null}
         </div>
-        <div className="stats-grid">
-          <div className="stat-card"><div className="stat-label">Today Appointments</div><div className="stat-value">{data.todayAppointments.length}</div></div>
-          <div className="stat-card"><div className="stat-label">Recent Assigned</div><div className="stat-value">{data.recentAppointments.length}</div></div>
-        </div>
+          <div className="stats-grid">
+            <div className="stat-card"><div className="stat-label"><CalendarCheck size={14} /> Today Appointments</div><div className="stat-value">{data.todayAppointments.length}</div></div>
+            <div className="stat-card"><div className="stat-label"><Clock size={14} /> Recent Assigned</div><div className="stat-value">{data.recentAppointments.length}</div></div>
+          </div>
         <div className="panel-card" style={{ marginTop: 18 }}>
           <h3>Assigned Appointments</h3>
           <div className="list-stack">

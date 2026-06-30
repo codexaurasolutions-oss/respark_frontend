@@ -1,4 +1,4 @@
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { api } from "../../api/client";
 import { useBranch } from '../../context/BranchContext';
@@ -32,7 +32,7 @@ const makeEmptyForm = () => ({
   branchId: "",
   customRoleId: "",
   showInCatalog: false,
-  attendanceEnabled: false,
+  attendanceEnabled: true,
   attendanceEnrollmentPhotoUrl: "",
   serviceIds: [],
   permissions: clonePermissions(DEFAULT_PERMISSIONS),
@@ -61,7 +61,68 @@ export default function UsersPage() {
   const [form, setForm] = useState(makeEmptyForm);
   const [status, setStatus] = useState({ error: "", success: "", loading: true });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [enrollmentCaptureBusy, setEnrollmentCaptureBusy] = useState(false);
+  const [enrollmentCameraOpen, setEnrollmentCameraOpen] = useState(false);
+  const enrollmentVideoRef = useRef(null);
+  const enrollmentCanvasRef = useRef(null);
+  const enrollmentStreamRef = useRef(null);
   const deferredQuery = useDeferredValue(query.trim().toLowerCase());
+
+  const openEnrollmentCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+      enrollmentStreamRef.current = stream;
+      setEnrollmentCameraOpen(true);
+    } catch (err) {
+      let msg = "Camera permission is required to capture enrollment selfie.";
+      if (err?.name === "NotAllowedError") msg = "Camera permission denied. Please allow camera access in browser settings.";
+      if (err?.name === "NotFoundError") msg = "No camera found. Please connect a camera.";
+      if (err?.name === "NotReadableError") msg = "Camera is already in use by another application.";
+      setStatus((s) => ({ ...s, error: msg, success: "" }));
+    }
+  };
+
+  const stopEnrollmentCamera = () => {
+    if (enrollmentStreamRef.current) {
+      enrollmentStreamRef.current.getTracks().forEach((t) => t.stop());
+      enrollmentStreamRef.current = null;
+    }
+    setEnrollmentCameraOpen(false);
+  };
+
+  const captureEnrollmentFrame = async () => {
+    const video = enrollmentVideoRef.current;
+    const canvas = enrollmentCanvasRef.current;
+    if (!video || !canvas) return;
+    setEnrollmentCaptureBusy(true);
+    try {
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Failed to access camera capture.");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+      if (!blob) throw new Error("Failed to capture frame.");
+      const file = new File([blob], "enrollment-selfie.jpg", { type: "image/jpeg" });
+      const url = await uploadEnrollmentImage(file);
+      stopEnrollmentCamera();
+      setForm((c) => ({ ...c, attendanceEnrollmentPhotoUrl: url, attendanceEnabled: true }));
+      setStatus((s) => ({ ...s, success: "Enrollment selfie captured successfully.", error: "" }));
+    } catch (err) {
+      setStatus((s) => ({ ...s, error: formatApiError(err, "Could not capture enrollment selfie"), success: "" }));
+    } finally {
+      setEnrollmentCaptureBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (enrollmentCameraOpen && enrollmentVideoRef.current && enrollmentStreamRef.current) {
+      enrollmentVideoRef.current.srcObject = enrollmentStreamRef.current;
+      enrollmentVideoRef.current.play().catch(() => {});
+    }
+  }, [enrollmentCameraOpen]);
+
+  useEffect(() => () => stopEnrollmentCamera(), []);
 
   const uploadEnrollmentImage = async (file) => {
     if (!file) return "";
@@ -75,21 +136,26 @@ export default function UsersPage() {
   };
 
   const load = async (branchId = selectedBranchId) => {
-    const [usersResponse, servicesResponse, rolesResponse, settingsResponse] = await Promise.all([
-      api.get("/owner/users", { params: branchId ? { branchId } : {} }),
-      api.get("/owner/services", { params: branchId ? { branchId } : {} }),
-      api.get("/owner/custom-roles"),
-      api.get("/owner/settings")
-    ]);
-    setRows(usersResponse.data);
-    setServices(servicesResponse.data);
-    setCustomRoles(rolesResponse.data);
-    setDesignationOptions(
-      Array.isArray(settingsResponse.data?.advancedSettings?.designations)
-        ? settingsResponse.data.advancedSettings.designations.filter((row) => row?.active !== false && row?.name).map((row) => row.name)
-        : []
-    );
-    setStatus((current) => ({ ...current, loading: false }));
+    try {
+      const [usersResponse, servicesResponse, rolesResponse, settingsResponse] = await Promise.all([
+        api.get("/owner/users", { params: branchId ? { branchId } : {} }),
+        api.get("/owner/services", { params: branchId ? { branchId } : {} }),
+        api.get("/owner/custom-roles"),
+        api.get("/owner/settings")
+      ]);
+      setRows(usersResponse.data);
+      setServices(servicesResponse.data);
+      setCustomRoles(rolesResponse.data);
+      setDesignationOptions(
+        Array.isArray(settingsResponse.data?.advancedSettings?.designations)
+          ? settingsResponse.data.advancedSettings.designations.filter((row) => row?.active !== false && row?.name).map((row) => row.name)
+          : []
+      );
+    } catch {
+      // Auth expired or network error — will redirect to login
+    } finally {
+      setStatus((current) => ({ ...current, loading: false }));
+    }
   };
 
   useEffect(() => {
@@ -333,6 +399,56 @@ export default function UsersPage() {
 
   return (
     <div className="page-shell" style={{ padding: 0, height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {enrollmentCameraOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 16 }}>
+          <div style={{ width: 'min(100%, 480px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ color: 'white', fontSize: 18, fontWeight: 700 }}>Biometric Enrollment</div>
+                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>Position face inside the oval and hold still</div>
+              </div>
+              <button type="button" onClick={stopEnrollmentCamera} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', width: 36, height: 36, borderRadius: '50%', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+            </div>
+            <div style={{ position: 'relative', borderRadius: 18, overflow: 'hidden', background: '#000', aspectRatio: '4/3' }}>
+              <video ref={enrollmentVideoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                <div style={{ width: 180, height: 240, borderRadius: '50%', border: '3px solid rgba(255,255,255,0.6)', boxShadow: '0 0 0 9999px rgba(0,0,0,0.4)' }} />
+              </div>
+              <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', padding: '6px 14px', borderRadius: 999, background: 'rgba(0,0,0,0.55)', color: 'white', fontSize: 11, fontWeight: 600, backdropFilter: 'blur(8px)' }}>
+                Front Camera Active
+              </div>
+            </div>
+            <canvas ref={enrollmentCanvasRef} style={{ display: 'none' }} />
+            <button
+              type="button"
+              onClick={() => void captureEnrollmentFrame()}
+              disabled={enrollmentCaptureBusy}
+              style={{
+                width: '100%', padding: '14px 0', borderRadius: 12, border: 'none',
+                background: enrollmentCaptureBusy ? '#64748b' : 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                color: 'white', fontSize: 15, fontWeight: 700, cursor: enrollmentCaptureBusy ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+              }}
+            >
+              {enrollmentCaptureBusy ? (
+                <>
+                  <div style={{ width: 18, height: 18, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spinAround 0.8s linear infinite' }} />
+                  Verifying & Uploading...
+                </>
+              ) : (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="13" r="4" />
+                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                  </svg>
+                  Capture & Verify Face
+                </>
+              )}
+            </button>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, textAlign: 'center' }}>Photo will be validated for a single clear face before saving</div>
+          </div>
+        </div>
+      )}
       {status.loading ? (
         <PageLoader title="Loading staff workspace" message="Pulling users, saved roles, branches, and services into one permission-controlled workspace." />
       ) : null}
@@ -533,33 +649,27 @@ export default function UsersPage() {
                           <input type="checkbox" checked={form.attendanceEnabled} onChange={(event) => setForm({ ...form, attendanceEnabled: event.target.checked })} />
                           <span>Enable selfie attendance for this staff account</span>
                         </div>
-                        <label style={{ display: 'block', fontSize: 12, color: '#475569', marginBottom: 6 }}>Enrollment selfie captured by salon owner</label>
-                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                          <input type="text" className="hub-input" value={form.attendanceEnrollmentPhotoUrl} onChange={(event) => setForm({ ...form, attendanceEnrollmentPhotoUrl: event.target.value })} placeholder="Enrollment selfie URL" style={{ flex: 1, minWidth: 220 }} />
-                          <label className="secondary-button" style={{ cursor: 'pointer' }}>
-                            Upload Enrollment Selfie
-                            <input
-                              type="file"
-                              accept="image/*"
-                              capture="user"
-                              style={{ display: 'none' }}
-                              onChange={async (event) => {
-                                const file = event.target.files?.[0];
-                                event.target.value = "";
-                                if (!file) return;
-                                try {
-                                  const url = await uploadEnrollmentImage(file);
-                                  setForm((current) => ({ ...current, attendanceEnrollmentPhotoUrl: url, attendanceEnabled: true }));
-                                  setStatus((current) => ({ ...current, success: "Enrollment selfie uploaded.", error: "" }));
-                                } catch (error) {
-                                  setStatus((current) => ({ ...current, error: formatApiError(error, "Could not upload enrollment selfie"), success: "" }));
-                                }
-                              }}
-                            />
-                          </label>
-                        </div>
+                        <label style={{ display: 'block', fontSize: 12, color: '#475569', marginBottom: 8 }}>Enrollment Selfie</label>
+                        {form.attendanceEnrollmentPhotoUrl ? (
+                          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                            <img src={form.attendanceEnrollmentPhotoUrl} alt="Enrollment selfie" style={{ width: 80, height: 80, borderRadius: 12, objectFit: 'cover', border: '2px solid #22c55e' }} />
+                            <div style={{ display: 'grid', gap: 6 }}>
+                              <div style={{ fontSize: 12, color: '#166534', fontWeight: 600 }}>Enrollment selfie captured</div>
+                              <button type="button" className="secondary-button" style={{ fontSize: 12, padding: '6px 12px', width: 'fit-content', cursor: 'pointer' }} onClick={openEnrollmentCamera}>Retake</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button type="button" onClick={openEnrollmentCamera} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', padding: '28px 16px', borderRadius: 10, border: '2px dashed #93c5fd', background: '#eff6ff', cursor: 'pointer', transition: 'border-color 0.2s' }}>
+                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 8 }}>
+                              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                              <circle cx="12" cy="13" r="3" />
+                            </svg>
+                            <div style={{ fontSize: 13, color: '#1d4ed8', fontWeight: 600 }}>Capture Enrollment Selfie</div>
+                            <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Click to open live camera and capture staff face for biometric enrollment</div>
+                          </button>
+                        )}
                         <div style={{ fontSize: 12, color: '#64748b', marginTop: 8 }}>
-                          Staff can only use self check-in after owner enables attendance and uploads an enrollment selfie.
+                          Staff can only use self check-in after owner enables attendance and captures an enrollment selfie.
                         </div>
                       </div>
                     </div>
@@ -743,30 +853,24 @@ export default function UsersPage() {
                   </div>
                   <div className="hub-form-group" style={{ marginBottom: 0 }}>
                     <label>Enrollment Selfie</label>
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <input type="text" className="hub-input" value={form.attendanceEnrollmentPhotoUrl} onChange={(event) => setForm({ ...form, attendanceEnrollmentPhotoUrl: event.target.value })} placeholder="Enrollment selfie URL" style={{ flex: 1, minWidth: 220 }} />
-                      <label className="secondary-button" style={{ cursor: 'pointer' }}>
-                        Upload
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="user"
-                          style={{ display: 'none' }}
-                          onChange={async (event) => {
-                            const file = event.target.files?.[0];
-                            event.target.value = "";
-                            if (!file) return;
-                            try {
-                              const url = await uploadEnrollmentImage(file);
-                              setForm((current) => ({ ...current, attendanceEnrollmentPhotoUrl: url, attendanceEnabled: true }));
-                              setStatus((current) => ({ ...current, success: "Enrollment selfie uploaded.", error: "" }));
-                            } catch (error) {
-                              setStatus((current) => ({ ...current, error: formatApiError(error, "Could not upload enrollment selfie"), success: "" }));
-                            }
-                          }}
-                        />
-                      </label>
-                    </div>
+                    {form.attendanceEnrollmentPhotoUrl ? (
+                      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 6 }}>
+                        <img src={form.attendanceEnrollmentPhotoUrl} alt="Enrollment selfie" style={{ width: 80, height: 80, borderRadius: 12, objectFit: 'cover', border: '2px solid #22c55e' }} />
+                        <div style={{ display: 'grid', gap: 6 }}>
+                          <div style={{ fontSize: 12, color: '#166534', fontWeight: 600 }}>Enrollment selfie captured</div>
+                          <button type="button" className="secondary-button" style={{ fontSize: 12, padding: '6px 12px', width: 'fit-content', cursor: 'pointer' }} onClick={openEnrollmentCamera}>Retake</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={openEnrollmentCamera} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', padding: '28px 16px', borderRadius: 10, border: '2px dashed #93c5fd', background: '#eff6ff', cursor: 'pointer', marginTop: 6, transition: 'border-color 0.2s' }}>
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 8 }}>
+                          <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                          <circle cx="12" cy="13" r="3" />
+                        </svg>
+                        <div style={{ fontSize: 13, color: '#1d4ed8', fontWeight: 600 }}>Capture Enrollment Selfie</div>
+                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>Click to open live camera and capture staff face for biometric enrollment</div>
+                      </button>
+                    )}
                   </div>
                 </div>
 

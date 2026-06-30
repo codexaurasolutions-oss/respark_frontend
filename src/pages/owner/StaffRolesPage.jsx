@@ -407,40 +407,37 @@ export default function StaffRolesPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
                           {group.modules.map((moduleKey) => {
                             const current = Array.isArray(roleForm.permissions?.[moduleKey]) ? roleForm.permissions[moduleKey] : [];
-                            const allChecked = current.length > 0;
                             return (
                               <div key={moduleKey} style={{
-                                display: 'flex', alignItems: 'center', padding: '9px 14px',
+                                display: 'flex', alignItems: 'center', padding: '10px 14px',
                                 borderRadius: 8, background: '#fafafa', border: '1px solid #f1f5f9',
                                 gap: 12, flexWrap: 'wrap',
                               }}>
                                 <div style={{ minWidth: 140, display: 'flex', alignItems: 'center', gap: 8 }}>
                                   <span style={{ width: 7, height: 7, borderRadius: '50%', background: group.color, flexShrink: 0 }} />
-                                  <span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>{group.labels?.[moduleKey] || pretty(moduleKey)}</span>
+                                  <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>{group.labels?.[moduleKey] || pretty(moduleKey)}</span>
                                 </div>
-                                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', paddingRight: 10 }}>
-                                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 10 }}>
-                                    <span style={{ fontSize: 13, fontWeight: 600, color: allChecked ? '#10b981' : '#64748b' }}>
-                                      {allChecked ? 'Full Access' : 'No Access'}
-                                    </span>
-                                    <div style={{
-                                      position: 'relative', width: 44, height: 24, borderRadius: 34,
-                                      background: allChecked ? '#10b981' : '#cbd5e1', transition: '0.3s'
-                                    }}>
-                                      <input 
-                                        type="checkbox" 
-                                        style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }} 
-                                        checked={allChecked} 
-                                        onChange={() => toggleRoleModuleAll(moduleKey)} 
-                                      />
-                                      <span style={{
-                                        position: 'absolute', height: 18, width: 18, left: 3, bottom: 3,
-                                        background: 'white', borderRadius: '50%', transition: '0.3s',
-                                        transform: allChecked ? 'translateX(20px)' : 'translateX(0)'
-                                      }} />
-                                    </div>
-                                  </label>
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flex: 1 }}>
+                                  {ACTIONS.map((action) => (
+                                    <PermissionChip
+                                      key={action}
+                                      action={action}
+                                      checked={current.includes(action)}
+                                      onChange={() => toggleRolePermission(moduleKey, action)}
+                                    />
+                                  ))}
                                 </div>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleRoleModuleAll(moduleKey)}
+                                  style={{
+                                    fontSize: 11, fontWeight: 600, color: '#ef4444', background: 'none',
+                                    border: '1.5px solid #fecaca', borderRadius: 6, cursor: 'pointer',
+                                    padding: '4px 10px', whiteSpace: 'nowrap', transition: 'all 0.15s',
+                                  }}
+                                >
+                                  ✕ Clear
+                                </button>
                               </div>
                             );
                           })}
@@ -546,7 +543,6 @@ export default function StaffRolesPage() {
                                 {group.modules.map((moduleKey) => {
                                   const current = Array.isArray(row.permissions?.[moduleKey])
                                     ? row.permissions[moduleKey] : [];
-                                  const allChecked = current.length > 0;
 
                                   return (
                                     <div key={moduleKey} style={{
@@ -554,45 +550,35 @@ export default function StaffRolesPage() {
                                       borderRadius: 8, background: "white", border: "1px solid #f1f5f9",
                                       gap: 12, flexWrap: "wrap",
                                     }}>
-                                      {/* module dot + name */}
                                       <div style={{ minWidth: 140, display: "flex", alignItems: "center", gap: 8 }}>
                                         <span style={{ width: 7, height: 7, borderRadius: "50%", background: group.color, flexShrink: 0 }} />
-                                        <span style={{ fontSize: 12, fontWeight: 600, color: "#334155" }}>
+                                        <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>
                                           {group.labels?.[moduleKey] || pretty(moduleKey)}
                                         </span>
                                       </div>
-
-                                      <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", paddingRight: 10 }}>
-                                        <label style={{ display: "flex", alignItems: "center", cursor: isSaving ? "not-allowed" : "pointer", gap: 10, opacity: isSaving ? 0.6 : 1 }}>
-                                          <span style={{ fontSize: 13, fontWeight: 600, color: allChecked ? "#10b981" : "#64748b" }}>
-                                            {allChecked ? "Full Access" : "No Access"}
-                                          </span>
-                                          <div style={{
-                                            position: "relative", width: 44, height: 24, borderRadius: 34,
-                                            background: allChecked ? "#10b981" : "#cbd5e1", transition: "0.3s"
-                                          }}>
-                                            <input
-                                              type="checkbox"
-                                              style={{ opacity: 0, width: 0, height: 0, position: "absolute" }}
-                                              checked={allChecked}
-                                              disabled={isSaving}
-                                              onChange={async () => {
-                                                setSavingId(row.id);
-                                                const current2 = row.permissions || {};
-                                                const nextPerms = { ...current2, [moduleKey]: allChecked ? [] : [...ACTIONS] };
-                                                await api.patch(`/owner/users/${row.id}`, { permissions: nextPerms });
-                                                await load();
-                                                setSavingId("");
-                                              }}
-                                            />
-                                            <span style={{
-                                              position: "absolute", height: 18, width: 18, left: 3, bottom: 3,
-                                              background: "white", borderRadius: "50%", transition: "0.3s",
-                                              transform: allChecked ? "translateX(20px)" : "translateX(0)"
-                                            }} />
-                                          </div>
-                                        </label>
+                                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flex: 1 }}>
+                                        {ACTIONS.map((action) => (
+                                          <PermissionChip
+                                            key={action}
+                                            action={action}
+                                            checked={current.includes(action)}
+                                            disabled={isSaving}
+                                            onChange={() => togglePermission(row, moduleKey, action)}
+                                          />
+                                        ))}
                                       </div>
+                                      <button
+                                        type="button"
+                                        disabled={isSaving}
+                                        onClick={() => toggleAll(row, moduleKey, false)}
+                                        style={{
+                                          fontSize: 11, fontWeight: 600, color: '#ef4444', background: 'none',
+                                          border: '1.5px solid #fecaca', borderRadius: 6, cursor: isSaving ? 'not-allowed' : 'pointer',
+                                          padding: '4px 10px', whiteSpace: 'nowrap', opacity: isSaving ? 0.6 : 1, transition: 'all 0.15s',
+                                        }}
+                                      >
+                                        ✕ Clear
+                                      </button>
                                     </div>
                                   );
                                 })}

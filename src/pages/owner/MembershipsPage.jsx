@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
+import { Trash2 } from "lucide-react";
 import { api } from "../../api/client";
 import { useSalonSettings } from "../../context/SalonSettingsContext";
+import { useBranch } from "../../context/BranchContext";
 import EmptyState from "../../components/EmptyState";
 import { formatApiError } from "../../utils/apiError";
 import ModuleTabs from "../../components/ModuleTabs";
@@ -25,7 +27,7 @@ const emptyMembership = {
   walletValue: "",
   serviceIds: []
 };
-const emptyPackage = { name: "", price: 0, totalSessions: 5, validityDays: 60, services: [], products: [], includeProducts: false };
+const emptyPackage = { name: "", price: 0, totalSessions: 5, validityDays: 60, services: [], products: [], includeProducts: false, selectedCategoryId: "" };
 const emptyPackageRedeem = { customerPackageId: "", serviceId: "", sessionsUsed: 1, note: "" };
 const normalizeRows = (value) => Array.isArray(value) ? value : value?.items || value?.rows || [];
 const normalizeBenefits = (value) => {
@@ -41,12 +43,14 @@ export default function MembershipsPage() {
   const location = useLocation();
   const { id: routeId } = useParams();
   const { formatMoney } = useSalonSettings();
+  const { selectedBranchId } = useBranch();
   const customerId = location.pathname.includes("/customers/") ? routeId : "";
   const editableMembershipId = location.pathname.includes("/admin/memberships/") && location.pathname.includes("/edit") ? routeId : "";
   const editablePackageId = location.pathname.includes("/admin/packages/") && location.pathname.includes("/edit") ? routeId : "";
   const [memberships, setMemberships] = useState([]);
   const [packages, setPackages] = useState([]);
   const [services, setServices] = useState([]);
+  const [serviceCategories, setServiceCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [selectedCustomerHistory, setSelectedCustomerHistory] = useState(null);
@@ -59,11 +63,13 @@ export default function MembershipsPage() {
   const [packageLifecycleForm, setPackageLifecycleForm] = useState({ customerPackageId: "", additionalSessions: 0, transferCustomerId: "", note: "" });
   const [status, setStatus] = useState({ error: "", success: "" });
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
 
   const applyWorkspaceData = useCallback(async ({
     membershipResponse,
     packageResponse,
     serviceResponse,
+    serviceCategoryResponse,
     productResponse,
     customerResponse,
     activeCustomerId = "",
@@ -76,12 +82,14 @@ export default function MembershipsPage() {
     const nextMemberships = membershipResponse.status === "fulfilled" ? normalizeRows(membershipResponse.value.data) : [];
     const nextPackages = packageResponse.status === "fulfilled" ? normalizeRows(packageResponse.value.data) : [];
     const nextServices = serviceResponse.status === "fulfilled" ? normalizeRows(serviceResponse.value.data) : [];
+    const nextServiceCategories = serviceCategoryResponse?.status === "fulfilled" ? normalizeRows(serviceCategoryResponse.value.data) : [];
     const nextProducts = productResponse?.status === "fulfilled" ? normalizeRows(productResponse.value.data) : [];
     const nextCustomers = customerResponse.status === "fulfilled" ? normalizeRows(customerResponse.value.data) : [];
 
     setMemberships(nextMemberships);
     setPackages(nextPackages);
     setServices(nextServices);
+    setServiceCategories(nextServiceCategories);
     setProducts(nextProducts);
     setCustomers(nextCustomers);
 
@@ -141,7 +149,8 @@ export default function MembershipsPage() {
             productId: item.productId,
             quantity: item.quantity || 1
           })),
-          includeProducts: (packageDetail.data.products || []).length > 0
+          includeProducts: (packageDetail.data.products || []).length > 0,
+          selectedCategoryId: ""
         });
       } catch {
         if (!active) return;
@@ -162,14 +171,15 @@ export default function MembershipsPage() {
   const loadAll = async (activeCustomerId = customerId || assignMembershipForm.customerId || assignPackageForm.customerId || "") => {
     setLoading(true);
     try {
-      const [membershipResponse, packageResponse, serviceResponse, productResponse, customerResponse] = await Promise.allSettled([
-        api.get("/owner/memberships"),
-        api.get("/owner/packages"),
-        api.get("/owner/services"),
-        api.get("/owner/inventory/products"),
-        api.get("/owner/customers")
+      const [membershipResponse, packageResponse, serviceResponse, serviceCategoryResponse, productResponse, customerResponse] = await Promise.allSettled([
+        api.get("/owner/memberships", { params: { branchId: selectedBranchId || undefined } }),
+        api.get("/owner/packages", { params: { branchId: selectedBranchId || undefined } }),
+        api.get("/owner/services", { params: { branchId: selectedBranchId || undefined } }),
+        api.get("/owner/service-categories"),
+        api.get("/owner/inventory/products", { params: { branchId: selectedBranchId || undefined } }),
+        api.get("/owner/customers", { params: { branchId: selectedBranchId || undefined } })
       ]);
-      await applyWorkspaceData({ membershipResponse, packageResponse, serviceResponse, productResponse, customerResponse, activeCustomerId });
+      await applyWorkspaceData({ membershipResponse, packageResponse, serviceResponse, serviceCategoryResponse, productResponse, customerResponse, activeCustomerId });
     } catch (error) {
       setStatus({ error: formatApiError(error, "Could not load memberships, packages, customers, or services"), success: "" });
     } finally {
@@ -181,17 +191,19 @@ export default function MembershipsPage() {
     let active = true;
     (async () => {
       try {
-        const [membershipResponse, packageResponse, serviceResponse, productResponse, customerResponse] = await Promise.allSettled([
-          api.get("/owner/memberships"),
-          api.get("/owner/packages"),
-          api.get("/owner/services"),
-          api.get("/owner/inventory/products"),
-          api.get("/owner/customers")
+        const [membershipResponse, packageResponse, serviceResponse, serviceCategoryResponse, productResponse, customerResponse] = await Promise.allSettled([
+          api.get("/owner/memberships", { params: { branchId: selectedBranchId || undefined } }),
+          api.get("/owner/packages", { params: { branchId: selectedBranchId || undefined } }),
+          api.get("/owner/services", { params: { branchId: selectedBranchId || undefined } }),
+          api.get("/owner/service-categories"),
+          api.get("/owner/inventory/products", { params: { branchId: selectedBranchId || undefined } }),
+          api.get("/owner/customers", { params: { branchId: selectedBranchId || undefined } })
         ]);
         await applyWorkspaceData({
           membershipResponse,
           packageResponse,
           serviceResponse,
+          serviceCategoryResponse,
           productResponse,
           customerResponse,
           activeCustomerId: customerId,
@@ -209,7 +221,7 @@ export default function MembershipsPage() {
     return () => {
       active = false;
     };
-  }, [applyWorkspaceData, customerId, editableMembershipId, editablePackageId]);
+  }, [applyWorkspaceData, customerId, editableMembershipId, editablePackageId, selectedBranchId]);
 
   const toggleMembershipService = (serviceId) => {
     setMembershipForm((current) => ({
@@ -254,6 +266,42 @@ export default function MembershipsPage() {
       products: current.products.some((item) => item.productId === productId)
         ? current.products.filter((item) => item.productId !== productId)
         : [...current.products, { productId, quantity: 1 }]
+    }));
+  };
+
+  const collectCategoryServiceIds = (categoryId) => {
+    const cat = serviceCategories.find((c) => c.id === categoryId);
+    if (!cat) return [];
+    const ids = new Set();
+    (cat.services || []).forEach((s) => ids.add(s.id));
+    (cat.children || []).forEach((child) => {
+      (child.services || []).forEach((s) => ids.add(s.id));
+    });
+    return Array.from(ids);
+  };
+
+  const handleCategorySelect = (categoryId) => {
+    if (!categoryId) {
+      setPackageForm((current) => ({ ...current, selectedCategoryId: "" }));
+      return;
+    }
+    const serviceIds = collectCategoryServiceIds(categoryId);
+    setPackageForm((current) => {
+      const existingIds = new Set(current.services.map((s) => s.serviceId));
+      const merged = [...current.services];
+      serviceIds.forEach((id) => {
+        if (!existingIds.has(id)) {
+          merged.push({ serviceId: id, sessions: 1 });
+        }
+      });
+      return { ...current, selectedCategoryId: categoryId, services: merged };
+    });
+  };
+
+  const removePackageService = (serviceId) => {
+    setPackageForm((current) => ({
+      ...current,
+      services: current.services.filter((item) => item.serviceId !== serviceId)
     }));
   };
 
@@ -561,6 +609,7 @@ export default function MembershipsPage() {
                   price: Number(packageForm.price),
                   totalSessions: Number(packageForm.totalSessions),
                   validityDays: Number(packageForm.validityDays),
+                  branchId: selectedBranchId || undefined,
                   services: packageForm.services.map((item) => ({
                     serviceId: item.serviceId,
                     sessions: Number(item.sessions || 1)
@@ -570,6 +619,7 @@ export default function MembershipsPage() {
                     quantity: Number(item.quantity || 1)
                   })) : []
                 };
+                delete payload.selectedCategoryId;
                 if (packageEditMode) {
                   await api.patch(`/owner/packages/${editablePackageId}`, payload);
                 } else {
@@ -655,23 +705,63 @@ export default function MembershipsPage() {
                 </label>
               </div>
 
-              {/* Service Selection */}
+              {/* Service Category + Selected Services + Individual Services */}
               <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-                <label style={{ display: "block", fontSize: "0.85rem", color: "#475569", fontWeight: 600, marginBottom: "8px" }}>Included Services</label>
-                <input 
-                  type="text" 
-                  placeholder="Search services..." 
-                  value={serviceSearch} 
-                  onChange={(e) => setServiceSearch(e.target.value)} 
+                <label style={{ display: "block", fontSize: "0.85rem", color: "#475569", fontWeight: 600, marginBottom: "8px" }}>Service Category</label>
+                <select
+                  value={packageForm.selectedCategoryId}
+                  onChange={(e) => handleCategorySelect(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", boxSizing: "border-box", outline: "none", marginBottom: "12px" }}
+                >
+                  <option value="">Select a category to auto-add services</option>
+                  {serviceCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+
+                {packageForm.services.length > 0 && (
+                  <>
+                    <label style={{ display: "block", fontSize: "0.85rem", color: "#475569", fontWeight: 600, marginBottom: "8px" }}>
+                      Included Services ({packageForm.services.length})
+                    </label>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "200px", overflowY: "auto", marginBottom: "16px" }}>
+                      {packageForm.services.map((item) => {
+                        const svc = services.find((s) => s.id === item.serviceId);
+                        if (!svc) return null;
+                        return (
+                          <div key={item.serviceId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "white", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                            <span style={{ fontSize: "0.8rem", color: "#0f172a", fontWeight: 500 }}>
+                              {svc.name}
+                              {svc.category ? <span style={{ color: "#94a3b8", marginLeft: "6px" }}>({svc.category.name})</span> : null}
+                              {svc.price ? <span style={{ color: "#64748b", marginLeft: "6px" }}>— {formatMoney(svc.price)}</span> : null}
+                            </span>
+                            <button type="button" onClick={() => removePackageService(item.serviceId)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "0.75rem", fontWeight: 600, padding: "2px 6px" }}>
+                              Remove
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                <hr style={{ border: "none", borderTop: "1px solid #e2e8f0", margin: "0 0 12px 0" }} />
+
+                <label style={{ display: "block", fontSize: "0.85rem", color: "#475569", fontWeight: 600, marginBottom: "8px" }}>Add Individual Services</label>
+                <input
+                  type="text"
+                  placeholder="Search services..."
+                  value={serviceSearch}
+                  onChange={(e) => setServiceSearch(e.target.value)}
                   style={{ marginBottom: "12px", padding: "8px 12px", width: "100%", borderRadius: "6px", border: "1px solid #cbd5e1", boxSizing: "border-box", fontSize: "0.8rem", outline: "none" }}
                 />
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", maxHeight: "150px", overflowY: "auto" }}>
                   {services.filter(s => s.name.toLowerCase().includes(serviceSearch.toLowerCase())).map((service) => {
                     const isSelected = packageForm.services.some((item) => item.serviceId === service.id);
                     return (
-                      <button 
-                        type="button" 
-                        key={service.id} 
+                      <button
+                        type="button"
+                        key={service.id}
                         onClick={() => togglePackageService(service.id)}
                         style={{
                           padding: "6px 12px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
@@ -734,7 +824,7 @@ export default function MembershipsPage() {
 
               {/* Actions */}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "10px" }}>
-                <button type="button" onClick={() => setPackageForm(emptyPackage)} style={{ padding: "8px 24px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#f1f5f9", color: "#475569", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+                <button type="button" onClick={() => { setPackageForm(emptyPackage); setServiceSearch(""); setProductSearch(""); }} style={{ padding: "8px 24px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#f1f5f9", color: "#475569", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
                 <button type="submit" style={{ padding: "8px 32px", borderRadius: "6px", border: "none", background: "var(--button-bg-solid, #3b82f6)", color: "white", fontWeight: 600, cursor: "pointer", transition: "opacity 0.2s" }}>Save</button>
               </div>
 
@@ -768,8 +858,22 @@ export default function MembershipsPage() {
                   </div>
                 ) : null}
                 {!customerMembershipMode && (
-                  <div className="inline-actions" style={{ marginTop: 10 }}>
+                  <div className="inline-actions" style={{ marginTop: 10, display: "flex", gap: 8 }}>
                     <Link to={`/admin/memberships/${item.id}/edit`} className="cta-secondary">Edit</Link>
+                    <button type="button" className="cta-secondary" style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }} disabled={deletingId === item.id} onClick={async () => {
+                      if (!window.confirm(`Delete membership plan "${item.name}"?`)) return;
+                      try {
+                        setDeletingId(item.id);
+                        await api.delete(`/owner/memberships/${item.id}`);
+                        setStatus({ error: "", success: "Membership plan deleted." });
+                        setTimeout(() => setStatus({ error: "", success: "" }), 3000);
+                        await loadAll(customerId);
+                      } catch (error) {
+                        setStatus({ error: formatApiError(error, "Could not delete membership plan"), success: "" });
+                      } finally {
+                        setDeletingId(null);
+                      }
+                    }}>{deletingId === item.id ? "..." : <Trash2 size={14} />}</button>
                   </div>
                 )}
                 {customerMembershipMode && (
@@ -799,8 +903,22 @@ export default function MembershipsPage() {
                     : `${item.totalSessions} sessions | ${item.validityDays} days`}
                 </div>
                 {!customerPackageMode && (
-                  <div className="inline-actions" style={{ marginTop: 10 }}>
+                  <div className="inline-actions" style={{ marginTop: 10, display: "flex", gap: 8 }}>
                     <Link to={`/admin/packages/${item.id}/edit`} className="cta-secondary">Edit</Link>
+                    <button type="button" className="cta-secondary" style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }} disabled={deletingId === item.id} onClick={async () => {
+                      if (!window.confirm(`Delete package "${item.name}"?`)) return;
+                      try {
+                        setDeletingId(item.id);
+                        await api.delete(`/owner/packages/${item.id}`);
+                        setStatus({ error: "", success: "Package deleted." });
+                        setTimeout(() => setStatus({ error: "", success: "" }), 3000);
+                        await loadAll(customerId);
+                      } catch (error) {
+                        setStatus({ error: formatApiError(error, "Could not delete package"), success: "" });
+                      } finally {
+                        setDeletingId(null);
+                      }
+                    }}>{deletingId === item.id ? "..." : <Trash2 size={14} />}</button>
                   </div>
                 )}
                 {customerPackageMode && (
@@ -989,13 +1107,6 @@ export default function MembershipsPage() {
               {!loading && !selectedCustomerHistory.packages?.length && <EmptyState title="No package history yet" message="Assigned packages and redemption usage will appear here once active." />}
             </div>
           </div>
-        </div>
-      )}
-
-      {(status.error || status.success) && (
-        <div className="panel-card" style={{ marginTop: 18 }}>
-          {status.error && <p className="error-text">{status.error}</p>}
-          {status.success && <p className="success-text">{status.success}</p>}
         </div>
       )}
 
