@@ -61,6 +61,7 @@ export default function UsersPage() {
   const [form, setForm] = useState(makeEmptyForm);
   const [status, setStatus] = useState({ error: "", success: "", loading: true });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [enrollmentCaptureBusy, setEnrollmentCaptureBusy] = useState(false);
   const [enrollmentCameraOpen, setEnrollmentCameraOpen] = useState(false);
   const enrollmentVideoRef = useRef(null);
@@ -133,6 +134,26 @@ export default function UsersPage() {
       headers: { "Content-Type": "multipart/form-data" }
     });
     return response.data?.url || "";
+  };
+
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    setStatus((s) => ({ ...s, error: "", success: "" }));
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const response = await api.post("/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      setForm((f) => ({ ...f, avatarUrl: response.data?.url || "" }));
+      setStatus((s) => ({ ...s, success: "Profile image uploaded successfully." }));
+    } catch (err) {
+      setStatus((s) => ({ ...s, error: formatApiError(err, "Failed to upload profile image.") }));
+    } finally {
+      setAvatarUploading(false);
+    }
   };
 
   const load = async (branchId = selectedBranchId) => {
@@ -644,6 +665,133 @@ export default function UsersPage() {
                         </div>
                         <div className="hub-form-group">
                           <label>Branch scope</label>
+                </div>
+              );
+            })}
+            {!filteredRows.length && !status.loading ? (
+              <div style={{ padding: 30, textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
+                No staff match this filter
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Right Column: Editor */}
+        <div className="hub-items-col" style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
+          {selectedRow ? (
+            <>
+              <div className="hub-items-header-bar" style={{ padding: '20px 32px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
+                <div>
+                  <div style={{ color: '#0f172a', fontWeight: 600, fontSize: 20, marginBottom: 4 }}>{selectedRow.user?.name}</div>
+                  <div style={{ color: '#64748b', fontSize: 14 }}>{selectedRow.user?.email}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button
+                    type="button"
+                    onClick={() => toggleUserStatus(selectedRow)}
+                    style={{ padding: '8px 16px', borderRadius: 6, fontSize: 14, cursor: 'pointer', border: '1px solid #e2e8f0', background: 'white', color: selectedRow.user?.isActive ? '#ef4444' : '#10b981' }}
+                  >
+                    {selectedRow.user?.isActive ? "Deactivate Login" : "Activate Login"}
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => archiveUser(selectedRow)}
+                    style={{ padding: '8px 16px', borderRadius: 6, fontSize: 14, cursor: 'pointer', border: 'none', background: '#ef4444', color: 'white' }}
+                  >
+                    Archive
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ padding: '32px', maxWidth: 900, margin: '0 auto' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 32 }}>
+                   <div style={{ background: 'white', padding: 20, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                     <div style={{ fontSize: 12, textTransform: 'uppercase', color: '#64748b', fontWeight: 600, marginBottom: 8 }}>Current Role</div>
+                     <div style={{ fontSize: 16, fontWeight: 600, color: '#0f172a' }}>{selectedRow.roleTitle || selectedRow.customRole?.name || resolveRoleLabel(selectedRow.salonRole)}</div>
+                     <div style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>{selectedRow.phone || "No phone added"}</div>
+                   </div>
+                   <div style={{ background: 'white', padding: 20, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                     <div style={{ fontSize: 12, textTransform: 'uppercase', color: '#64748b', fontWeight: 600, marginBottom: 8 }}>Page Access</div>
+                     <div style={{ fontSize: 16, fontWeight: 600, color: '#0f172a' }}>{countGrantedModules(selectedRow.permissions || {})} Modules</div>
+                     <div style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>{countGrantedActions(selectedRow.permissions || {})} switches enabled</div>
+                   </div>
+                   <div style={{ background: 'white', padding: 20, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                     <div style={{ fontSize: 12, textTransform: 'uppercase', color: '#64748b', fontWeight: 600, marginBottom: 8 }}>Services</div>
+                     <div style={{ fontSize: 16, fontWeight: 600, color: '#0f172a' }}>{selectedRow.serviceAssignments?.length || 0} Services</div>
+                     <div style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>{selectedRow.showInCatalog ? "Visible in catalog" : "Hidden from catalog"}</div>
+                   </div>
+                </div>
+
+                <div style={{ background: 'white', borderRadius: 8, border: '1px solid #e2e8f0', padding: 32 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                    <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>Edit Access & Settings</h3>
+                    {status.success && <span style={{ color: '#10b981', fontSize: 14, fontWeight: 500 }}>{status.success}</span>}
+                    {status.error && <span style={{ color: '#ef4444', fontSize: 14, fontWeight: 500 }}>{status.error}</span>}
+                  </div>
+                  
+                  <form onSubmit={submit}>
+                    {/* Identity Section */}
+                    <div style={{ marginBottom: 32 }}>
+                      <h4 style={{ fontSize: 15, color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 16 }}>Identity & Scope</h4>
+                      
+                      {/* PRIMARY: Custom role from Access Control */}
+                      <div style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: '1px solid #93c5fd', borderRadius: 10, padding: 16, marginBottom: 20 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span>🎯 Access Role (from Access Control)</span>
+                              <span style={{ background: '#2563eb', color: 'white', fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 10, letterSpacing: 0.5 }}>RECOMMENDED</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>
+                              Roles created in <strong>Settings → Access Control</strong>. Pick one to auto-apply its full permission set.
+                            </div>
+                          </div>
+                          <button type="button" onClick={openAccessControl} className="secondary-button" style={{ background: 'white', border: '1px solid #2563eb', color: '#1d4ed8', padding: '6px 12px', fontSize: 12, fontWeight: 600, borderRadius: 6, cursor: 'pointer' }}>
+                            + Create New Role
+                          </button>
+                        </div>
+                        <select
+                          className="hub-input"
+                          style={{ width: '100%', background: 'white', fontSize: 14, fontWeight: 600 }}
+                          value={form.customRoleId || ""}
+                          onChange={(event) => applyCustomRole(event.target.value)}
+                        >
+                          <option value="">— No saved access role (use system role below) —</option>
+                          {customRoles.length === 0 && (
+                            <option value="" disabled>No custom roles yet — create one in Access Control</option>
+                          )}
+                          {customRoles.map((role) => (
+                            <option key={role.id} value={role.id}>
+                              {role.name}{role.description ? ` — ${role.description}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                        {form.customRoleId && (() => {
+                          const sel = customRoles.find((r) => r.id === form.customRoleId);
+                          if (!sel) return null;
+                          const grantedModules = Object.entries(sel.permissions || {}).filter(([, actions]) => Array.isArray(actions) && actions.length > 0).length;
+                          return (
+                            <div style={{ marginTop: 8, fontSize: 12, color: '#1e40af', display: 'flex', alignItems: 'center', gap: 12 }}>
+                              <span>✓ Permissions loaded: <strong>{grantedModules}</strong> module{grantedModules === 1 ? "" : "s"}</span>
+                              {sel.isSystemPreset && <span style={{ background: '#fbbf24', color: '#78350f', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4 }}>PRESET</span>}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        <div className="hub-form-group">
+                          <label>System role (fallback) <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 11 }}>— auto-set when access role picked</span></label>
+                          <select className="hub-input" value={form.salonRole} onChange={(event) => applyRolePreset(event.target.value)} disabled={Boolean(form.customRoleId)} style={form.customRoleId ? { background: '#f1f5f9', cursor: 'not-allowed' } : undefined}>
+                            {ROLE_OPTIONS.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
+                          </select>
+                        </div>
+                        <div className="hub-form-group">
+                          <label>Role title (Visible designation)</label>
+                          <input type="text" className="hub-input" value={form.roleTitle} onChange={(event) => setForm({ ...form, roleTitle: event.target.value })} placeholder="e.g. Senior Stylist, Floor Manager" />
+                        </div>
+                        <div className="hub-form-group">
+                          <label>Branch scope</label>
                           <select className="hub-input" value={form.branchId} onChange={(event) => setForm({ ...form, branchId: event.target.value, serviceIds: [] })}>
                             <option value="">All branches</option>
                             {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
@@ -652,6 +800,25 @@ export default function UsersPage() {
                         <div className="hub-form-group">
                           <label>Phone</label>
                           <IndianPhoneInput required={true} value={form.phone} onChange={(phone) => setForm({ ...form, phone })} className="hub-input" inputStyle={{ padding: "12px 14px" }} />
+                        </div>
+                        <div className="hub-form-group">
+                          <label>Profile Avatar</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            {form.avatarUrl ? (
+                              <img src={form.avatarUrl} alt="Avatar" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1px solid #cbd5e1' }} />
+                            ) : (
+                              <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                              </div>
+                            )}
+                            <label className="secondary-button" style={{ fontSize: 12, padding: '6px 12px', cursor: 'pointer', display: 'inline-block', margin: 0 }}>
+                              {avatarUploading ? "Uploading..." : "Upload Image"}
+                              <input type="file" accept="image/*" onChange={handleAvatarUpload} disabled={avatarUploading} style={{ display: 'none' }} />
+                            </label>
+                            {form.avatarUrl && (
+                              <button type="button" onClick={() => setForm({...form, avatarUrl: ""})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: 12, cursor: 'pointer', padding: 0 }}>Remove</button>
+                            )}
+                          </div>
                         </div>
                       </div>
                       
@@ -850,8 +1017,23 @@ export default function UsersPage() {
                 </div>
 
                 <div className="hub-form-group" style={{ marginBottom: 16 }}>
-                  <label>Avatar URL</label>
-                  <input type="text" className="hub-input" value={form.avatarUrl} onChange={e => setForm({ ...form, avatarUrl: e.target.value })} placeholder="https://example.com/avatar.jpg" maxLength={2000} />
+                  <label>Profile Avatar</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {form.avatarUrl ? (
+                      <img src={form.avatarUrl} alt="Avatar" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1px solid #cbd5e1' }} />
+                    ) : (
+                      <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                      </div>
+                    )}
+                    <label className="secondary-button" style={{ fontSize: 12, padding: '6px 12px', cursor: 'pointer', display: 'inline-block', margin: 0 }}>
+                      {avatarUploading ? "Uploading..." : "Upload Image"}
+                      <input type="file" accept="image/*" onChange={handleAvatarUpload} disabled={avatarUploading} style={{ display: 'none' }} />
+                    </label>
+                    {form.avatarUrl && (
+                      <button type="button" onClick={() => setForm({...form, avatarUrl: ""})} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: 12, cursor: 'pointer', padding: 0 }}>Remove</button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="hub-form-group" style={{ marginBottom: 16 }}>
