@@ -3,6 +3,7 @@ import { api } from "../../api/client";
 import { downloadFromApi } from "../../utils/download";
 import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
+import { useBranch } from "../../context/BranchContext";
 import { formatApiError } from "../../utils/apiError";
 
 const DURATION_OPTIONS = [
@@ -53,6 +54,7 @@ function IconButton({ title, color = "#64748b", onClick, children }) {
 }
 
 export default function ServiceCategoriesPage() {
+  const { selectedBranchId } = useBranch();
   const [categories, setCategories] = useState([]);
   const [branches, setBranches] = useState([]);
   const [selectedCatId, setSelectedCatId] = useState("");
@@ -77,7 +79,7 @@ export default function ServiceCategoriesPage() {
     setLoading(true);
     try {
       const [categoriesRes, branchesRes] = await Promise.all([
-        api.get("/owner/service-categories"),
+        api.get("/owner/service-categories", { params: { branchId: selectedBranchId || undefined } }),
         api.get("/owner/branches")
       ]);
       setCategories(categoriesRes.data || []);
@@ -91,7 +93,7 @@ export default function ServiceCategoriesPage() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [selectedBranchId]);
 
   const selectedCategory = useMemo(
     () => categories.find((category) => category.id === selectedCatId) || null,
@@ -189,7 +191,7 @@ export default function ServiceCategoriesPage() {
         await api.patch(`/owner/service-categories/${editingCatId}`, { name: catInput.trim() });
         setSuccess("Category updated.");
       } else {
-        await api.post("/owner/service-categories", { name: catInput.trim() });
+        await api.post("/owner/service-categories", { name: catInput.trim(), branchId: selectedBranchId || null });
         setSuccess("Category added.");
       }
       setCatInput("");
@@ -234,7 +236,7 @@ export default function ServiceCategoriesPage() {
         await api.patch(`/owner/service-categories/${editingSubId}`, { name: subInput.trim() });
         setSuccess("Subcategory updated.");
       } else {
-        await api.post("/owner/service-categories", { name: subInput.trim(), parentId: selectedCategory.id });
+        await api.post("/owner/service-categories", { name: subInput.trim(), parentId: selectedCategory.id, branchId: selectedBranchId || null });
         setSuccess("Subcategory added.");
       }
       setSubInput("");

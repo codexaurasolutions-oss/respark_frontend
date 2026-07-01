@@ -114,7 +114,8 @@ export default function CouponsPage() {
         startsAt: start.toISOString(),
         endsAt: end.toISOString(),
         isArchived: !couponForm.isActive,
-        notes: couponForm.isPrivate ? "PRIVATE" : ""
+        notes: couponForm.isPrivate ? "PRIVATE" : "",
+        branchId: selectedBranchId || null
       };
 
       if (editingCoupon) {
@@ -151,7 +152,8 @@ export default function CouponsPage() {
           code: giftCardForm.code,
           title: giftCardForm.title,
           originalAmount: Number(giftCardForm.originalAmount),
-          note: giftCardForm.note
+          note: giftCardForm.note,
+          branchId: selectedBranchId || null
         });
         setStatus({ error: "", success: "Gift card updated." });
       } else {
@@ -159,7 +161,8 @@ export default function CouponsPage() {
           code: giftCardForm.code,
           title: giftCardForm.title,
           originalAmount: Number(giftCardForm.originalAmount),
-          note: giftCardForm.note
+          note: giftCardForm.note,
+          branchId: selectedBranchId || null
         });
         setStatus({ error: "", success: "Gift card created." });
       }

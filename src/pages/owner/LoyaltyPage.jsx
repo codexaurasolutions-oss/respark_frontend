@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { api } from "../../api/client";
+import { useBranch } from "../../context/BranchContext";
 import ModuleTabs from "../../components/ModuleTabs";
 import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
@@ -17,6 +18,7 @@ const emptyRule = {
 export default function LoyaltyPage() {
   const location = useLocation();
   const params = useParams();
+  const { selectedBranchId } = useBranch();
   const [rules, setRules] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [report, setReport] = useState(null);
@@ -40,9 +42,9 @@ export default function LoyaltyPage() {
     setLoading(true);
     try {
       const [rulesResponse, transactionsResponse, reportResponse] = await Promise.all([
-        api.get("/owner/loyalty/rules"),
-        api.get("/owner/loyalty/transactions"),
-        api.get("/owner/loyalty/reports")
+        api.get("/owner/loyalty/rules", { params: { branchId: selectedBranchId || undefined } }),
+        api.get("/owner/loyalty/transactions", { params: { branchId: selectedBranchId || undefined } }),
+        api.get("/owner/loyalty/reports", { params: { branchId: selectedBranchId || undefined } })
       ]);
       setRules(rulesResponse.data || []);
       setTransactions(transactionsResponse.data || []);
@@ -58,7 +60,7 @@ export default function LoyaltyPage() {
     } finally {
       setLoading(false);
     }
-  }, [params.id]);
+  }, [params.id, selectedBranchId]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -75,7 +77,8 @@ export default function LoyaltyPage() {
         pointsPerCurrency: Number(form.pointsPerCurrency),
         minRedeemPoints: Number(form.minRedeemPoints),
         maxRedeemPercent: Number(form.maxRedeemPercent),
-        expiryDays: Number(form.expiryDays)
+        expiryDays: Number(form.expiryDays),
+        branchId: selectedBranchId || null
       });
       setForm(emptyRule);
       setStatus({ error: "", success: "Loyalty rule saved." });
@@ -90,7 +93,8 @@ export default function LoyaltyPage() {
     try {
       await api.post("/owner/loyalty/adjust", {
         ...adjustment,
-        points: Number(adjustment.points)
+        points: Number(adjustment.points),
+        branchId: selectedBranchId || null
       });
       setAdjustment({ customerId: "", points: 0, type: "ADJUST", note: "" });
       setStatus({ error: "", success: "Loyalty adjustment saved." });

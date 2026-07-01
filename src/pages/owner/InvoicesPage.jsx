@@ -19,14 +19,18 @@ export default function InvoicesPage() {
   const [status, setStatus] = useState({ error: "", success: "", loading: true });
 
   const load = async (branchId = selectedBranchId) => {
-    const params = {
-      ...(branchId ? { branchId } : {}),
-      ...(filters.q ? { q: filters.q } : {}),
-      ...(filters.status ? { status: filters.status } : {})
-    };
-    const response = await api.get("/owner/invoices", { params });
-    setRows(response.data);
-    setStatus((current) => ({ ...current, loading: false }));
+    try {
+      const params = {
+        ...(branchId ? { branchId } : {}),
+        ...(filters.q ? { q: filters.q } : {}),
+        ...(filters.status ? { status: filters.status } : {})
+      };
+      const response = await api.get("/owner/invoices", { params });
+      setRows(response.data);
+      setStatus((current) => ({ ...current, loading: false, error: "" }));
+    } catch (error) {
+      setStatus((current) => ({ ...current, loading: false, error: formatApiError(error, "Failed to load invoices") }));
+    }
   };
 
   useEffect(() => {
@@ -39,7 +43,10 @@ export default function InvoicesPage() {
     api.get("/owner/invoices", { params }).then((response) => {
       if (!active) return;
       setRows(response.data);
-      setStatus((current) => ({ ...current, loading: false }));
+      setStatus((current) => ({ ...current, loading: false, error: "" }));
+    }).catch((error) => {
+      if (!active) return;
+      setStatus((current) => ({ ...current, loading: false, error: formatApiError(error, "Failed to load invoices") }));
     });
     return () => {
       active = false;

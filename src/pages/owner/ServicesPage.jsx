@@ -43,7 +43,7 @@ export default function ServicesPage() {
   const load = async (branchId = selectedBranchId) => {
     const [servicesResponse, catsResponse] = await Promise.all([
       api.get("/owner/services", { params: branchId ? { branchId } : {} }),
-      api.get("/owner/service-categories")
+      api.get("/owner/service-categories", { params: branchId ? { branchId } : {} })
     ]);
     setRows(servicesResponse.data);
     setCategories(catsResponse.data);

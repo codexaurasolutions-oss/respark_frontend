@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api } from "../../api/client";
+import { useBranch } from "../../context/BranchContext";
 import { formatApiError } from "../../utils/apiError";
 import { downloadFromApi } from "../../utils/download";
 import EmptyState from "../../components/EmptyState";
@@ -22,6 +23,7 @@ export default function CampaignsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams();
+  const { selectedBranchId } = useBranch();
   const [rows, setRows] = useState([]);
   const [detail, setDetail] = useState(null);
   const [form, setForm] = useState(emptyForm);

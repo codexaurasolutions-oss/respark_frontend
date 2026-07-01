@@ -520,7 +520,7 @@ export default function AppointmentsPage() {
 
   useEffect(() => {
     loadContext();
-  }, []);
+  }, [selectedBranchId]);
 
   useEffect(() => {
     loadAppointments();

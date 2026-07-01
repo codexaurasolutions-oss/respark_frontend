@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { api } from "../../api/client";
+import { useBranch } from "../../context/BranchContext";
 import EmptyState from "../../components/EmptyState";
 import ModuleTabs from "../../components/ModuleTabs";
 import { formatApiError } from "../../utils/apiError";
@@ -69,6 +70,7 @@ export default function WhatsAppPage() {
   const [logFilters, setLogFilters] = useState({ q: "", status: "", templateType: "" });
   const [status, setStatus] = useState({ error: "", success: "" });
   const [loading, setLoading] = useState(true);
+  const { selectedBranchId } = useBranch();
 
   const mode = location.pathname.includes("/settings")
     ? "settings"
@@ -81,15 +83,16 @@ export default function WhatsAppPage() {
   const load = useCallback(async () => {
     try {
       const [settingsResponse, logsResponse, automationResponse, templatesResponse] = await Promise.all([
-        api.get("/owner/whatsapp/settings"),
+        api.get("/owner/whatsapp/settings", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
         api.get("/owner/whatsapp/logs", {
           params: {
+            ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
             ...(logFilters.q ? { q: logFilters.q } : {}),
             ...(logFilters.status ? { status: logFilters.status } : {}),
             ...(logFilters.templateType ? { templateType: logFilters.templateType } : {})
           }
         }),
-        api.get("/owner/whatsapp/automations"),
+        api.get("/owner/whatsapp/automations", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
         api.get("/owner/message-templates").catch(() => ({ data: [] }))
       ]);
       setSettings({ ...emptySettings, ...(settingsResponse.data || {}) });
@@ -101,7 +104,7 @@ export default function WhatsAppPage() {
       setStatus({ error: formatApiError(error, "Could not load WhatsApp workspace"), success: "" });
       setLoading(false);
     }
-  }, [logFilters]);
+  }, [logFilters, selectedBranchId]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -113,7 +116,7 @@ export default function WhatsAppPage() {
   const saveSettings = async (event) => {
     event.preventDefault();
     try {
-      await api.post("/owner/whatsapp/settings", settings);
+      await api.post("/owner/whatsapp/settings", { ...settings, branchId: selectedBranchId || null });
       setStatus({ error: "", success: "WhatsApp settings saved." });
       await load();
     } catch (error) {
@@ -206,6 +209,7 @@ export default function WhatsAppPage() {
     try {
       await downloadFromApi("/owner/whatsapp/logs/export.csv", {
         params: {
+          ...(selectedBranchId ? { branchId: selectedBranchId } : {}),
           ...(logFilters.q ? { q: logFilters.q } : {}),
           ...(logFilters.status ? { status: logFilters.status } : {}),
           ...(logFilters.templateType ? { templateType: logFilters.templateType } : {})

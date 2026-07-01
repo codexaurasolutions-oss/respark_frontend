@@ -5,6 +5,7 @@ import { api } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
 import { useAuth } from "../../context/AuthContext";
+import { useBranch } from "../../context/BranchContext";
 import { useSalonSettings } from "../../context/SalonSettingsContext";
 import { formatApiError } from "../../utils/apiError";
 import { normalizeCurrencyCode } from "../../utils/currency";
@@ -168,7 +169,7 @@ const defaultAdvancedSettings = {
     emailEnabled: true,
     smsEnabled: true,
     whatsappEnabled: true,
-    pushEnabled: false,
+    pushEnabled: true,
     digestHour: "20:00",
     alertEmail: "",
     toggles: {
@@ -435,6 +436,7 @@ export default function SettingsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { auth } = useAuth();
+  const { selectedBranchId } = useBranch();
   const salonId = auth?.salonId || auth?.membership?.salonId || auth?.membership?.salon?.id || "global";
   const { formatMoney } = useSalonSettings();
   const [form, setForm] = useState(initialForm);
@@ -505,13 +507,13 @@ export default function SettingsPage() {
 
   const refreshGiftCardsSummary = useCallback(async () => {
     try {
-      const response = await api.get("/owner/gift-cards");
+      const response = await api.get("/owner/gift-cards", { params: selectedBranchId ? { branchId: selectedBranchId } : {} });
       const rows = Array.isArray(response.data) ? response.data : [];
       setSummary((current) => ({ ...current, giftCards: rows }));
     } catch {
       // Keep the last known summary if refresh fails.
     }
-  }, []);
+  }, [selectedBranchId]);
 
   const activeSection = useMemo(() => getSettingsSection(location.pathname), [location.pathname]);
 
@@ -529,25 +531,25 @@ export default function SettingsPage() {
     const load = async () => {
       try {
         const [settingsResponse, ...summaryResponses] = await Promise.allSettled([
-          api.get("/owner/settings"),
-          api.get("/owner/users"),
+          api.get("/owner/settings", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
+          api.get("/owner/users", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
           api.get("/owner/custom-roles"),
           api.get("/owner/staff-schedule"),
-          api.get("/owner/customers"),
-          api.get("/owner/services"),
+          api.get("/owner/customers", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
+          api.get("/owner/services", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
           api.get("/owner/memberships"),
           api.get("/owner/packages"),
-          api.get("/owner/loyalty/rules"),
-          api.get("/owner/coupons"),
-          api.get("/owner/gift-cards"),
+          api.get("/owner/loyalty/rules", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
+          api.get("/owner/coupons", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
+          api.get("/owner/gift-cards", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
           api.get("/owner/incentives"),
           api.get("/owner/notifications"),
           api.get("/owner/feedback/reports"),
           api.get("/owner/expenses/accounts"),
-          api.get("/owner/tax-rates"),
-          api.get("/owner/designations"),
+          api.get("/owner/tax-rates", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
+          api.get("/owner/designations", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
           api.get("/owner/feedback-types"),
-          api.get("/owner/shifts"),
+          api.get("/owner/shifts", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
           api.get("/owner/referrals/rule"),
           api.get("/owner/tax-slabs"),
           api.get("/owner/pnl-categories")
@@ -620,7 +622,7 @@ export default function SettingsPage() {
     return () => {
       active = false;
     };
-  }, [canViewSettings, salonId]);
+  }, [canViewSettings, salonId, selectedBranchId]);
 
   useEffect(() => {
     let active = true;
@@ -890,6 +892,7 @@ export default function SettingsPage() {
 
     try {
       const response = await api.post("/owner/settings", {
+        branchId: selectedBranchId || undefined,
         invoicePrefix: form.invoicePrefix,
         invoiceFooter: form.invoiceFooter,
         taxLabel: form.taxLabel,
@@ -958,12 +961,12 @@ export default function SettingsPage() {
 
   const refreshCouponsSummary = useCallback(async () => {
     try {
-      const response = await api.get("/owner/coupons");
+      const response = await api.get("/owner/coupons", { params: selectedBranchId ? { branchId: selectedBranchId } : {} });
       setSummary((current) => ({ ...current, coupons: Array.isArray(response.data) ? response.data : [] }));
     } catch {
       // keep last known list
     }
-  }, []);
+  }, [selectedBranchId]);
 
   const issueGiftCardFromSettings = async (event) => {
     event.preventDefault();
@@ -972,7 +975,8 @@ export default function SettingsPage() {
     try {
       await api.post("/owner/gift-cards", {
         ...giftCardDraft,
-        originalAmount: Number(giftCardDraft.originalAmount)
+        originalAmount: Number(giftCardDraft.originalAmount),
+        branchId: selectedBranchId || null
       });
       setGiftCardDraft(emptyGiftCardDraft);
       await refreshGiftCardsSummary();
@@ -2027,6 +2031,7 @@ export default function SettingsPage() {
       try {
         setStatus({ error: "", success: "" });
         const response = await api.post("/owner/settings", {
+          branchId: selectedBranchId || undefined,
           invoicePrefix: form.invoicePrefix,
           invoiceFooter: form.invoiceFooter,
           taxLabel: form.taxLabel,
@@ -2250,7 +2255,8 @@ export default function SettingsPage() {
           code: draftTax.code?.trim() || draftTax.label.trim().toUpperCase().replace(/\s+/g, "").slice(0, 8),
           rate: Number(draftTax.rate) || 0,
           active: draftTax.active !== false,
-          applicableFor: Array.isArray(draftTax.applicableFor) ? draftTax.applicableFor : ["SERVICE", "PRODUCT"]
+          applicableFor: Array.isArray(draftTax.applicableFor) ? draftTax.applicableFor : ["SERVICE", "PRODUCT"],
+          branchId: selectedBranchId || null
         };
         if (draftTax._isNew) {
           const res = await api.post("/owner/tax-rates", payload);
@@ -2894,18 +2900,57 @@ export default function SettingsPage() {
       }
     ];
 
+    const channelLabels = {
+      anniversaryOffer: "Email + customer web",
+      birthdayOffer: "Email + customer web",
+      loyaltyExpiryReminder: "Email + customer web",
+      loyaltyEarning: "Customer web",
+      membershipPurchase: "Email + customer web",
+      membershipExpiry: "Email + customer web",
+      membershipRenewal: "Email + customer web",
+      onlineRedeemablePurchaseToOwner: "Owner web",
+      appointmentCreatedToOwner: "Owner web",
+      appointmentConfirmedToCustomer: "Email + customer web",
+      appointmentCancelledToCustomer: "Email + customer web",
+      appointmentReminderBeforeDays: "Email scheduler",
+      appointmentReminderBeforeHours: "Email scheduler",
+      appointmentInvoiceLink: "Email + customer web",
+      appointmentFeedbackLink: "Email feedback",
+      smsForServiceReminder: "Email reminder gate",
+      combineFeedbackAndInvoiceSms: "Email + customer web",
+      messageForAppointments: "Appointment master gate",
+      appointmentRescheduledToCustomer: "Email + customer web",
+      appointmentCancelledToOwner: "Owner web",
+      onlineAppointmentBookedToOwner: "Owner web",
+      appointmentMsgToStaff: "Staff web",
+      orderPlacedToStaff: "Staff web",
+      orderConfirmed: "Customer web",
+      orderRejected: "Customer + owner web",
+      orderInvoiceLink: "Email + customer web",
+      messageForOrders: "Order master gate",
+      orderFeedbackLink: "Email + customer web",
+      referralCodeSMS: "Email + customer web",
+      referrerRewardSMS: "Email + customer web",
+      giftCard: "Email + customer web",
+      giftCardExpiryReminder: "Email + customer web",
+      packagePurchase: "Email + customer web",
+      packageExpiryReminder: "Email + customer web",
+      advanceReceivedInvoice: "Email",
+      balanceClearedInvoice: "Owner web"
+    };
+
     return (
       <>
-        <SectionHeader title="Notification Settings" description="Define how business alerts travel across live channels like SMS." badges={[`${summary.notifications.filter((row) => !row.isRead).length} unread live alerts`]} action={<Link className="secondary-button" to="/admin/notifications">Open Notifications</Link>} />
+        <SectionHeader title="Notification Settings" description="Control email delivery and in-web alert rules for automated business notifications. SMS/WhatsApp provider details are saved separately until a live gateway is connected." badges={[`${summary.notifications.filter((row) => !row.isRead).length} unread live alerts`]} action={<Link className="secondary-button" to="/admin/notifications">Open Notifications</Link>} />
         
         <div className="settings-panel-card" style={{ marginBottom: 20 }}>
           <div className="settings-toggle-grid">
             <ToggleRow checked={config.emailEnabled} label="Email alerts" onChange={(value) => updateAdvancedObject("notificationSettings", { emailEnabled: value })} />
             <ToggleRow checked={config.smsEnabled} label="SMS alerts" onChange={(value) => updateAdvancedObject("notificationSettings", { smsEnabled: value })} />
             <ToggleRow checked={config.whatsappEnabled} label="WhatsApp alerts" onChange={(value) => updateAdvancedObject("notificationSettings", { whatsappEnabled: value })} />
-            <ToggleRow checked={config.pushEnabled} label="Push alerts" onChange={(value) => updateAdvancedObject("notificationSettings", { pushEnabled: value })} />
+            <ToggleRow checked={config.pushEnabled} label="In-web alerts" onChange={(value) => updateAdvancedObject("notificationSettings", { pushEnabled: value })} />
             <label className="settings-input-group"><span className="muted">Digest hour</span><input type="time" value={config.digestHour} onChange={(event) => updateAdvancedObject("notificationSettings", { digestHour: event.target.value })} /></label>
-            <div className="settings-input-group" style={{ alignSelf: "end" }}><span className="muted" style={{ fontSize: 12 }}>Digest hour is stored for scheduled notification batching.</span></div>
+            <div className="settings-input-group" style={{ alignSelf: "end" }}><span className="muted" style={{ fontSize: 12 }}>Email uses SMTP. In-web alerts appear in the bell and notifications page.</span></div>
             <label className="settings-input-group"><span className="muted">Alert email</span><input value={config.alertEmail} onChange={(event) => updateAdvancedObject("notificationSettings", { alertEmail: event.target.value })} /></label>
           </div>
         </div>
@@ -2919,7 +2964,7 @@ export default function SettingsPage() {
                 return (
                   <div key={item.key} style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 120px",
+                    gridTemplateColumns: "1fr 190px",
                     alignItems: "center",
                     padding: "12px 16px",
                     borderBottom: index === category.items.length - 1 ? "none" : "1px solid #f1f5f9",
@@ -2934,7 +2979,9 @@ export default function SettingsPage() {
                         onChange={(e) => handleToggleChange(item.key, e.target.checked)}
                         style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--accent, #3b82f6)" }}
                       />
-                      <span style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>SMS</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: channelLabels[item.key] === "Not wired yet" ? "#b45309" : "#475569" }}>
+                        {channelLabels[item.key] || "Saved rule"}
+                      </span>
                     </label>
                   </div>
                 );
@@ -3216,9 +3263,9 @@ export default function SettingsPage() {
 
   const renderSmsSection = () => (
     <>
-      <SectionHeader title="Messaging Center" description="Configure SMTP or delivery-provider credentials, sender identity, and message-routing defaults without leaving settings." badges={[form.smsSettings.gatewayProvider.replace("_PLACEHOLDER", ""), form.smsSettings.senderId || "No Sender ID"]} action={<Link className="secondary-button" to="/admin/whatsapp">Open Messaging</Link>} />
+      <SectionHeader title="Messaging Center" description="Review delivery-provider defaults. Email is sent through backend SMTP; SMS and WhatsApp values stay ready for live gateway integration." badges={[form.smsSettings.gatewayProvider.replace("_PLACEHOLDER", ""), form.smsSettings.senderId || "No Sender ID"]} action={<Link className="secondary-button" to="/admin/whatsapp">Open Messaging</Link>} />
       <div className="muted" style={{ marginBottom: 12, fontSize: 12 }}>
-        Gateway/provider details are synced into the live messaging configuration used by notification, reminder, and manual outreach defaults.
+        SMTP credentials are configured on the backend environment. SMS/WhatsApp provider details are saved here so the UI stays ready when the real gateway API is connected.
       </div>
       <div className="settings-panel-card">
         <div className="settings-form-grid">
@@ -3240,7 +3287,7 @@ export default function SettingsPage() {
           </label>
           <div className="settings-input-group" style={{ alignSelf: "end" }}>
             <span className="muted" style={{ fontSize: 12 }}>
-              Provider, sender ID, and auth token are the live values pushed into messaging defaults. Extra notes were removed here to avoid fake saved fields with no runtime effect.
+              Provider, sender ID, and auth token are stored with salon settings. They do not send real SMS until a gateway connector is added.
             </span>
           </div>
         </div>
@@ -3433,7 +3480,8 @@ export default function SettingsPage() {
         const payload = {
           name: draft.name.trim(),
           description: draft.description || null,
-          active: draft.active !== false
+          active: draft.active !== false,
+          branchId: selectedBranchId || null
         };
         if (draft._isNew) {
           const res = await api.post("/owner/designations", payload);

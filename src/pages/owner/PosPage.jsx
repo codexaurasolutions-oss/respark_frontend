@@ -1626,12 +1626,14 @@ export default function PosPage() {
                       const existingAdvance = (current.payments || []).find(p => p.mode === "ADVANCE");
                       const advAmount = Number(existingAdvance?.amount || 0);
                       const maxOnline = Math.max(0, totals.total - advAmount);
-                      const newPayments = (current.payments || []).filter(p => p.mode !== "ONLINE");
+                      let newPayments = (current.payments || []).filter(p => p.mode !== "ONLINE" && p.mode !== "CASH" && p.mode !== "BALANCE");
                       if (!newPayments.find(p => p.mode === "ADVANCE") && advAmount > 0) {
                         newPayments.push({ mode: "ADVANCE", amount: advAmount, note: "Advance used" });
                       }
-                      if (!newPayments.find(p => p.mode === "ONLINE")) {
-                        newPayments.push({ mode: "ONLINE", amount: maxOnline, note: "" });
+                      newPayments.push({ mode: "ONLINE", amount: maxOnline, note: "" });
+                      const remainingAfter = Math.max(0, totals.total - advAmount - maxOnline);
+                      if (remainingAfter > 0) {
+                        newPayments.push({ mode: "BALANCE", amount: remainingAfter, note: "" });
                       }
                       return { ...current, payments: newPayments };
                     });
@@ -1642,6 +1644,14 @@ export default function PosPage() {
                     setForm((current) => {
                       const newPayments = (current.payments || []).filter(p => p.mode !== "ONLINE");
                       newPayments.push({ mode: "ONLINE", amount, note: "" });
+                      const paidSoFar = newPayments.filter(p => p.mode !== "BALANCE").reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const balanceNeeded = Math.max(0, totals.total - paidSoFar);
+                      const balanceEntry = newPayments.find(p => p.mode === "BALANCE");
+                      if (balanceEntry) {
+                        balanceEntry.amount = balanceNeeded;
+                      } else if (balanceNeeded > 0) {
+                        newPayments.push({ mode: "BALANCE", amount: balanceNeeded, note: "" });
+                      }
                       return { ...current, payments: newPayments };
                     });
                   }} />
@@ -1653,12 +1663,14 @@ export default function PosPage() {
                       const existingAdvance = (current.payments || []).find(p => p.mode === "ADVANCE");
                       const advAmount = Number(existingAdvance?.amount || 0);
                       const maxCash = Math.max(0, totals.total - advAmount);
-                      const newPayments = (current.payments || []).filter(p => p.mode !== "CASH");
+                      let newPayments = (current.payments || []).filter(p => p.mode !== "ONLINE" && p.mode !== "CASH" && p.mode !== "BALANCE");
                       if (!newPayments.find(p => p.mode === "ADVANCE") && advAmount > 0) {
                         newPayments.push({ mode: "ADVANCE", amount: advAmount, note: "Advance used" });
                       }
-                      if (!newPayments.find(p => p.mode === "CASH")) {
-                        newPayments.push({ mode: "CASH", amount: maxCash, note: "" });
+                      newPayments.push({ mode: "CASH", amount: maxCash, note: "" });
+                      const remainingAfter = Math.max(0, totals.total - advAmount - maxCash);
+                      if (remainingAfter > 0) {
+                        newPayments.push({ mode: "BALANCE", amount: remainingAfter, note: "" });
                       }
                       return { ...current, payments: newPayments };
                     });
@@ -1669,6 +1681,14 @@ export default function PosPage() {
                     setForm((current) => {
                       const newPayments = (current.payments || []).filter(p => p.mode !== "CASH");
                       newPayments.push({ mode: "CASH", amount, note: "" });
+                      const paidSoFar = newPayments.filter(p => p.mode !== "BALANCE").reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const balanceNeeded = Math.max(0, totals.total - paidSoFar);
+                      const balanceEntry = newPayments.find(p => p.mode === "BALANCE");
+                      if (balanceEntry) {
+                        balanceEntry.amount = balanceNeeded;
+                      } else if (balanceNeeded > 0) {
+                        newPayments.push({ mode: "BALANCE", amount: balanceNeeded, note: "" });
+                      }
                       return { ...current, payments: newPayments };
                     });
                   }} />

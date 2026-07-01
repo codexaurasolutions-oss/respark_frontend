@@ -7,7 +7,7 @@ import { Menu, Settings, FileText, Monitor, Calendar as CalendarIcon, Users, Bar
 export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { branches, selectedBranchId, selectedBranchName, setSelectedBranchId } = useBranch();
+  const { branches, selectedBranchId, selectedBranchName, setSelectedBranchId, isOwner } = useBranch();
   const [salonName, setSalonName] = useState("");
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -595,7 +595,8 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
         ) : null}
 
         <div className="respark-top-right">
-          {/* Branch Selector */}
+          {/* Branch Selector — Owner only */}
+          {isOwner ? (
           <div className="respark-branch-wrap">
             <button className="respark-branch-btn" onClick={() => setIsBranchOpen(!isBranchOpen)}>
               <Building2 size={14} color="#64748b" />
@@ -617,6 +618,14 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
               </div>
             )}
           </div>
+          ) : (
+            <div className="respark-branch-wrap">
+              <span className="respark-branch-btn" style={{ cursor: "default" }}>
+                <Building2 size={14} color="#64748b" />
+                {selectedBranchName}
+              </span>
+            </div>
+          )}
 
           <div className="respark-date">{dateStr}</div>
           

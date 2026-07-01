@@ -175,7 +175,7 @@ export default function MembershipsPage() {
         api.get("/owner/memberships", { params: { branchId: selectedBranchId || undefined } }),
         api.get("/owner/packages", { params: { branchId: selectedBranchId || undefined } }),
         api.get("/owner/services", { params: { branchId: selectedBranchId || undefined } }),
-        api.get("/owner/service-categories"),
+        api.get("/owner/service-categories", { params: { branchId: selectedBranchId || undefined } }),
         api.get("/owner/inventory/products", { params: { branchId: selectedBranchId || undefined } }),
         api.get("/owner/customers", { params: { branchId: selectedBranchId || undefined } })
       ]);
@@ -195,7 +195,7 @@ export default function MembershipsPage() {
           api.get("/owner/memberships", { params: { branchId: selectedBranchId || undefined } }),
           api.get("/owner/packages", { params: { branchId: selectedBranchId || undefined } }),
           api.get("/owner/services", { params: { branchId: selectedBranchId || undefined } }),
-          api.get("/owner/service-categories"),
+          api.get("/owner/service-categories", { params: { branchId: selectedBranchId || undefined } }),
           api.get("/owner/inventory/products", { params: { branchId: selectedBranchId || undefined } }),
           api.get("/owner/customers", { params: { branchId: selectedBranchId || undefined } })
         ]);
@@ -369,7 +369,8 @@ export default function MembershipsPage() {
                   isSharable: membershipForm.isSharable,
                   applySelectedDays: membershipForm.applySelectedDays,
                   applySelectedServices: membershipForm.applySelectedServices,
-                  serviceIds: membershipForm.applySelectedServices ? membershipForm.serviceIds : []
+                  serviceIds: membershipForm.applySelectedServices ? membershipForm.serviceIds : [],
+                  branchId: selectedBranchId || null
                 };
                 if (membershipEditMode) {
                   await api.patch(`/owner/memberships/${editableMembershipId}`, payload);
