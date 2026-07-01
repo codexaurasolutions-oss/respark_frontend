@@ -136,6 +136,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           flex-direction: column;
           width: 100%;
           z-index: 1050;
+          position: relative;
         }
         .respark-top-row {
           background: var(--navbar-bg, white);
