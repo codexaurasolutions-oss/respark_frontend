@@ -325,6 +325,24 @@ export default function UsersPage() {
     event.preventDefault();
     setStatus((current) => ({ ...current, error: "", success: "" }));
     try {
+      if (!editingId) {
+        if (!form.name?.trim()) return setStatus((current) => ({ ...current, error: "Name is required" }));
+        if (form.name.trim().length < 2) return setStatus((current) => ({ ...current, error: "Name must be at least 2 characters" }));
+        if (!form.email?.trim()) return setStatus((current) => ({ ...current, error: "Email is required" }));
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return setStatus((current) => ({ ...current, error: "Enter a valid email address" }));
+        if (!form.password) return setStatus((current) => ({ ...current, error: "Password is required" }));
+        if (form.password.length < 8) return setStatus((current) => ({ ...current, error: "Password must be at least 8 characters" }));
+        if (form.password.length > 128) return setStatus((current) => ({ ...current, error: "Password must be at most 128 characters" }));
+        if (form.phone && !/^\+91\d{10}$/.test(form.phone)) return setStatus((current) => ({ ...current, error: "Phone must be a valid 10-digit Indian number" }));
+        if (form.uanNumber && !/^\d{12}$/.test(form.uanNumber)) return setStatus((current) => ({ ...current, error: "UAN must be exactly 12 digits" }));
+        if (form.accountNumber && !/^\d{9,18}$/.test(form.accountNumber)) return setStatus((current) => ({ ...current, error: "Account number must be 9-18 digits" }));
+        if (form.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(form.ifscCode)) return setStatus((current) => ({ ...current, error: "Invalid IFSC code format (e.g. HDFC0001234)" }));
+      } else {
+        if (form.phone && !/^\+91\d{10}$/.test(form.phone)) return setStatus((current) => ({ ...current, error: "Phone must be a valid 10-digit Indian number" }));
+        if (form.uanNumber && !/^\d{12}$/.test(form.uanNumber)) return setStatus((current) => ({ ...current, error: "UAN must be exactly 12 digits" }));
+        if (form.accountNumber && !/^\d{9,18}$/.test(form.accountNumber)) return setStatus((current) => ({ ...current, error: "Account number must be 9-18 digits" }));
+        if (form.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(form.ifscCode)) return setStatus((current) => ({ ...current, error: "Invalid IFSC code format (e.g. HDFC0001234)" }));
+      }
       const payload = {
         salonRole: form.salonRole,
         roleTitle: form.roleTitle || undefined,
@@ -355,8 +373,8 @@ export default function UsersPage() {
         await api.post("/owner/users/create-login", {
           ...payload,
           branchId: form.branchId || undefined,
-          name: form.name,
-          email: form.email,
+          name: form.name.trim(),
+          email: form.email.trim(),
           password: form.password,
           joiningDate: form.joiningDate || undefined,
           designation: form.designation || undefined,
@@ -633,7 +651,7 @@ export default function UsersPage() {
                         </div>
                         <div className="hub-form-group">
                           <label>Phone</label>
-                          <IndianPhoneInput value={form.phone} onChange={(phone) => setForm({ ...form, phone })} className="hub-input" inputStyle={{ padding: "12px 14px" }} />
+                          <IndianPhoneInput required={true} value={form.phone} onChange={(phone) => setForm({ ...form, phone })} className="hub-input" inputStyle={{ padding: "12px 14px" }} />
                         </div>
                       </div>
                       
@@ -712,7 +730,7 @@ export default function UsersPage() {
                         </div>
                         <div className="hub-form-group">
                           <label>UAN Number</label>
-                          <input type="text" className="hub-input" value={form.uanNumber} onChange={(event) => setForm({ ...form, uanNumber: event.target.value })} placeholder="12-digit UAN" />
+                          <input type="text" className="hub-input" value={form.uanNumber} onChange={(event) => setForm({ ...form, uanNumber: event.target.value })} placeholder="12-digit UAN" pattern="\d{12}" maxLength={12} />
                         </div>
                         <div className="hub-form-group">
                           <label>Working Hours</label>
@@ -734,19 +752,19 @@ export default function UsersPage() {
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                         <div className="hub-form-group">
                           <label>Bank Name</label>
-                          <input type="text" className="hub-input" value={form.bankName} onChange={(event) => setForm({ ...form, bankName: event.target.value })} placeholder="e.g. HDFC Bank" />
+                          <input type="text" className="hub-input" value={form.bankName} onChange={(event) => setForm({ ...form, bankName: event.target.value })} placeholder="e.g. HDFC Bank" maxLength={200} />
                         </div>
                         <div className="hub-form-group">
                           <label>Branch Name</label>
-                          <input type="text" className="hub-input" value={form.bankBranch} onChange={(event) => setForm({ ...form, bankBranch: event.target.value })} placeholder="Branch Area" />
+                          <input type="text" className="hub-input" value={form.bankBranch} onChange={(event) => setForm({ ...form, bankBranch: event.target.value })} placeholder="Branch Area" maxLength={200} />
                         </div>
                         <div className="hub-form-group">
                           <label>Account Number</label>
-                          <input type="text" className="hub-input" value={form.accountNumber} onChange={(event) => setForm({ ...form, accountNumber: event.target.value })} placeholder="Account No." />
+                          <input type="text" className="hub-input" value={form.accountNumber} onChange={(event) => setForm({ ...form, accountNumber: event.target.value })} placeholder="Account No." pattern="\d{9,18}" maxLength={18} />
                         </div>
                         <div className="hub-form-group">
                           <label>IFSC / Routing Code</label>
-                          <input type="text" className="hub-input" value={form.ifscCode} onChange={(event) => setForm({ ...form, ifscCode: event.target.value })} placeholder="IFSC Code" />
+                          <input type="text" className="hub-input" value={form.ifscCode} onChange={(event) => setForm({ ...form, ifscCode: event.target.value.toUpperCase() })} placeholder="IFSC Code" pattern="[A-Z]{4}0[A-Z0-9]{6}" maxLength={11} style={{ textTransform: 'uppercase' }} />
                         </div>
                       </div>
                     </div>
@@ -780,17 +798,17 @@ export default function UsersPage() {
               <div className="hub-modal-body" style={{ overflowY: 'auto', flex: 1 }}>
                 <div className="hub-form-group" style={{ marginBottom: 16 }}>
                   <label>Full Name *</label>
-                  <input type="text" required className="hub-input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. John Doe" />
+                  <input type="text" required className="hub-input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. John Doe" minLength={2} maxLength={200} />
                 </div>
 
                 <div className="hub-form-group" style={{ marginBottom: 16 }}>
                   <label>Email Address *</label>
-                  <input type="email" required className="hub-input" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="john@example.com" />
+                  <input type="email" required className="hub-input" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="john@example.com" maxLength={254} />
                 </div>
 
                 <div className="hub-form-group" style={{ marginBottom: 16 }}>
                   <label>Password *</label>
-                  <input type="password" required className="hub-input" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Create a strong password" />
+                  <input type="password" required className="hub-input" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Min 8 chars, uppercase + lowercase + digit" minLength={8} maxLength={128} />
                 </div>
 
                 <div className="hub-form-group" style={{ marginBottom: 16 }}>
@@ -828,12 +846,12 @@ export default function UsersPage() {
 
                 <div className="hub-form-group" style={{ marginBottom: 16 }}>
                   <label>Phone</label>
-                  <IndianPhoneInput value={form.phone} onChange={(phone) => setForm({ ...form, phone })} className="hub-input" inputStyle={{ padding: "12px 14px" }} />
+                  <IndianPhoneInput required={true} value={form.phone} onChange={(phone) => setForm({ ...form, phone })} className="hub-input" inputStyle={{ padding: "12px 14px" }} />
                 </div>
 
                 <div className="hub-form-group" style={{ marginBottom: 16 }}>
                   <label>Avatar URL</label>
-                  <input type="text" className="hub-input" value={form.avatarUrl} onChange={e => setForm({ ...form, avatarUrl: e.target.value })} placeholder="https://example.com/avatar.jpg" />
+                  <input type="text" className="hub-input" value={form.avatarUrl} onChange={e => setForm({ ...form, avatarUrl: e.target.value })} placeholder="https://example.com/avatar.jpg" maxLength={2000} />
                 </div>
 
                 <div className="hub-form-group" style={{ marginBottom: 16 }}>
@@ -890,7 +908,7 @@ export default function UsersPage() {
                   </div>
                   <div className="hub-form-group" style={{ marginBottom: 16 }}>
                     <label>UAN Number</label>
-                    <input type="text" className="hub-input" value={form.uanNumber} onChange={e => setForm({ ...form, uanNumber: e.target.value })} placeholder="12-digit UAN" />
+                    <input type="text" className="hub-input" value={form.uanNumber} onChange={e => setForm({ ...form, uanNumber: e.target.value })} placeholder="12-digit UAN" pattern="\d{12}" maxLength={12} />
                   </div>
                   <div className="hub-form-group" style={{ marginBottom: 16 }}>
                     <label>Working Hours</label>
@@ -909,19 +927,19 @@ export default function UsersPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div className="hub-form-group" style={{ marginBottom: 16 }}>
                     <label>Bank Name</label>
-                    <input type="text" className="hub-input" value={form.bankName} onChange={e => setForm({ ...form, bankName: e.target.value })} placeholder="e.g. HDFC Bank" />
+                    <input type="text" className="hub-input" value={form.bankName} onChange={e => setForm({ ...form, bankName: e.target.value })} placeholder="e.g. HDFC Bank" maxLength={200} />
                   </div>
                   <div className="hub-form-group" style={{ marginBottom: 16 }}>
                     <label>Branch Name</label>
-                    <input type="text" className="hub-input" value={form.bankBranch} onChange={e => setForm({ ...form, bankBranch: e.target.value })} placeholder="Branch Area" />
+                    <input type="text" className="hub-input" value={form.bankBranch} onChange={e => setForm({ ...form, bankBranch: e.target.value })} placeholder="Branch Area" maxLength={200} />
                   </div>
                   <div className="hub-form-group" style={{ marginBottom: 16 }}>
                     <label>Account Number</label>
-                    <input type="text" className="hub-input" value={form.accountNumber} onChange={e => setForm({ ...form, accountNumber: e.target.value })} placeholder="Account No." />
+                    <input type="text" className="hub-input" value={form.accountNumber} onChange={e => setForm({ ...form, accountNumber: e.target.value })} placeholder="Account No." pattern="\d{9,18}" maxLength={18} />
                   </div>
                   <div className="hub-form-group" style={{ marginBottom: 16 }}>
                     <label>IFSC / Routing Code</label>
-                    <input type="text" className="hub-input" value={form.ifscCode} onChange={e => setForm({ ...form, ifscCode: e.target.value })} placeholder="IFSC Code" />
+                    <input type="text" className="hub-input" value={form.ifscCode} onChange={e => setForm({ ...form, ifscCode: e.target.value.toUpperCase() })} placeholder="IFSC Code" pattern="[A-Z]{4}0[A-Z0-9]{6}" maxLength={11} style={{ textTransform: 'uppercase' }} />
                   </div>
                 </div>
 
