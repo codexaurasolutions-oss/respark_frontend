@@ -133,6 +133,9 @@ export default function PosPage() {
   const [tipDraft, setTipDraft] = useState({ staffId: "", amount: "", paymentMode: "CASH" });
   const [tipEntries, setTipEntries] = useState([]);
 
+  const [couponValidating, setCouponValidating] = useState(false);
+  const [couponValidation, setCouponValidation] = useState(null);
+  const [couponCodeInput, setCouponCodeInput] = useState("");
   const [newGuestForm, setNewGuestForm] = useState({ name: "", phone: "", email: "", gender: "FEMALE", alternatePhone: "", dateOfBirth: "", anniversary: "", gst: "", notes: "" });
   const [form, setForm] = useState({
     customerId: "",
@@ -227,6 +230,59 @@ export default function PosPage() {
     setForm(c => ({ ...c, discount: finalDiscount }));
     setShowDiscountModal(false);
     setToastMessage({ type: "success", title: "Discount Applied", message: `${discountDraft.type === "PERCENT" ? discountDraft.value + "% off" : formatMoney(finalDiscount)} discount applied successfully.` });
+  };
+
+  // === Apply Coupon ===
+  const applyCoupon = async () => {
+    const code = couponCodeInput.trim();
+    if (!code) {
+      setToastMessage({ type: "error", title: "Coupon Code Required", message: "Please enter a coupon code." });
+      return;
+    }
+    setCouponValidating(true);
+    setCouponValidation(null);
+    try {
+      const itemDrafts = form.items
+        .filter(item => item.serviceId || item.productId)
+        .map((item, index) => ({
+          index,
+          type: item.itemType === "PRODUCT" ? "product" : "service",
+          serviceId: item.serviceId || null,
+          productId: item.productId || null,
+          categoryId: item.categoryId || null,
+          name: item.name || "Item",
+          qty: Number(item.qty || 1),
+          unitPrice: Number(item.unitPrice || 0),
+        }));
+      const response = await api.post("/owner/referrals/coupons/validate", {
+        code,
+        branchId: form.branchId,
+        customerId: form.customerId || undefined,
+        itemDrafts,
+      });
+      const data = response.data;
+      setCouponValidation(data);
+      setForm(c => ({ ...c, couponCode: code }));
+      setToastMessage({
+        type: "success",
+        title: "Coupon Applied",
+        message: `${data.coupon.title || data.coupon.code} — ${formatMoney(data.totalDiscount)} discount on ${data.eligibleItems.filter(i => i.isEligible).length} eligible item(s).${data.totalPartnerCredits > 0 ? ` Partner earns ${data.totalPartnerCredits.toFixed(1)} credits.` : ""}`,
+      });
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to validate coupon.";
+      setToastMessage({ type: "error", title: "Coupon Invalid", message: msg });
+      setCouponValidation(null);
+      setForm(c => ({ ...c, couponCode: "" }));
+    } finally {
+      setCouponValidating(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setForm(c => ({ ...c, couponCode: "" }));
+    setCouponValidation(null);
+    setCouponCodeInput("");
+    setToastMessage({ type: "success", title: "Coupon Removed", message: "Coupon has been removed." });
   };
 
   // === Apply Package ===
@@ -831,6 +887,8 @@ export default function PosPage() {
 
       // Reset main POS form
       setGuestSearchInput("");
+      setCouponValidation(null);
+      setCouponCodeInput("");
       setForm({
         customerId: "",
         branchId: form.branchId,
@@ -951,10 +1009,11 @@ export default function PosPage() {
     }, 0);
     // Note: form.tax is part of the API payload (extra tax) but always 0 in this UI; per-item taxPct handles all tax.
     const discount = Number(form.discount || 0);
-    const total = subtotal + itemTax - discount;
+    const couponDiscount = Number(couponValidation?.totalDiscount || 0);
+    const total = subtotal + itemTax - discount - couponDiscount;
     const paid = form.payments.filter(p => p.mode !== "BALANCE").reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-    return { subtotal, itemTax, total, paid, due: Math.max(0, total - paid) };
-  }, [form, getCatalogBasePrice, context.settings]);
+    return { subtotal, itemTax, total, paid, due: Math.max(0, total - paid), couponDiscount };
+  }, [form, getCatalogBasePrice, context.settings, couponValidation]);
 
   const getEligibleStaffUsers = useCallback((item) => {
     const selectedBranchId = form.branchId;
@@ -1091,6 +1150,8 @@ export default function PosPage() {
       }
 
       setGuestSearchInput("");
+      setCouponValidation(null);
+      setCouponCodeInput("");
       setForm({
         customerId: "",
         branchId: form.branchId,
@@ -1567,6 +1628,8 @@ export default function PosPage() {
                   }
                   return (
                     <div>
+                      {totals.couponDiscount > 0 && <div style={{ fontSize: 12, color: "#2563eb", marginBottom: 2 }}>Coupon: −{formatMoney(totals.couponDiscount.toFixed(0))}</div>}
+                      {Number(form.discount || 0) > 0 && <div style={{ fontSize: 12, color: "#16a34a", marginBottom: 2 }}>Discount: −{formatMoney(Number(form.discount || 0).toFixed(0))}</div>}
                       Grand Total <strong>{formatMoney(totals.total.toFixed(0))}</strong>
                     </div>
                   );
@@ -1584,6 +1647,47 @@ export default function PosPage() {
               <button type="button" onClick={() => { setGcRedemptionCode(""); setGcRedemptionResult(null); setShowGcRedemptionModal(true); }} style={{ padding: "8px 18px", background: "#fff", border: "1px solid var(--accent, #3b82f6)", borderRadius: 20, cursor: "pointer", fontWeight: 600, color: "var(--accent, #3b82f6)", fontSize: 13, whiteSpace: "nowrap" }}>Apply Gift Card</button>
               <button type="button" onClick={() => setShowTipModal(true)} style={{ padding: "8px 18px", background: "#fff", border: "1px solid var(--accent, #3b82f6)", borderRadius: 20, cursor: "pointer", fontWeight: 600, color: "var(--accent, #3b82f6)", fontSize: 13, whiteSpace: "nowrap" }}>Add Tip</button>
             </div>
+
+            {form.couponCode && couponValidation ? (
+              <div style={{ margin: "4px 0 8px", padding: "10px 14px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#1e40af" }}>
+                    Coupon: {couponValidation.coupon.code}
+                    {couponValidation.coupon.title ? ` — ${couponValidation.coupon.title}` : ""}
+                  </span>
+                  <button type="button" onClick={removeCoupon} style={{ background: "none", border: "none", color: "#ef4444", fontSize: 12, cursor: "pointer", fontWeight: 600, padding: 0 }}>Remove</button>
+                </div>
+                <div style={{ fontSize: 12, color: "#334155" }}>
+                  {couponValidation.coupon.discountType === "PERCENT"
+                    ? `${couponValidation.coupon.discountValue}% off`
+                    : `${formatMoney(couponValidation.coupon.discountValue)} off`} — Eligible: {couponValidation.eligibleItems.filter(i => i.isEligible).length} item(s)
+                </div>
+                {couponValidation.totalPartnerCredits > 0 && (
+                  <div style={{ marginTop: 4, fontSize: 11, color: "#7c3aed", fontWeight: 600 }}>
+                    Partner earns {couponValidation.totalPartnerCredits.toFixed(2)} credits — {couponValidation.partnerCreditNote}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 8, margin: "4px 0 8px", alignItems: "center" }}>
+                <input
+                  type="text"
+                  placeholder="Enter coupon code"
+                  value={couponCodeInput}
+                  onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => { if (e.key === "Enter") applyCoupon(); }}
+                  style={{ flex: 1, padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 13, outline: "none" }}
+                />
+                <button
+                  type="button"
+                  onClick={applyCoupon}
+                  disabled={couponValidating || !couponCodeInput.trim()}
+                  style={{ padding: "8px 16px", background: "var(--button-bg-solid, #0f172a)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: couponValidating || !couponCodeInput.trim() ? "not-allowed" : "pointer", opacity: couponValidating || !couponCodeInput.trim() ? 0.6 : 1, whiteSpace: "nowrap" }}
+                >
+                  {couponValidating ? "Checking..." : "Apply Coupon"}
+                </button>
+              </div>
+            )}
 
             <div className="pos-payment-details">
               {form.customerId && (() => {
@@ -1759,7 +1863,7 @@ export default function PosPage() {
               {status.error && <span style={{ color: "#ef4444", fontWeight: 500, fontSize: "13px" }}>{status.error}</span>}
               {status.success && <span style={{ color: "#10b981", fontWeight: 500, fontSize: "13px" }}>{status.success}</span>}
             </div>
-            <button type="button" className="pos-btn-clear" onClick={() => { setForm(c => ({ ...c, items: [], discount: 0, giftVoucherCode: "", packageRedemptions: [] })); setTipEntries([]); }}>Clear</button>
+            <button type="button" className="pos-btn-clear" onClick={() => { setForm(c => ({ ...c, items: [], discount: 0, giftVoucherCode: "", couponCode: "", packageRedemptions: [] })); setTipEntries([]); setCouponValidation(null); setCouponCodeInput(""); }}>Clear</button>
             <button type="button" className="pos-btn-create" disabled={submitting} onClick={() => !submitting && submitInvoice("draft")}>Create</button>
             <button type="button" className="pos-btn-complete" disabled={submitting} onClick={() => !submitting && submitInvoice("complete")}>Create & Complete</button>
           </div>
