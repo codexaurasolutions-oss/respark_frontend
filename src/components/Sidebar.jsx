@@ -103,7 +103,7 @@ export default function Sidebar({ groups, auth, onLogout, sidebarExpanded = true
         {/* Brand Row */}
         <div className="sidebar-brand-row">
           <div className="sidebar-brand-inner">
-            {/* <img src="/skillify-logo.png" alt="Skillify" className="sidebar-logo" /> */}
+            <img src="/skillify-logo.png" alt="Skillify" className="sidebar-logo" />
           </div>
           <button
             type="button"
