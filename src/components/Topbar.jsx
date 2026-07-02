@@ -156,8 +156,10 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
         }
         .respark-brand-image {
           height: 42px;
+          max-width: 160px;
           width: auto;
           object-fit: contain;
+          display: block;
         }
         .respark-salon-name {
           color: #475569;

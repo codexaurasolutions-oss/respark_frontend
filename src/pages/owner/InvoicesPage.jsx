@@ -54,9 +54,13 @@ export default function InvoicesPage() {
   }, [selectedBranchId, filters]);
 
   const openDetail = useCallback(async (invoiceId) => {
-    const response = await api.get(`/owner/invoices/${invoiceId}`);
-    setSelectedInvoice(response.data);
-    navigate(`/admin/invoices/${invoiceId}`, { replace: true });
+    try {
+      const response = await api.get(`/owner/invoices/${invoiceId}`);
+      setSelectedInvoice(response.data);
+      navigate(`/admin/invoices/${invoiceId}`, { replace: true });
+    } catch (error) {
+      setStatus((current) => ({ ...current, error: formatApiError(error, "Failed to load invoice detail") }));
+    }
   }, [navigate]);
 
   useEffect(() => {

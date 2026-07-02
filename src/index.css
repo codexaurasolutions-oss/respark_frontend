@@ -517,12 +517,16 @@ pre {
   display: flex;
   align-items: center;
   gap: 9px;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .sidebar-logo {
   height: 30px;
+  max-width: 140px;
   width: auto;
   object-fit: contain;
+  display: block;
 }
 
 .sidebar-close-btn {
