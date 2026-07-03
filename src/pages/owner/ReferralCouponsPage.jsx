@@ -365,8 +365,9 @@ export default function ReferralCouponsPage() {
                   type="text"
                   value={form.code}
                   onChange={(e) => setForm(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
-                  placeholder="Leave blank for auto code e.g. A10"
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  placeholder={editing ? "Cannot change code" : "Leave blank for auto code e.g. A10"}
+                  disabled={!!editing}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: editing ? "#0f172a" : "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box", opacity: editing ? 0.6 : 1, cursor: editing ? "not-allowed" : "text" }}
                 />
               </div>
               <div>
