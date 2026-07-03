@@ -542,7 +542,7 @@ export default function CouponsPage() {
               <input placeholder="e.g. Birthday Voucher" required value={giftCardForm.title} onChange={(e) => setGiftCardForm({ ...giftCardForm, title: e.target.value })} />
             </label>
             <label>
-              <span className="muted">Amount ($)</span>
+              <span className="muted">Amount (₹)</span>
               <input type="number" min="1" placeholder="e.g. 1000" required value={giftCardForm.originalAmount} onChange={(e) => setGiftCardForm({ ...giftCardForm, originalAmount: e.target.value })} />
             </label>
             <label>
@@ -584,7 +584,7 @@ export default function CouponsPage() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, padding: "8px 0", borderTop: `1px solid ${gc.isActive ? "rgba(255,255,255,0.2)" : "#e2e8f0"}` }}>
                     <div>
                       <div style={{ fontSize: 11, opacity: 0.7 }}>Balance</div>
-                      <div style={{ fontSize: 20, fontWeight: 700 }}>${balance.toFixed(0)} <span style={{ fontSize: 12, opacity: 0.6 }}>/ ${original.toFixed(0)}</span></div>
+                      <div style={{ fontSize: 20, fontWeight: 700 }}>₹{balance.toFixed(0)} <span style={{ fontSize: 12, opacity: 0.6 }}>/ ₹{original.toFixed(0)}</span></div>
                     </div>
                     {daysLeft !== null && (
                       <div style={{ textAlign: "right" }}>
@@ -615,13 +615,13 @@ export default function CouponsPage() {
         <div className="panel-card">
           <h3>Promotion Reports</h3>
           <div className="badge-row" style={{ marginBottom: 16 }}>
-            <span className="badge">Coupon Savings ${reports.totalSavings || 0}</span>
+            <span className="badge">Coupon Savings ₹{reports.totalSavings || 0}</span>
           </div>
           <div className="list-stack">
             {(reports.redemptions || []).map((row) => (
               <div key={row.id} className="list-item">
                 <strong>{row.coupon?.code || "-"}</strong>
-                <div className="item-meta">Saved ${row.amountSaved}</div>
+                <div className="item-meta">Saved ₹{row.amountSaved}</div>
               </div>
             ))}
             {!reports.redemptions?.length && <EmptyState title="No promotion redemptions yet" message="Savings and gift card usage will appear here once customers begin using promotions." />}
