@@ -463,6 +463,8 @@ export default function SettingsPage() {
   const [referralRule, setReferralRule] = useState(null);
   const [savingReferral, setSavingReferral] = useState(false);
   const [referralDraft, setReferralDraft] = useState(defaultReferralRuleDraft);
+  const [affiliateServiceCreditInput, setAffiliateServiceCreditInput] = useState("1");
+  const [affiliateCashCreditInput, setAffiliateCashCreditInput] = useState("0.5");
   const [taxSlabs, setTaxSlabs] = useState([]);
   const [pnlCategories, setPnlCategories] = useState([]);
   const [status, setStatus] = useState({ loading: true, error: "", success: "" });
@@ -535,6 +537,14 @@ export default function SettingsPage() {
   useEffect(() => {
     setReferralDraft(referralRule || defaultReferralRuleDraft);
   }, [referralRule]);
+
+  useEffect(() => {
+    const referralSettings = form.advancedSettings?.referralSettings || {};
+    const serviceValue = referralSettings.affiliateServiceCreditValue;
+    const cashValue = referralSettings.affiliateCashCreditValue;
+    setAffiliateServiceCreditInput(serviceValue !== undefined && serviceValue !== null ? String(serviceValue) : "1");
+    setAffiliateCashCreditInput(cashValue !== undefined && cashValue !== null ? String(cashValue) : "0.5");
+  }, [form.advancedSettings?.referralSettings]);
 
   const filteredSections = useMemo(() => {
     if (!canViewSettings) return [];
@@ -3427,22 +3437,38 @@ export default function SettingsPage() {
             <label className="settings-input-group">
               <span className="muted">Service redemption value per credit</span>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 min="0.01"
                 step="0.01"
-                value={affiliateSettings.affiliateServiceCreditValue ?? 1}
-                onChange={(event) => updateAdvancedObject("referralSettings", { affiliateServiceCreditValue: Number(event.target.value || 1) })}
+                value={affiliateServiceCreditInput}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setAffiliateServiceCreditInput(next);
+                  const parsed = Number(next);
+                  if (Number.isFinite(parsed) && parsed > 0) {
+                    updateAdvancedObject("referralSettings", { affiliateServiceCreditValue: parsed });
+                  }
+                }}
               />
               <small className="muted">Default from workflow: 1 credit = {formatMoney(1)} service discount.</small>
             </label>
             <label className="settings-input-group">
               <span className="muted">Cash payout value per credit</span>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 min="0.01"
                 step="0.01"
-                value={affiliateSettings.affiliateCashCreditValue ?? 0.5}
-                onChange={(event) => updateAdvancedObject("referralSettings", { affiliateCashCreditValue: Number(event.target.value || 0.5) })}
+                value={affiliateCashCreditInput}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setAffiliateCashCreditInput(next);
+                  const parsed = Number(next);
+                  if (Number.isFinite(parsed) && parsed > 0) {
+                    updateAdvancedObject("referralSettings", { affiliateCashCreditValue: parsed });
+                  }
+                }}
               />
               <small className="muted">Default from workflow: 1 credit = {formatMoney(0.5)} cash payout.</small>
             </label>
