@@ -141,13 +141,23 @@ export default function ReferralCouponsPage() {
     e.preventDefault();
     try {
       const payload = {
-        ...form,
-        branchId: selectedBranchId || null,
+        code: form.code || undefined,
+        title: form.title,
+        description: form.description || null,
+        discountType: form.discountType,
+        discountValue: Number(form.discountValue) || 0,
         minBillAmount: form.minBillAmount !== "" ? Number(form.minBillAmount) : null,
         usageLimit: form.usageLimit !== "" ? Number(form.usageLimit) : null,
         customerUsageLimit: form.customerUsageLimit !== "" ? Number(form.customerUsageLimit) : null,
+        startsAt: form.startsAt || null,
+        endsAt: form.endsAt || null,
+        partnerCreditType: form.partnerCreditType,
         partnerCreditValue: Number(form.partnerCreditValue) || 0,
         partnerCustomerId: form.partnerCustomerId || null,
+        categoryIds: form.categoryIds,
+        serviceIds: form.serviceIds,
+        notes: form.notes || null,
+        branchId: selectedBranchId || null,
       };
 
       if (editing) {
