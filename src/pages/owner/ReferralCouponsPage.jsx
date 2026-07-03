@@ -74,7 +74,7 @@ export default function ReferralCouponsPage() {
 
   const handleEdit = (c) => {
     setEditing(c);
-    setForm({
+    setForm(prev => ({
       code: c.code || "",
       title: c.title || "",
       description: c.description || "",
@@ -91,7 +91,7 @@ export default function ReferralCouponsPage() {
       categoryIds: (c.eligibleCategories || []).map((e) => e.categoryId),
       serviceIds: (c.eligibleServices || []).map((e) => e.serviceId),
       notes: c.notes || "",
-    });
+    }));
     setShowForm(true);
   };
 
@@ -145,6 +145,14 @@ export default function ReferralCouponsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.title?.trim()) {
+      setStatus({ error: "Title is required.", success: "" });
+      return;
+    }
+    if (!editing && !form.discountValue && form.discountValue !== 0) {
+      setStatus({ error: "Discount value is required.", success: "" });
+      return;
+    }
     try {
       const payload = {
         code: form.code || undefined,

@@ -910,9 +910,9 @@ export default function PosPage() {
       setGuestSearchInput("");
       setCouponValidation(null);
       setCouponCodeInput("");
-      setForm({
+      setForm(current => ({
         customerId: "",
-        branchId: form.branchId,
+        branchId: current.branchId,
         appliedMembershipId: "",
         discount: 0,
         tax: 0,
@@ -925,7 +925,7 @@ export default function PosPage() {
         payments: [emptyPayment],
         sendFeedbackMessage: true,
         sendInvoiceMessage: true
-      });
+      }));
 
       // Reset package modal draft values
       setPkgDraft({
@@ -1183,9 +1183,9 @@ export default function PosPage() {
       setGuestSearchInput("");
       setCouponValidation(null);
       setCouponCodeInput("");
-      setForm({
+      setForm(current => ({
         customerId: "",
-        branchId: form.branchId,
+        branchId: current.branchId,
         appliedMembershipId: "",
         discount: 0,
         tax: 0,
@@ -1198,7 +1198,7 @@ export default function PosPage() {
         payments: [emptyPayment],
         sendFeedbackMessage: true,
         sendInvoiceMessage: true
-      });
+      }));
       await loadContext("", form.branchId);
     } catch (error) {
       setToastMessage({ type: "error", title: "Invoice Failed", message: formatApiError(error, "Could not create invoice") });

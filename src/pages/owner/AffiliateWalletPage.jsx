@@ -247,7 +247,7 @@ export default function AffiliateWalletPage() {
                           </span>
                         </div>
                         <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>
-                          Credits: {Number(p.creditsRedeemed)} → Cash: ₹{Number(p.cashAmount).toFixed(2)}
+                          Credits: {Number(p.creditsRedeemed ?? 0)} → Cash: ₹{Number(p.cashAmount ?? 0).toFixed(2)}
                           <span style={{ marginLeft: 8, fontSize: 12, color: "#64748b" }}>
                             {new Date(p.createdAt).toLocaleDateString()}
                           </span>
