@@ -116,6 +116,7 @@ export default function CustomersPage() {
   const [giftCards, setGiftCards] = useState([]);
   const [customerGiftCards, setCustomerGiftCards] = useState([]);
   const [customerAdvances, setCustomerAdvances] = useState([]);
+  const [customerAffiliateWallet, setCustomerAffiliateWallet] = useState(null);
   const [updateForm, setUpdateForm] = useState({ name: "", phone: "", email: "", gender: "", dateOfBirth: "", anniversary: "" });
   const [nowTime] = useState(getNow);
   const assignMembershipBalanceVal = Number(membershipForm.price || 0) - (Number(membershipForm.online || 0) + Number(membershipForm.offline || 0) + Number(membershipForm.advance || 0));
@@ -450,6 +451,12 @@ export default function CustomersPage() {
     if (detailTab === "packages" && packagePlans.length === 0) {
       fetchPackagePlans();
       fetchStaffUsers();
+    }
+    if (detailTab === "affiliate") {
+      setCustomerAffiliateWallet(null);
+      api.get(`/owner/referrals/wallets/${selectedCustomer.id}`)
+        .then(res => setCustomerAffiliateWallet(res.data || null))
+        .catch(() => setCustomerAffiliateWallet(null));
     }
   }, [detailTab, selectedCustomer, membershipPlans.length, packagePlans.length]);
 
@@ -1638,6 +1645,7 @@ export default function CustomersPage() {
                     { key: "family", icon: Users, label: "Family Members" },
                     { key: "updateprofile", icon: UserCog, label: "Update Profile" },
                     { key: "segments", icon: Tag, label: "Referrals" },
+                    { key: "affiliate", icon: Wallet, label: "Affiliate Wallet" },
                     { key: "followup", icon: Phone, label: "Follow Up" },
                     { key: "notes", icon: StickyNote, label: "Notes" },
                   ].map(({ key, icon: Icon, label }) => (
@@ -1664,6 +1672,7 @@ export default function CustomersPage() {
                       { key: "family", label: "Family Members" },
                       { key: "updateprofile", label: "Update Profile" },
                       { key: "segments", label: "Referrals" },
+                      { key: "affiliate", label: "Affiliate Wallet" },
                       { key: "followup", label: "Follow Up" },
                       { key: "notes", label: "Notes" },
                     ].find(t => t.key === detailTab)?.label || "Details"}
@@ -2080,6 +2089,75 @@ export default function CustomersPage() {
                                 <div className="cust-mem-name">{seg.name || seg}</div>
                               </div>
                             ))
+                          )}
+                        </div>
+                      )}
+
+                      {/* Affiliate Wallet Tab */}
+                      {detailTab === "affiliate" && (
+                        <div className="cust-detail-section">
+                          <div className="cust-detail-section-title">Affiliate Wallet</div>
+                          {!customerAffiliateWallet ? (
+                            <div className="cust-empty-state">
+                              <Wallet size={40} color="#cbd5e1" style={{ marginBottom: "12px" }} />
+                              <div>{customerAffiliateWallet === null ? "Loading..." : "Not an affiliate partner"}</div>
+                            </div>
+                          ) : customerAffiliateWallet.wallet ? (
+                            <>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
+                                <div style={{ padding: "12px 14px", borderRadius: 8, background: "linear-gradient(135deg, #16a34a22, #16a34a08)", border: "1px solid #16a34a33" }}>
+                                  <div style={{ fontSize: 11, color: "#94a3b8" }}>Balance</div>
+                                  <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "#16a34a", marginTop: 4 }}>
+                                    {Number(customerAffiliateWallet.wallet.balance ?? 0)} cr
+                                  </div>
+                                  <div style={{ fontSize: 10, color: "#64748b" }}>Service: {formatMoney(Number(customerAffiliateWallet.wallet.balance ?? 0))}</div>
+                                </div>
+                                <div style={{ padding: "12px 14px", borderRadius: 8, background: "linear-gradient(135deg, #6366f122, #6366f108)", border: "1px solid #6366f133" }}>
+                                  <div style={{ fontSize: 11, color: "#94a3b8" }}>Total Earned</div>
+                                  <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "#6366f1", marginTop: 4 }}>
+                                    {Number(customerAffiliateWallet.wallet.totalEarned ?? 0)} cr
+                                  </div>
+                                </div>
+                                <div style={{ padding: "12px 14px", borderRadius: 8, background: "linear-gradient(135deg, #f59e0b22, #f59e0b08)", border: "1px solid #f59e0b33" }}>
+                                  <div style={{ fontSize: 11, color: "#94a3b8" }}>Total Redeemed</div>
+                                  <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "#f59e0b", marginTop: 4 }}>
+                                    {Number(customerAffiliateWallet.wallet.totalRedeemed ?? 0)} cr
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0", marginBottom: 8 }}>Transaction History</div>
+                              {(customerAffiliateWallet.transactions || []).length === 0 ? (
+                                <div className="cust-empty-state" style={{ padding: "16px 0" }}>
+                                  <div style={{ fontSize: 12, color: "#64748b" }}>No transactions yet</div>
+                                </div>
+                              ) : (
+                                <div style={{ maxHeight: 260, overflowY: "auto" }}>
+                                  {(customerAffiliateWallet.transactions || []).map((t) => (
+                                    <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderRadius: 6, background: "#0f172a", marginBottom: 6, border: "1px solid #1e293b" }}>
+                                      <div>
+                                        <div style={{ fontSize: 12, color: "#e2e8f0", fontWeight: 500 }}>{t.type}</div>
+                                        <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{t.note || "-"}</div>
+                                      </div>
+                                      <div style={{ textAlign: "right" }}>
+                                        <div style={{ fontSize: 13, fontWeight: 700, color: t.type === "EARN" || t.type === "MANUAL_ADJUSTMENT" ? "#16a34a" : "#ef4444" }}>
+                                          {t.type === "EARN" || t.type === "MANUAL_ADJUSTMENT" ? "+" : "-"}{Number(t.amount ?? 0)} cr
+                                        </div>
+                                        {t.invoiceId && (
+                                          <div style={{ fontSize: 10, color: "#64748b" }}>{t.invoice?.invoiceNumber || ""}</div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="cust-empty-state">
+                              <Wallet size={40} color="#cbd5e1" style={{ marginBottom: "12px" }} />
+                              <div>No affiliate wallet found</div>
+                              <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>Wallet is created when a referral coupon is used by this customer's referred user.</div>
+                            </div>
                           )}
                         </div>
                       )}
