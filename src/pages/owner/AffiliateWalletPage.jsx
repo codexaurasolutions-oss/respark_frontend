@@ -18,16 +18,23 @@ export default function AffiliateWalletPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [payoutStatusFilter, setPayoutStatusFilter] = useState("");
   const [activeTab, setActiveTab] = useState("wallets");
+  const [ratios, setRatios] = useState({ service: 1, cash: 0.5 });
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [walletRes, payoutRes] = await Promise.all([
+      const [walletRes, payoutRes, settingsRes] = await Promise.all([
         api.get("/owner/referrals/wallets", { params: { branchId: selectedBranchId || undefined, search: search || undefined } }),
         api.get("/owner/referrals/payouts", { params: { branchId: selectedBranchId || undefined, status: payoutStatusFilter || undefined } }),
+        api.get("/owner/settings"),
       ]);
       setWallets(walletRes.data || []);
       setPayouts(payoutRes.data?.requests || []);
+      const referralSettings = settingsRes.data?.advancedSettings?.referralSettings || {};
+      setRatios({
+        service: Number(referralSettings.affiliateServiceCreditValue || 1) || 1,
+        cash: Number(referralSettings.affiliateCashCreditValue || 0.5) || 0.5
+      });
     } catch (err) {
       setStatus({ error: formatApiError(err, "Could not load affiliate data"), success: "" });
     } finally {
@@ -76,6 +83,19 @@ export default function AffiliateWalletPage() {
       if (selectedWallet) await loadWalletDetail(partnerId);
     } catch (err) {
       setStatus({ error: formatApiError(err, "Could not redeem credits"), success: "" });
+    }
+  };
+
+  const handleRequestPayout = async (partnerId) => {
+    const amount = prompt("Enter credits to request as cash payout (1 credit = ₹0.50):");
+    if (!amount || isNaN(amount) || Number(amount) <= 0) return;
+    try {
+      await api.post(`/owner/referrals/wallets/${partnerId}/payout`, { creditsRedeemed: Number(amount) });
+      setStatus({ error: "", success: `Cash payout requested for ${amount} credits.` });
+      await load();
+      if (selectedWallet) await loadWalletDetail(partnerId);
+    } catch (err) {
+      setStatus({ error: formatApiError(err, "Could not request payout"), success: "" });
     }
   };
 
@@ -282,6 +302,13 @@ export default function AffiliateWalletPage() {
               style={{ fontSize: 13 }}
             >
               Redeem for Services
+            </button>
+            <button
+              className="btn btn-ghost"
+              onClick={() => handleRequestPayout(selectedWallet)}
+              style={{ fontSize: 13, border: "1px solid #eab308", color: "#eab308" }}
+            >
+              Request Cash Payout
             </button>
           </div>
 

@@ -95,6 +95,30 @@ export default function ReferralCouponsPage() {
     setShowForm(true);
   };
 
+  const handleOnboardPartner = async () => {
+    const name = prompt("Affiliate partner name:");
+    if (!name) return;
+    const phone = prompt("Affiliate partner phone:");
+    if (!phone) return;
+    try {
+      const response = await api.post("/owner/referrals/partners/onboard", {
+        branchId: selectedBranchId || null,
+        name,
+        phone,
+        discountType: "PERCENT",
+        discountValue: 10,
+        partnerCreditType: "PERCENT",
+        partnerCreditValue: 5,
+        title: `${name} Affiliate Code`,
+        notes: "Auto-onboarded from referral coupon page"
+      });
+      setStatus({ error: "", success: `Partner onboarded. Code ${response.data?.coupon?.code || ""} created.` });
+      await load();
+    } catch (err) {
+      setStatus({ error: formatApiError(err, "Could not onboard partner"), success: "" });
+    }
+  };
+
   const toggleCategory = (catId) => {
     setForm((prev) => ({
       ...prev,
@@ -225,6 +249,9 @@ export default function ReferralCouponsPage() {
               <button className="btn btn-primary" onClick={handleCreate} style={{ fontSize: 13 }}>
                 + New Referral Coupon
               </button>
+              <button className="btn btn-ghost" onClick={handleOnboardPartner} style={{ fontSize: 13, border: "1px solid #6366f1", color: "#6366f1" }}>
+                Auto Onboard Partner
+              </button>
             </div>
           </div>
 
@@ -309,13 +336,12 @@ export default function ReferralCouponsPage() {
           <form onSubmit={handleSubmit}>
             <div className="form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>Coupon Code *</label>
+                <label style={{ fontSize: 12, color: "#94a3b8" }}>Coupon Code</label>
                 <input
                   type="text"
-                  required
                   value={form.code}
                   onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-                  placeholder="e.g. REF10"
+                  placeholder="Leave blank for auto code e.g. A10"
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>

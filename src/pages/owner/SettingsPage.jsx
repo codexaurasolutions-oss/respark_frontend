@@ -228,7 +228,9 @@ const defaultAdvancedSettings = {
     referrerPercentage: 10,
     referredMaxBenefitAmount: 500,
     referredFixedAmount: 0,
-    referredPercentage: 10
+    referredPercentage: 10,
+    affiliateServiceCreditValue: 1,
+    affiliateCashCreditValue: 0.5
   },
   expenseSettings: {
     autoApprove: false
@@ -3344,6 +3346,7 @@ export default function SettingsPage() {
   };
 
   const renderReferralSection = () => {
+    const affiliateSettings = form.advancedSettings.referralSettings || {};
     const referral = referralRule || {
       enabled: false, maxReferLimit: 1000,
       referrerMaxBenefitAmount: 500, referrerFixedAmount: 0, referrerPercentage: 10,
@@ -3402,6 +3405,37 @@ export default function SettingsPage() {
                   style={{ width: 100, padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13 }} />
               </label>
             </div>
+          </div>
+        </div>
+
+        <div className="settings-panel-card" style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "#7c3aed", marginBottom: 12 }}>Affiliate Credit Ratios</div>
+          <p style={{ marginTop: 0, color: "#64748b", fontSize: 13 }}>
+            Controls the wallet redemption values shown in the affiliate workflow.
+          </p>
+          <div className="settings-form-grid">
+            <label className="settings-input-group">
+              <span className="muted">Service redemption value per credit</span>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={affiliateSettings.affiliateServiceCreditValue ?? 1}
+                onChange={(event) => updateAdvancedObject("referralSettings", { affiliateServiceCreditValue: Number(event.target.value || 1) })}
+              />
+              <small className="muted">Default from workflow: 1 credit = {formatMoney(1)} service discount.</small>
+            </label>
+            <label className="settings-input-group">
+              <span className="muted">Cash payout value per credit</span>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={affiliateSettings.affiliateCashCreditValue ?? 0.5}
+                onChange={(event) => updateAdvancedObject("referralSettings", { affiliateCashCreditValue: Number(event.target.value || 0.5) })}
+              />
+              <small className="muted">Default from workflow: 1 credit = {formatMoney(0.5)} cash payout.</small>
+            </label>
           </div>
         </div>
 

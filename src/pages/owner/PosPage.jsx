@@ -136,6 +136,7 @@ export default function PosPage() {
   const [couponValidating, setCouponValidating] = useState(false);
   const [couponValidation, setCouponValidation] = useState(null);
   const [couponCodeInput, setCouponCodeInput] = useState("");
+  const [affiliateWallet, setAffiliateWallet] = useState(null);
   const [newGuestForm, setNewGuestForm] = useState({ name: "", phone: "", email: "", gender: "FEMALE", alternatePhone: "", dateOfBirth: "", anniversary: "", gst: "", notes: "" });
   const [form, setForm] = useState({
     customerId: "",
@@ -284,6 +285,22 @@ export default function PosPage() {
     setCouponCodeInput("");
     setToastMessage({ type: "success", title: "Coupon Removed", message: "Coupon has been removed." });
   };
+
+  useEffect(() => {
+    let active = true;
+    if (!form.customerId) {
+      setAffiliateWallet(null);
+      return undefined;
+    }
+    api.get(`/owner/referrals/wallets/${form.customerId}`)
+      .then((res) => {
+        if (active) setAffiliateWallet(res.data?.wallet || null);
+      })
+      .catch(() => {
+        if (active) setAffiliateWallet(null);
+      });
+    return () => { active = false; };
+  }, [form.customerId]);
 
   // === Apply Package ===
   const loadCustomerPackagesForRedemption = async () => {
@@ -489,6 +506,10 @@ export default function PosPage() {
   const packageLookup = useMemo(() => Object.fromEntries((context.packages || []).map((p) => [p.id, p])), [context.packages]);
   const selectedCoupon = useMemo(() => (context.coupons || []).find((coupon) => coupon.code === form.couponCode) || null, [context.coupons, form.couponCode]);
   const selectedGiftCard = useMemo(() => (context.giftCards || []).find((giftCard) => giftCard.code === form.giftVoucherCode) || null, [context.giftCards, form.giftVoucherCode]);
+  const affiliateServiceCreditValue = useMemo(() => {
+    const value = Number(context.settings?.advancedSettings?.referralSettings?.affiliateServiceCreditValue || 1);
+    return value > 0 ? value : 1;
+  }, [context.settings]);
   const pkgPaymentTotal = Math.max(0, Number(pkgDraft.price || pkgModalPkg?.price || 0));
   const pkgPaymentOnline = Math.max(0, Math.min(pkgPaymentTotal, Number(pkgDraft.online || 0)));
   const pkgPaymentOffline = Math.max(0, Math.min(pkgPaymentTotal - pkgPaymentOnline, Number(pkgDraft.offline || 0)));
@@ -1054,8 +1075,17 @@ export default function PosPage() {
     const activeItems = form.items.filter((item) => item.serviceId || item.productId || item.membershipPlanId || item.packageId || item.giftCardId || item.itemType === "GIFT_CARD");
     
     let finalPayments = [];
+    let affiliateCreditRedemptions = [];
     if (mode === "complete") {
-      finalPayments = form.payments.filter((payment) => payment.mode !== "BALANCE" && Number(payment.amount) > 0).map((payment) => ({
+      affiliateCreditRedemptions = form.payments
+        .filter((payment) => payment.mode === "AFFILIATE_CREDIT" && Number(payment.amount) > 0)
+        .map((payment) => ({
+          partnerId: form.customerId,
+          amount: Number(payment.amount),
+          credits: Number((Number(payment.amount) / affiliateServiceCreditValue).toFixed(2)),
+          note: payment.note || "POS service redemption"
+        }));
+      finalPayments = form.payments.filter((payment) => !["BALANCE", "AFFILIATE_CREDIT"].includes(payment.mode) && Number(payment.amount) > 0).map((payment) => ({
         ...payment,
         amount: Number(payment.amount)
       }));
@@ -1075,9 +1105,10 @@ export default function PosPage() {
         ...item,
         sessionsUsed: Number(item.sessionsUsed || 1)
       })),
+      affiliateCreditRedemptions,
       payments: finalPayments
     };
-  }, [form]);
+  }, [affiliateServiceCreditValue, form]);
 
   const updateItem = (index, patch) => {
     const nextItems = [...form.items];
@@ -1662,6 +1693,22 @@ export default function PosPage() {
                     ? `${couponValidation.coupon.discountValue}% off`
                     : `${formatMoney(couponValidation.coupon.discountValue)} off`} — Eligible: {couponValidation.eligibleItems.filter(i => i.isEligible).length} item(s)
                 </div>
+                <div style={{ marginTop: 8, display: "grid", gap: 4 }}>
+                  {couponValidation.eligibleItems
+                    .filter((item) => item.isEligible && Number(item.discount || 0) > 0)
+                    .map((item) => (
+                      <div key={`${item.index}-${item.serviceId || item.productId || item.name}`} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 11, color: "#1d4ed8", background: "#dbeafe", borderRadius: 6, padding: "5px 8px" }}>
+                        <span>{item.name} x{item.qty}</span>
+                        <strong>-{formatMoney(item.discount)}</strong>
+                      </div>
+                    ))}
+                  {Number(couponValidation.totalDiscount || 0) > 0 && (
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, color: "#0f172a", fontWeight: 700, borderTop: "1px solid #bfdbfe", paddingTop: 6 }}>
+                      <span>Coupon discount total</span>
+                      <span>-{formatMoney(couponValidation.totalDiscount)}</span>
+                    </div>
+                  )}
+                </div>
                 {couponValidation.totalPartnerCredits > 0 && (
                   <div style={{ marginTop: 4, fontSize: 11, color: "#7c3aed", fontWeight: 600 }}>
                     Partner earns {couponValidation.totalPartnerCredits.toFixed(2)} credits — {couponValidation.partnerCreditNote}
@@ -1727,23 +1774,20 @@ export default function PosPage() {
                   <label><svg width="16" height="16" style={{ color: "#10b981" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> Online</label>
                   <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "ONLINE")?.amount || ""} onFocus={() => {
                     setForm((current) => {
-                      const existingAdvance = (current.payments || []).find(p => p.mode === "ADVANCE");
-                      const advAmount = Number(existingAdvance?.amount || 0);
-                      const maxOnline = Math.max(0, totals.total - advAmount);
+                      const preservedPayments = (current.payments || []).filter(p => !["ONLINE", "CASH", "BALANCE"].includes(p.mode));
+                      const preservedPaid = preservedPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const maxOnline = Math.max(0, totals.total - preservedPaid);
                       let newPayments = (current.payments || []).filter(p => p.mode !== "ONLINE" && p.mode !== "CASH" && p.mode !== "BALANCE");
-                      if (!newPayments.find(p => p.mode === "ADVANCE") && advAmount > 0) {
-                        newPayments.push({ mode: "ADVANCE", amount: advAmount, note: "Advance used" });
-                      }
                       newPayments.push({ mode: "ONLINE", amount: maxOnline, note: "" });
-                      const remainingAfter = Math.max(0, totals.total - advAmount - maxOnline);
+                      const remainingAfter = Math.max(0, totals.total - preservedPaid - maxOnline);
                       if (remainingAfter > 0) {
                         newPayments.push({ mode: "BALANCE", amount: remainingAfter, note: "" });
                       }
                       return { ...current, payments: newPayments };
                     });
                   }} onChange={(e) => {
-                    const advAmount = Number((form.payments || []).find(p => p.mode === "ADVANCE")?.amount || 0);
-                    const maxOnline = Math.max(0, totals.total - advAmount);
+                    const preservedPaid = (form.payments || []).filter(p => !["ONLINE", "BALANCE"].includes(p.mode)).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                    const maxOnline = Math.max(0, totals.total - preservedPaid);
                     const amount = Math.min(Number(e.target.value) || 0, maxOnline);
                     setForm((current) => {
                       const newPayments = (current.payments || []).filter(p => p.mode !== "ONLINE");
@@ -1764,23 +1808,20 @@ export default function PosPage() {
                   <label><svg width="16" height="16" style={{ color: "#64748b" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg> Cash</label>
                   <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "CASH")?.amount || ""} onFocus={() => {
                     setForm((current) => {
-                      const existingAdvance = (current.payments || []).find(p => p.mode === "ADVANCE");
-                      const advAmount = Number(existingAdvance?.amount || 0);
-                      const maxCash = Math.max(0, totals.total - advAmount);
+                      const preservedPayments = (current.payments || []).filter(p => !["ONLINE", "CASH", "BALANCE"].includes(p.mode));
+                      const preservedPaid = preservedPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const maxCash = Math.max(0, totals.total - preservedPaid);
                       let newPayments = (current.payments || []).filter(p => p.mode !== "ONLINE" && p.mode !== "CASH" && p.mode !== "BALANCE");
-                      if (!newPayments.find(p => p.mode === "ADVANCE") && advAmount > 0) {
-                        newPayments.push({ mode: "ADVANCE", amount: advAmount, note: "Advance used" });
-                      }
                       newPayments.push({ mode: "CASH", amount: maxCash, note: "" });
-                      const remainingAfter = Math.max(0, totals.total - advAmount - maxCash);
+                      const remainingAfter = Math.max(0, totals.total - preservedPaid - maxCash);
                       if (remainingAfter > 0) {
                         newPayments.push({ mode: "BALANCE", amount: remainingAfter, note: "" });
                       }
                       return { ...current, payments: newPayments };
                     });
                   }} onChange={(e) => {
-                    const advAmount = Number((form.payments || []).find(p => p.mode === "ADVANCE")?.amount || 0);
-                    const maxCash = Math.max(0, totals.total - advAmount);
+                    const preservedPaid = (form.payments || []).filter(p => !["CASH", "BALANCE"].includes(p.mode)).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                    const maxCash = Math.max(0, totals.total - preservedPaid);
                     const amount = Math.min(Number(e.target.value) || 0, maxCash);
                     setForm((current) => {
                       const newPayments = (current.payments || []).filter(p => p.mode !== "CASH");
@@ -1842,6 +1883,27 @@ export default function PosPage() {
                     </div>
                   );
                 })()}
+                {form.customerId && affiliateWallet && Number(affiliateWallet.balance || 0) > 0 && (
+                  <div className="pos-payment-input">
+                    <label style={{ color: "#7c3aed" }} title={`Available affiliate credits: ${Number(affiliateWallet.balance || 0).toFixed(2)}`}>
+                      <svg width="16" height="16" style={{ color: "#7c3aed" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M4 7h16M4 17h16" /></svg>
+                      Affiliate Credits ({Number(affiliateWallet.balance || 0).toFixed(2)} cr)
+                    </label>
+                    <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "AFFILIATE_CREDIT")?.amount || ""} onFocus={() => {
+                      const walletBalance = Number(affiliateWallet.balance || 0) * affiliateServiceCreditValue;
+                      const nonAffiliatePaid = (form.payments || []).filter(p => !["AFFILIATE_CREDIT", "BALANCE"].includes(p.mode)).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const useCredits = Math.min(walletBalance, Math.max(0, totals.total - nonAffiliatePaid));
+                      setForm((current) => ({ ...current, payments: [...(current.payments || []).filter(p => p.mode !== "AFFILIATE_CREDIT"), { mode: "AFFILIATE_CREDIT", amount: useCredits, note: "Affiliate service credit used" }] }));
+                    }} onChange={(e) => {
+                      const walletBalance = Number(affiliateWallet.balance || 0) * affiliateServiceCreditValue;
+                      const nonAffiliatePaid = (form.payments || []).filter(p => !["AFFILIATE_CREDIT", "BALANCE"].includes(p.mode)).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const maxCredits = Math.max(0, Math.min(walletBalance, totals.total - nonAffiliatePaid));
+                      const amount = Math.min(Number(e.target.value) || 0, maxCredits);
+                      setForm((current) => ({ ...current, payments: [...(current.payments || []).filter(p => p.mode !== "AFFILIATE_CREDIT"), { mode: "AFFILIATE_CREDIT", amount, note: "Affiliate service credit used" }] }));
+                    }} />
+                    <div style={{ fontSize: 11, color: "#7c3aed", marginTop: 4 }}>1 credit = {formatMoney(affiliateServiceCreditValue)} service discount</div>
+                  </div>
+                )}
               </div>
 
               <div className="pos-message-config">
