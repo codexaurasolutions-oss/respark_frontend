@@ -39,6 +39,9 @@ export default function ReferralCouponsPage() {
   const [showForm, setShowForm] = useState(false);
   const [generatingCode, setGeneratingCode] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [showOnboardModal, setShowOnboardModal] = useState(false);
+  const [onboardForm, setOnboardForm] = useState({ name: "", phone: "", discountValue: 10, partnerCreditValue: 5, title: "" });
+  const [onboardLoading, setOnboardLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -114,27 +117,36 @@ export default function ReferralCouponsPage() {
     }
   };
 
-  const handleOnboardPartner = async () => {
-    const name = prompt("Affiliate partner name:");
-    if (!name) return;
-    const phone = prompt("Affiliate partner phone:");
-    if (!phone) return;
+  const handleOnboardPartner = () => {
+    setOnboardForm({ name: "", phone: "", discountValue: 10, partnerCreditValue: 5, title: "" });
+    setShowOnboardModal(true);
+  };
+
+  const submitOnboard = async () => {
+    if (!onboardForm.name.trim() || !onboardForm.phone.trim()) {
+      setStatus({ error: "Name and phone are required.", success: "" });
+      return;
+    }
+    setOnboardLoading(true);
     try {
       const response = await api.post("/owner/referrals/partners/onboard", {
         branchId: selectedBranchId || null,
-        name,
-        phone,
+        name: onboardForm.name.trim(),
+        phone: onboardForm.phone.trim(),
         discountType: "PERCENT",
-        discountValue: 10,
+        discountValue: Number(onboardForm.discountValue) || 10,
         partnerCreditType: "PERCENT",
-        partnerCreditValue: 5,
-        title: `${name} Affiliate Code`,
-        notes: "Auto-onboarded from referral coupon page"
+        partnerCreditValue: Number(onboardForm.partnerCreditValue) || 5,
+        title: onboardForm.title.trim() || `${onboardForm.name.trim()} Affiliate Code`,
+        notes: "Onboarded from referral coupon page"
       });
       setStatus({ error: "", success: `Partner onboarded. Code ${response.data?.coupon?.code || ""} created.` });
+      setShowOnboardModal(false);
       await load();
     } catch (err) {
       setStatus({ error: formatApiError(err, "Could not onboard partner"), success: "" });
+    } finally {
+      setOnboardLoading(false);
     }
   };
 
@@ -632,6 +644,71 @@ export default function ReferralCouponsPage() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Onboard Partner Modal */}
+      {showOnboardModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }}>
+          <div style={{ background: "#1e293b", borderRadius: 12, border: "1px solid #334155", padding: 24, width: 420, maxWidth: "90vw" }}>
+            <h3 style={{ margin: "0 0 16px", color: "#e2e8f0", fontSize: 16 }}>Onboard Affiliate Partner</h3>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Partner Name *</label>
+              <input
+                type="text" value={onboardForm.name}
+                onChange={(e) => setOnboardForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g. John Doe"
+                style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Phone *</label>
+              <input
+                type="text" value={onboardForm.phone}
+                onChange={(e) => setOnboardForm(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="e.g. 9876543210"
+                style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Coupon Title</label>
+              <input
+                type="text" value={onboardForm.title}
+                onChange={(e) => setOnboardForm(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Auto from partner name if blank"
+                style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+              />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+              <div>
+                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Customer Discount %</label>
+                <input
+                  type="number" value={onboardForm.discountValue}
+                  onChange={(e) => setOnboardForm(prev => ({ ...prev, discountValue: e.target.value }))}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Partner Credit %</label>
+                <input
+                  type="number" value={onboardForm.partnerCreditValue}
+                  onChange={(e) => setOnboardForm(prev => ({ ...prev, partnerCreditValue: e.target.value }))}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button className="btn btn-ghost" onClick={() => setShowOnboardModal(false)} style={{ fontSize: 13 }}>Cancel</button>
+              <button className="btn btn-primary" onClick={submitOnboard} disabled={onboardLoading} style={{ fontSize: 13 }}>
+                {onboardLoading ? "Onboarding..." : "Onboard Partner"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

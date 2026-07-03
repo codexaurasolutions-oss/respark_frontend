@@ -19,6 +19,9 @@ export default function AffiliateWalletPage() {
   const [payoutStatusFilter, setPayoutStatusFilter] = useState("");
   const [activeTab, setActiveTab] = useState("wallets");
   const [ratios, setRatios] = useState({ service: 1, cash: 0.5 });
+  const [showAddPartnerModal, setShowAddPartnerModal] = useState(false);
+  const [addPartnerForm, setAddPartnerForm] = useState({ name: "", phone: "", title: "", discountValue: 10, partnerCreditValue: 5 });
+  const [addPartnerLoading, setAddPartnerLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -77,6 +80,35 @@ export default function AffiliateWalletPage() {
       if (selectedWallet) await loadWalletDetail(selectedWallet);
     } catch (err) {
       setStatus({ error: formatApiError(err, "Could not update payout"), success: "" });
+    }
+  };
+
+  const handleAddPartner = async () => {
+    if (!addPartnerForm.name.trim() || !addPartnerForm.phone.trim()) {
+      setStatus({ error: "Name and phone are required.", success: "" });
+      return;
+    }
+    setAddPartnerLoading(true);
+    try {
+      const res = await api.post("/owner/referrals/partners/onboard", {
+        branchId: selectedBranchId || null,
+        name: addPartnerForm.name.trim(),
+        phone: addPartnerForm.phone.trim(),
+        discountType: "PERCENT",
+        discountValue: Number(addPartnerForm.discountValue) || 10,
+        partnerCreditType: "PERCENT",
+        partnerCreditValue: Number(addPartnerForm.partnerCreditValue) || 5,
+        title: addPartnerForm.title.trim() || `${addPartnerForm.name.trim()} Affiliate Code`,
+        notes: "Onboarded from affiliate wallet page"
+      });
+      setStatus({ error: "", success: `Partner onboarded. Code ${res.data?.coupon?.code || ""} created.` });
+      setShowAddPartnerModal(false);
+      setAddPartnerForm({ name: "", phone: "", title: "", discountValue: 10, partnerCreditValue: 5 });
+      await load();
+    } catch (err) {
+      setStatus({ error: formatApiError(err, "Could not onboard partner"), success: "" });
+    } finally {
+      setAddPartnerLoading(false);
     }
   };
 
@@ -169,6 +201,9 @@ export default function AffiliateWalletPage() {
                   onChange={(e) => setSearch(e.target.value)}
                   style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, width: 220 }}
                 />
+                <button className="btn btn-primary" onClick={() => { setAddPartnerForm({ name: "", phone: "", title: "", discountValue: 10, partnerCreditValue: 5 }); setShowAddPartnerModal(true); }} style={{ fontSize: 13, whiteSpace: "nowrap" }}>
+                  + Add Partner
+                </button>
               </div>
             )}
             {activeTab === "payouts" && (
@@ -385,6 +420,71 @@ export default function AffiliateWalletPage() {
               )}
             </>
           ) : null}
+        </div>
+      )}
+
+      {/* Add Partner Modal */}
+      {showAddPartnerModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }}>
+          <div style={{ background: "#1e293b", borderRadius: 12, border: "1px solid #334155", padding: 24, width: 420, maxWidth: "90vw" }}>
+            <h3 style={{ margin: "0 0 16px", color: "#e2e8f0", fontSize: 16 }}>Add Affiliate Partner</h3>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Partner Name *</label>
+              <input
+                type="text" value={addPartnerForm.name}
+                onChange={(e) => setAddPartnerForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g. John Doe"
+                style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Phone *</label>
+              <input
+                type="text" value={addPartnerForm.phone}
+                onChange={(e) => setAddPartnerForm(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="e.g. 9876543210"
+                style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Coupon Title</label>
+              <input
+                type="text" value={addPartnerForm.title}
+                onChange={(e) => setAddPartnerForm(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Auto from partner name if blank"
+                style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+              />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+              <div>
+                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Customer Discount %</label>
+                <input
+                  type="number" value={addPartnerForm.discountValue}
+                  onChange={(e) => setAddPartnerForm(prev => ({ ...prev, discountValue: e.target.value }))}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Partner Credit %</label>
+                <input
+                  type="number" value={addPartnerForm.partnerCreditValue}
+                  onChange={(e) => setAddPartnerForm(prev => ({ ...prev, partnerCreditValue: e.target.value }))}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button className="btn btn-ghost" onClick={() => setShowAddPartnerModal(false)} style={{ fontSize: 13 }}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleAddPartner} disabled={addPartnerLoading} style={{ fontSize: 13 }}>
+                {addPartnerLoading ? "Onboarding..." : "Onboard Partner"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

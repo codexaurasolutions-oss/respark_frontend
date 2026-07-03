@@ -117,6 +117,9 @@ export default function CustomersPage() {
   const [customerGiftCards, setCustomerGiftCards] = useState([]);
   const [customerAdvances, setCustomerAdvances] = useState([]);
   const [customerAffiliateWallet, setCustomerAffiliateWallet] = useState(null);
+  const [showMakePartnerModal, setShowMakePartnerModal] = useState(false);
+  const [partnerForm, setPartnerForm] = useState({ discountValue: 10, partnerCreditValue: 5, title: "" });
+  const [partnerLoading, setPartnerLoading] = useState(false);
   const [updateForm, setUpdateForm] = useState({ name: "", phone: "", email: "", gender: "", dateOfBirth: "", anniversary: "" });
   const [nowTime] = useState(getNow);
   const assignMembershipBalanceVal = Number(membershipForm.price || 0) - (Number(membershipForm.online || 0) + Number(membershipForm.offline || 0) + Number(membershipForm.advance || 0));
@@ -428,6 +431,35 @@ export default function CustomersPage() {
       setPackagePlans(res.data || []);
     } catch (e) {
       console.error("Failed to load package plans", e);
+    }
+  };
+
+  const handleMakeAffiliatePartner = async () => {
+    if (!selectedCustomer) return;
+    setPartnerLoading(true);
+    try {
+      await api.post("/owner/referrals/partners/onboard", {
+        branchId: selectedCustomer.branchId || null,
+        partnerCustomerId: selectedCustomer.id,
+        name: selectedCustomer.name,
+        phone: selectedCustomer.phone,
+        discountType: "PERCENT",
+        discountValue: Number(partnerForm.discountValue) || 10,
+        partnerCreditType: "PERCENT",
+        partnerCreditValue: Number(partnerForm.partnerCreditValue) || 5,
+        title: partnerForm.title.trim() || `${selectedCustomer.name} Affiliate Code`,
+        notes: "Onboarded from customer profile"
+      });
+      setShowMakePartnerModal(false);
+      setDetailTab("affiliate");
+      api.get(`/owner/referrals/wallets/${selectedCustomer.id}`)
+        .then(res => setCustomerAffiliateWallet(res.data || null))
+        .catch(() => {});
+      alert("Customer is now an affiliate partner!");
+    } catch (err) {
+      alert("Failed: " + (err.response?.data?.message || "Could not onboard partner"));
+    } finally {
+      setPartnerLoading(false);
     }
   };
 
@@ -1709,6 +1741,16 @@ export default function CustomersPage() {
                               <span className="cust-profile-val">{val}</span>
                             </div>
                           ))}
+                          <button
+                            className="btn btn-ghost"
+                            onClick={() => {
+                              setPartnerForm({ discountValue: 10, partnerCreditValue: 5, title: "" });
+                              setShowMakePartnerModal(true);
+                            }}
+                            style={{ marginTop: 12, fontSize: 12, border: "1px solid #6366f1", color: "#6366f1", width: "100%" }}
+                          >
+                            Make Affiliate Partner
+                          </button>
                         </div>
                       )}
 
@@ -3356,6 +3398,54 @@ export default function CustomersPage() {
               color: "#0f172a",
               textAlign: "center"
             }}>{savingMessage}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Make Affiliate Partner Modal */}
+      {showMakePartnerModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }}>
+          <div style={{ background: "#1e293b", borderRadius: 12, border: "1px solid #334155", padding: 24, width: 400, maxWidth: "90vw" }}>
+            <h3 style={{ margin: "0 0 6px", color: "#e2e8f0", fontSize: 16 }}>Make Affiliate Partner</h3>
+            <p style={{ margin: "0 0 16px", color: "#94a3b8", fontSize: 12 }}>
+              Convert <strong style={{ color: "#e2e8f0" }}>{selectedCustomer?.name}</strong> into an affiliate partner. A referral coupon and wallet will be created.
+            </p>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Coupon Title</label>
+              <input
+                type="text" value={partnerForm.title}
+                onChange={(e) => setPartnerForm(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Auto from customer name if blank"
+                style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+              />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+              <div>
+                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Customer Discount %</label>
+                <input
+                  type="number" value={partnerForm.discountValue}
+                  onChange={(e) => setPartnerForm(prev => ({ ...prev, discountValue: e.target.value }))}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Partner Credit %</label>
+                <input
+                  type="number" value={partnerForm.partnerCreditValue}
+                  onChange={(e) => setPartnerForm(prev => ({ ...prev, partnerCreditValue: e.target.value }))}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button className="btn btn-ghost" onClick={() => setShowMakePartnerModal(false)} style={{ fontSize: 13 }}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleMakeAffiliatePartner} disabled={partnerLoading} style={{ fontSize: 13 }}>
+                {partnerLoading ? "Onboarding..." : "Confirm"}
+              </button>
+            </div>
           </div>
         </div>
       )}
