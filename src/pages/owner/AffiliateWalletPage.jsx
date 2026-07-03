@@ -47,8 +47,15 @@ export default function AffiliateWalletPage() {
     return () => clearTimeout(t);
   }, [load]);
 
+  useEffect(() => {
+    if (!status.error && !status.success) return;
+    const t = setTimeout(() => setStatus({ error: "", success: "" }), 5000);
+    return () => clearTimeout(t);
+  }, [status]);
+
   const loadWalletDetail = async (partnerId) => {
     setDetailLoading(true);
+    setWalletDetail(null);
     try {
       const res = await api.get(`/owner/referrals/wallets/${partnerId}`, {
         params: { branchId: selectedBranchId || undefined },
@@ -314,36 +321,36 @@ export default function AffiliateWalletPage() {
 
           {detailLoading ? (
             <PageLoader title="Loading wallet details..." message="Please wait" />
-          ) : walletDetail ? (
+          ) : walletDetail?.wallet ? (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
                 <div style={{ background: "#1e293b", borderRadius: 8, padding: 16, textAlign: "center" }}>
                   <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Available Balance</div>
                   <div style={{ fontSize: 24, fontWeight: 700, color: "#22c55e" }}>
-                    {Number(walletDetail.wallet.balance)} cr
+                    {Number(walletDetail.wallet.balance || 0)} cr
                   </div>
-                  <div style={{ fontSize: 11, color: "#64748b" }}>₹{Number(walletDetail.wallet.balance).toFixed(2)} for services</div>
+                  <div style={{ fontSize: 11, color: "#64748b" }}>₹{(Number(walletDetail.wallet.balance || 0) * ratios.service).toFixed(2)} for services</div>
                 </div>
                 <div style={{ background: "#1e293b", borderRadius: 8, padding: 16, textAlign: "center" }}>
                   <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Total Earned</div>
                   <div style={{ fontSize: 24, fontWeight: 700, color: "#e2e8f0" }}>
-                    {Number(walletDetail.wallet.totalEarned)} cr
+                    {Number(walletDetail.wallet.totalEarned || 0)} cr
                   </div>
                 </div>
                 <div style={{ background: "#1e293b", borderRadius: 8, padding: 16, textAlign: "center" }}>
                   <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>Total Redeemed</div>
                   <div style={{ fontSize: 24, fontWeight: 700, color: "#eab308" }}>
-                    {Number(walletDetail.wallet.totalRedeemed)} cr
+                    {Number(walletDetail.wallet.totalRedeemed || 0)} cr
                   </div>
                 </div>
               </div>
 
               <h4 style={{ margin: "0 0 8px 0", color: "#e2e8f0", fontSize: 14 }}>Transaction Ledger</h4>
-              {walletDetail.transactions.length === 0 ? (
+              {(walletDetail.transactions || []).length === 0 ? (
                 <p style={{ color: "#64748b", fontSize: 13 }}>No transactions yet.</p>
               ) : (
                 <div className="list-stack">
-                  {walletDetail.transactions.map((t) => (
+                  {(walletDetail.transactions || []).map((t) => (
                     <div key={t.id} className="list-item">
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>

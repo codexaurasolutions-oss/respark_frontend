@@ -66,6 +66,12 @@ export default function ReferralCouponsPage() {
     return () => clearTimeout(t);
   }, [load]);
 
+  useEffect(() => {
+    if (!status.error && !status.success) return;
+    const t = setTimeout(() => setStatus({ error: "", success: "" }), 5000);
+    return () => clearTimeout(t);
+  }, [status]);
+
   const handleEdit = (c) => {
     setEditing(c);
     setForm({
@@ -73,14 +79,14 @@ export default function ReferralCouponsPage() {
       title: c.title || "",
       description: c.description || "",
       discountType: c.discountType || "PERCENT",
-      discountValue: c.discountValue ? Number(c.discountValue) : 0,
-      minBillAmount: c.minBillAmount ? Number(c.minBillAmount) : "",
-      usageLimit: c.usageLimit || "",
-      customerUsageLimit: c.customerUsageLimit || "",
+      discountValue: c.discountValue != null ? Number(c.discountValue) : 0,
+      minBillAmount: c.minBillAmount != null ? Number(c.minBillAmount) : "",
+      usageLimit: c.usageLimit != null ? String(c.usageLimit) : "",
+      customerUsageLimit: c.customerUsageLimit != null ? String(c.customerUsageLimit) : "",
       startsAt: c.startsAt ? new Date(c.startsAt).toISOString().split("T")[0] : "",
       endsAt: c.endsAt ? new Date(c.endsAt).toISOString().split("T")[0] : "",
       partnerCreditType: c.partnerCreditType || "FIXED",
-      partnerCreditValue: c.partnerCreditValue ? Number(c.partnerCreditValue) : 0,
+      partnerCreditValue: c.partnerCreditValue != null ? Number(c.partnerCreditValue) : 0,
       partnerCustomerId: c.partnerCustomerId || "",
       categoryIds: (c.eligibleCategories || []).map((e) => e.categoryId),
       serviceIds: (c.eligibleServices || []).map((e) => e.serviceId),
@@ -350,7 +356,7 @@ export default function ReferralCouponsPage() {
                 <input
                   type="text"
                   value={form.code}
-                  onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+                  onChange={(e) => setForm(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
                   placeholder="Leave blank for auto code e.g. A10"
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
                 />
@@ -361,7 +367,7 @@ export default function ReferralCouponsPage() {
                   type="text"
                   required
                   value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="e.g. Referral Discount"
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
                 />
@@ -371,7 +377,7 @@ export default function ReferralCouponsPage() {
                 <input
                   type="text"
                   value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Optional description"
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
                 />
@@ -381,7 +387,7 @@ export default function ReferralCouponsPage() {
                 <label style={{ fontSize: 12, color: "#94a3b8" }}>Discount Type *</label>
                 <select
                   value={form.discountType}
-                  onChange={(e) => setForm({ ...form, discountType: e.target.value })}
+                  onChange={(e) => setForm(prev => ({ ...prev, discountType: e.target.value }))}
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
                 >
                   <option value="PERCENT">Percentage (%)</option>
@@ -396,7 +402,7 @@ export default function ReferralCouponsPage() {
                   min="0"
                   step="0.01"
                   value={form.discountValue}
-                  onChange={(e) => setForm({ ...form, discountValue: e.target.value })}
+                  onChange={(e) => setForm(prev => ({ ...prev, discountValue: e.target.value }))}
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
@@ -406,7 +412,7 @@ export default function ReferralCouponsPage() {
                   type="number"
                   min="0"
                   value={form.minBillAmount}
-                  onChange={(e) => setForm({ ...form, minBillAmount: e.target.value })}
+                  onChange={(e) => setForm(prev => ({ ...prev, minBillAmount: e.target.value }))}
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
@@ -416,7 +422,7 @@ export default function ReferralCouponsPage() {
                   type="number"
                   min="0"
                   value={form.usageLimit}
-                  onChange={(e) => setForm({ ...form, usageLimit: e.target.value })}
+                  onChange={(e) => setForm(prev => ({ ...prev, usageLimit: e.target.value }))}
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
@@ -426,7 +432,7 @@ export default function ReferralCouponsPage() {
                   type="number"
                   min="0"
                   value={form.customerUsageLimit}
-                  onChange={(e) => setForm({ ...form, customerUsageLimit: e.target.value })}
+                  onChange={(e) => setForm(prev => ({ ...prev, customerUsageLimit: e.target.value }))}
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
@@ -435,7 +441,7 @@ export default function ReferralCouponsPage() {
                 <input
                   type="date"
                   value={form.startsAt}
-                  onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
+                  onChange={(e) => setForm(prev => ({ ...prev, startsAt: e.target.value }))}
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
@@ -444,7 +450,7 @@ export default function ReferralCouponsPage() {
                 <input
                   type="date"
                   value={form.endsAt}
-                  onChange={(e) => setForm({ ...form, endsAt: e.target.value })}
+                  onChange={(e) => setForm(prev => ({ ...prev, endsAt: e.target.value }))}
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
@@ -456,7 +462,7 @@ export default function ReferralCouponsPage() {
                 <label style={{ fontSize: 12, color: "#94a3b8" }}>Credit Type</label>
                 <select
                   value={form.partnerCreditType}
-                  onChange={(e) => setForm({ ...form, partnerCreditType: e.target.value })}
+                  onChange={(e) => setForm(prev => ({ ...prev, partnerCreditType: e.target.value }))}
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
                 >
                   <option value="FIXED">Fixed (₹)</option>
@@ -470,7 +476,7 @@ export default function ReferralCouponsPage() {
                   min="0"
                   step="0.01"
                   value={form.partnerCreditValue}
-                  onChange={(e) => setForm({ ...form, partnerCreditValue: e.target.value })}
+                  onChange={(e) => setForm(prev => ({ ...prev, partnerCreditValue: e.target.value }))}
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
@@ -478,7 +484,7 @@ export default function ReferralCouponsPage() {
                 <label style={{ fontSize: 12, color: "#94a3b8" }}>Partner (Customer)</label>
                 <select
                   value={form.partnerCustomerId}
-                  onChange={(e) => setForm({ ...form, partnerCustomerId: e.target.value })}
+                  onChange={(e) => setForm(prev => ({ ...prev, partnerCustomerId: e.target.value }))}
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
                 >
                   <option value="">Select partner (optional)</option>
@@ -549,7 +555,7 @@ export default function ReferralCouponsPage() {
                 <input
                   type="text"
                   value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
                   placeholder="Internal notes"
                   style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
                 />
