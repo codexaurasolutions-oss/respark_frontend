@@ -106,16 +106,16 @@ export default function CouponsPage() {
       const payload = {
         code: couponForm.code,
         title: couponForm.title,
-        description: couponForm.description || null,
+        ...(couponForm.description ? { description: couponForm.description } : {}),
         discountType: couponForm.discountType,
         discountValue: Number(couponForm.discountValue),
         minBillAmount: Number(couponForm.minBillAmount || 0),
-        usageLimit: couponForm.usageLimit ? Number(couponForm.usageLimit) : null,
+        ...(couponForm.usageLimit ? { usageLimit: Number(couponForm.usageLimit) } : {}),
         startsAt: start.toISOString(),
         endsAt: end.toISOString(),
         isArchived: !couponForm.isActive,
         notes: couponForm.isPrivate ? "PRIVATE" : "",
-        branchId: selectedBranchId || null
+        ...(selectedBranchId ? { branchId: selectedBranchId } : {})
       };
 
       if (editingCoupon) {

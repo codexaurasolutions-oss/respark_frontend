@@ -12,6 +12,8 @@ export const SETTINGS_WORKSPACE_SECTIONS = [
   { key: "crm-segment", label: "CRM Referral", to: "/admin/settings/crm-segment", hint: "Audience groups" },
   { key: "coupons", label: "Coupons", to: "/admin/settings/coupons", hint: "Promo rules" },
   { key: "referrals", label: "Referrals", to: "/admin/settings/referrals", hint: "Referral benefits" },
+  { key: "referral-coupons", label: "Referral Coupons", to: "/admin/referral-coupons", hint: "Partner codes" },
+  { key: "affiliate-wallets", label: "Affiliate Wallets", to: "/admin/affiliate-wallets", hint: "Wallet redemptions" },
   { key: "designation", label: "Designation", to: "/admin/settings/designation", hint: "Job titles" },
   { key: "privacy-policy", label: "Privacy Policy", to: "/admin/settings/privacy-policy", hint: "Legal copy" },
   { key: "terms-and-conditions", label: "Terms & Conditions", to: "/admin/settings/terms-and-conditions", hint: "Policies" },
