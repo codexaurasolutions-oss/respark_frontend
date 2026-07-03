@@ -379,6 +379,17 @@ const emptyGiftCardDraft = {
   originalAmount: 1000
 };
 
+const defaultReferralRuleDraft = {
+  enabled: false,
+  maxReferLimit: 1000,
+  referrerMaxBenefitAmount: 500,
+  referrerFixedAmount: 0,
+  referrerPercentage: 10,
+  referredMaxBenefitAmount: 500,
+  referredFixedAmount: 0,
+  referredPercentage: 10
+};
+
 const rowsFromResponse = (response) => {
   const data = response?.status === "fulfilled" ? response.value?.data : null;
   if (Array.isArray(data)) return data;
@@ -450,6 +461,8 @@ export default function SettingsPage() {
   const [feedbackTypes, setFeedbackTypes] = useState([]);
   const [shifts, setShifts] = useState([]);
   const [referralRule, setReferralRule] = useState(null);
+  const [savingReferral, setSavingReferral] = useState(false);
+  const [referralDraft, setReferralDraft] = useState(defaultReferralRuleDraft);
   const [taxSlabs, setTaxSlabs] = useState([]);
   const [pnlCategories, setPnlCategories] = useState([]);
   const [status, setStatus] = useState({ loading: true, error: "", success: "" });
@@ -518,6 +531,10 @@ export default function SettingsPage() {
   }, [selectedBranchId]);
 
   const activeSection = useMemo(() => getSettingsSection(location.pathname), [location.pathname]);
+
+  useEffect(() => {
+    setReferralDraft(referralRule || defaultReferralRuleDraft);
+  }, [referralRule]);
 
   const filteredSections = useMemo(() => {
     if (!canViewSettings) return [];
@@ -3347,14 +3364,7 @@ export default function SettingsPage() {
 
   const renderReferralSection = () => {
     const affiliateSettings = form.advancedSettings.referralSettings || {};
-    const referral = referralRule || {
-      enabled: false, maxReferLimit: 1000,
-      referrerMaxBenefitAmount: 500, referrerFixedAmount: 0, referrerPercentage: 10,
-      referredMaxBenefitAmount: 500, referredFixedAmount: 0, referredPercentage: 10
-    };
-    const [savingReferral, setSavingReferral] = useState(false);
-    const [referralDraft, setReferralDraft] = useState(referral);
-    useEffect(() => { setReferralDraft(referral); }, [referralRule]);
+    const referral = referralRule || defaultReferralRuleDraft;
     const update = (patch) => setReferralDraft((current) => ({ ...current, ...patch }));
 
     const saveReferral = async () => {
