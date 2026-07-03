@@ -37,6 +37,7 @@ export default function ReferralCouponsPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [generatingCode, setGeneratingCode] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
 
   const load = useCallback(async () => {
@@ -99,6 +100,18 @@ export default function ReferralCouponsPage() {
     setEditing(null);
     setForm(defaultForm);
     setShowForm(true);
+  };
+
+  const handleGenerateCode = async () => {
+    setGeneratingCode(true);
+    try {
+      const res = await api.get("/owner/referrals/coupons/next-code");
+      setForm(prev => ({ ...prev, code: res.data.code }));
+    } catch {
+      setStatus({ error: "Failed to generate code.", success: "" });
+    } finally {
+      setGeneratingCode(false);
+    }
   };
 
   const handleOnboardPartner = async () => {
@@ -359,17 +372,51 @@ export default function ReferralCouponsPage() {
 
           <form onSubmit={handleSubmit}>
             <div className="form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>Coupon Code</label>
-                <input
-                  type="text"
-                  value={form.code}
-                  onChange={(e) => setForm(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
-                  placeholder={editing ? "Cannot change code" : "Leave blank for auto code e.g. A10"}
-                  disabled={!!editing}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: editing ? "#0f172a" : "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box", opacity: editing ? 0.6 : 1, cursor: editing ? "not-allowed" : "text" }}
-                />
-              </div>
+              {!editing && (
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={{ fontSize: 12, color: "#94a3b8", marginBottom: 6, display: "block" }}>Coupon Code</label>
+                  {form.code ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{
+                        flex: 1, padding: "10px 14px", borderRadius: 6, border: "2px solid #22c55e",
+                        background: "#0f172a", color: "#22c55e", fontSize: 18, fontWeight: 700,
+                        fontFamily: "monospace", letterSpacing: 2,
+                      }}>
+                        {form.code}
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => setForm(prev => ({ ...prev, code: "" }))}
+                        style={{ fontSize: 12, color: "#ef4444", flexShrink: 0 }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={handleGenerateCode}
+                      disabled={generatingCode}
+                      style={{ width: "100%", padding: "10px 16px", fontSize: 13, fontWeight: 600 }}
+                    >
+                      {generatingCode ? "Generating..." : "Auto Generate Code"}
+                    </button>
+                  )}
+                </div>
+              )}
+              {editing && (
+                <div>
+                  <label style={{ fontSize: 12, color: "#94a3b8" }}>Coupon Code</label>
+                  <div style={{
+                    padding: "10px 14px", borderRadius: 6, border: "1px solid #334155",
+                    background: "#0f172a", color: "#64748b", fontSize: 13, fontFamily: "monospace",
+                  }}>
+                    {editing.code}
+                  </div>
+                </div>
+              )}
               <div>
                 <label style={{ fontSize: 12, color: "#94a3b8" }}>Title *</label>
                 <input
