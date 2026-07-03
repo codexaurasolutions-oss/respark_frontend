@@ -3382,6 +3382,7 @@ export default function SettingsPage() {
         setSavingReferral(true);
         const res = await api.post("/owner/referrals/rule", referralDraft);
         setReferralRule(res.data);
+        await saveWorkspace();
         setStatus({ loading: false, error: "", success: "Referral settings saved." });
       } catch (err) {
         setStatus({ loading: false, error: formatApiError(err, "Could not save referral settings"), success: "" });
