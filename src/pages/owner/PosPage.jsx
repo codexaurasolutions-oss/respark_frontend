@@ -1064,9 +1064,12 @@ export default function PosPage() {
       if (Number(item.qty || 0) <= 0) return "Quantity must be greater than zero.";
     }
     if (mode === "complete") {
-      const totalPaid = form.payments.filter(p => p.mode !== "BALANCE").reduce((sum, p) => sum + Number(p.amount || 0), 0);
-      if (totalPaid <= 0) return "Please enter at least one payment amount (Cash or Online) before completing the invoice.";
-      if (totalPaid > totals.total + 0.01) return "Payment amount exceeds invoice total. Please check the amounts.";
+      const grandTotal = Math.max(0, totals.total);
+      if (grandTotal > 0) {
+        const totalPaid = form.payments.filter(p => p.mode !== "BALANCE").reduce((sum, p) => sum + Number(p.amount || 0), 0);
+        if (totalPaid <= 0) return "Please enter at least one payment amount (Cash or Online) before completing the invoice.";
+        if (totalPaid > grandTotal + 0.01) return "Payment amount exceeds invoice total. Please check the amounts.";
+      }
     }
     return "";
   }, [form, totals.total]);
