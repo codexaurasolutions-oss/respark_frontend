@@ -331,11 +331,17 @@ const StaffWorkspaceRoute = ({ moduleKey, action = "view", featureKey, element }
     return <AccessNotice title="Staff Workspace Only" message="This area is reserved for staff self-service pages, not the owner workspace." />;
   }
 
+  const permissions = auth.membership?.permissions || {};
   const featureFlags = auth.membership?.featureFlags || {};
+  const allowed = Array.isArray(permissions[moduleKey]) && permissions[moduleKey].includes(action);
   const enabled = featureKey ? featureFlags[featureKey] !== false : true;
 
   if (!enabled) {
     return <AccessNotice title="Module Disabled" message="This module is currently turned off in business settings." />;
+  }
+
+  if (!allowed) {
+    return <Navigate to="/admin/my-dashboard" replace />;
   }
 
   return element;

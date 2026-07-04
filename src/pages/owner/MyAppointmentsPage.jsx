@@ -15,16 +15,20 @@ export default function MyAppointmentsPage() {
       if (!active) return;
       setRows(response.data);
       setLoading(false);
-    })();
+    })().catch(() => { setLoading(false); });
     return () => {
       active = false;
     };
   }, []);
 
   const updateStatus = async (id, status) => {
-    await api.patch(`/owner/appointments/${id}/status`, { status });
-    const response = await api.get("/owner/my-appointments");
-    setRows(response.data);
+    try {
+      await api.patch(`/owner/appointments/${id}/status`, { status });
+      const response = await api.get("/owner/my-appointments");
+      setRows(response.data);
+    } catch (err) {
+      alert("Failed to update appointment status.");
+    }
   };
 
   return (

@@ -12,7 +12,7 @@ export default function MyCommissionPage() {
     api.get("/owner/my-commission").then((response) => {
       setData(response.data);
       setLoading(false);
-    });
+    }).catch(() => { setLoading(false); });
   }, []);
 
   return (

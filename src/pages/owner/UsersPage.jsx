@@ -418,16 +418,24 @@ export default function UsersPage() {
   };
 
   const toggleUserStatus = async (row) => {
-    await api.patch(`/owner/users/${row.id}/status`, { isActive: !row.user.isActive });
-    await load(selectedBranchId);
+    try {
+      await api.patch(`/owner/users/${row.id}/status`, { isActive: !row.user.isActive });
+      await load(selectedBranchId);
+    } catch (err) {
+      alert("Failed to update user status.");
+    }
   };
 
   const archiveUser = async (row) => {
-    await api.patch(`/owner/users/${row.id}/archive`);
-    if (editingId === row.id) {
-      resetForm();
+    try {
+      await api.patch(`/owner/users/${row.id}/archive`);
+      if (editingId === row.id) {
+        resetForm();
+      }
+      await load(selectedBranchId);
+    } catch (err) {
+      alert("Failed to archive user.");
     }
-    await load(selectedBranchId);
   };
 
   const handleDirectorySelect = (rowId) => {

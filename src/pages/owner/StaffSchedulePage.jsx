@@ -18,17 +18,21 @@ export default function StaffSchedulePage() {
   const [loading, setLoading] = useState(true);
 
   const reload = async () => {
-    const branchParams = selectedBranchId ? { branchId: selectedBranchId } : {};
-    const [scheduleResponse, usersResponse, branchesResponse, availabilityResponse] = await Promise.all([
-      api.get("/owner/staff-schedule", { params: branchParams }),
-      api.get("/owner/users", { params: branchParams }),
-      api.get("/owner/branches"),
-      api.get("/owner/staff-availability", { params: branchParams })
-    ]);
-    setSchedules(scheduleResponse.data);
-    setStaff(usersResponse.data);
-    setBranches(branchesResponse.data);
-    setAvailability(availabilityResponse.data);
+    try {
+      const branchParams = selectedBranchId ? { branchId: selectedBranchId } : {};
+      const [scheduleResponse, usersResponse, branchesResponse, availabilityResponse] = await Promise.all([
+        api.get("/owner/staff-schedule", { params: branchParams }),
+        api.get("/owner/users", { params: branchParams }),
+        api.get("/owner/branches"),
+        api.get("/owner/staff-availability", { params: branchParams })
+      ]);
+      setSchedules(scheduleResponse.data);
+      setStaff(usersResponse.data);
+      setBranches(branchesResponse.data);
+      setAvailability(availabilityResponse.data);
+    } catch (err) {
+      alert("Failed to reload schedule data.");
+    }
   };
 
   useEffect(() => {
@@ -47,7 +51,7 @@ export default function StaffSchedulePage() {
       setBranches(branchesResponse.data);
       setAvailability(availabilityResponse.data);
       setLoading(false);
-    })();
+    })().catch(() => { setLoading(false); });
     return () => {
       active = false;
     };
@@ -74,9 +78,13 @@ export default function StaffSchedulePage() {
           <h3>Weekly Schedule</h3>
           <form onSubmit={async (event) => {
             event.preventDefault();
-            await api.post("/owner/staff-schedule", { ...scheduleForm, weekday: Number(scheduleForm.weekday) });
-            setScheduleForm(emptySchedule);
-            await reload();
+            try {
+              await api.post("/owner/staff-schedule", { ...scheduleForm, weekday: Number(scheduleForm.weekday) });
+              setScheduleForm(emptySchedule);
+              await reload();
+            } catch (err) {
+              alert("Failed to save schedule.");
+            }
           }} style={{ display: "grid", gap: 10 }}>
             <select value={scheduleForm.userSalonId} onChange={(event) => setScheduleForm((current) => ({ ...current, userSalonId: event.target.value }))}>
               <option value="">Select staff</option>
@@ -98,9 +106,13 @@ export default function StaffSchedulePage() {
           <h3>Breaks</h3>
           <form onSubmit={async (event) => {
             event.preventDefault();
-            await api.post("/owner/staff-breaks", { ...breakForm, weekday: Number(breakForm.weekday) });
-            setBreakForm(emptyBreak);
-            await reload();
+            try {
+              await api.post("/owner/staff-breaks", { ...breakForm, weekday: Number(breakForm.weekday) });
+              setBreakForm(emptyBreak);
+              await reload();
+            } catch (err) {
+              alert("Failed to save break.");
+            }
           }} style={{ display: "grid", gap: 10 }}>
             <select value={breakForm.userSalonId} onChange={(event) => setBreakForm((current) => ({ ...current, userSalonId: event.target.value }))}>
               <option value="">Select staff</option>

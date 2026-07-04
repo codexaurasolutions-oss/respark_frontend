@@ -24,7 +24,7 @@ export default function MyProfilePage() {
       setAttendanceHistory(response.data?.attendanceHistory || []);
       setProfileMeta(response.data);
       setLoading(false);
-    });
+    }).catch(() => { setLoading(false); });
   }, []);
 
   return (
@@ -57,8 +57,12 @@ export default function MyProfilePage() {
         <div className="panel-card">
           <form onSubmit={async (event) => {
             event.preventDefault();
-            await api.patch("/owner/my-profile", form);
-            setStatus("Profile updated.");
+            try {
+              await api.patch("/owner/my-profile", form);
+              setStatus("Profile updated.");
+            } catch (err) {
+              setStatus("Failed to save profile.");
+            }
           }} style={{ display: "grid", gap: 10 }}>
             <label>
               <span className="muted">Phone</span>

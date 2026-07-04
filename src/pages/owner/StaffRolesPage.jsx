@@ -180,37 +180,53 @@ export default function StaffRolesPage() {
           ...(settingsRes.data?.advancedSettings?.accessControl || {})
         });
         setLoading(false);
-      });
+      })
+      .catch(() => { setLoading(false); });
     return () => { active = false; };
   }, []);
 
   const togglePermission = async (row, moduleKey, action) => {
     setSavingId(row.id);
-    const current   = row.permissions || {};
-    const curActs   = Array.isArray(current[moduleKey]) ? current[moduleKey] : [];
-    const nextActs  = curActs.includes(action)
-      ? curActs.filter((a) => a !== action)
-      : [...curActs, action];
-    const nextPerms = { ...current, [moduleKey]: nextActs };
-    await api.patch(`/owner/users/${row.id}`, { permissions: nextPerms });
-    await load();
-    setSavingId("");
+    try {
+      const current   = row.permissions || {};
+      const curActs   = Array.isArray(current[moduleKey]) ? current[moduleKey] : [];
+      const nextActs  = curActs.includes(action)
+        ? curActs.filter((a) => a !== action)
+        : [...curActs, action];
+      const nextPerms = { ...current, [moduleKey]: nextActs };
+      await api.patch(`/owner/users/${row.id}`, { permissions: nextPerms });
+      await load();
+    } catch (err) {
+      alert("Failed to update permission.");
+    } finally {
+      setSavingId("");
+    }
   };
 
   const toggleAll = async (row, moduleKey, forceAll) => {
     setSavingId(row.id);
-    const current  = row.permissions || {};
-    const nextPerms = { ...current, [moduleKey]: forceAll ? [...ACTIONS] : [] };
-    await api.patch(`/owner/users/${row.id}`, { permissions: nextPerms });
-    await load();
-    setSavingId("");
+    try {
+      const current  = row.permissions || {};
+      const nextPerms = { ...current, [moduleKey]: forceAll ? [...ACTIONS] : [] };
+      await api.patch(`/owner/users/${row.id}`, { permissions: nextPerms });
+      await load();
+    } catch (err) {
+      alert("Failed to update permissions.");
+    } finally {
+      setSavingId("");
+    }
   };
 
   const toggleStatus = async (row) => {
     setSavingId(row.id);
-    await api.patch(`/owner/users/${row.id}/status`, { isActive: !row.user.isActive });
-    await load();
-    setSavingId("");
+    try {
+      await api.patch(`/owner/users/${row.id}/status`, { isActive: !row.user.isActive });
+      await load();
+    } catch (err) {
+      alert("Failed to update user status.");
+    } finally {
+      setSavingId("");
+    }
   };
 
   const saveRole = async (e) => {

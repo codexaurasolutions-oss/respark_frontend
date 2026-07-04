@@ -12,7 +12,7 @@ export default function MySchedulePage() {
     api.get("/owner/my-schedule").then((response) => {
       setData(response.data);
       setLoading(false);
-    });
+    }).catch(() => { setLoading(false); });
   }, []);
 
   return (
