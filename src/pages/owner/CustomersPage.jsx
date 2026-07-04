@@ -546,6 +546,7 @@ export default function CustomersPage() {
         title: giftCardForm.title || "Gift Card",
         originalAmount: amountVal,
         expiresAt: expiresAt.toISOString().split("T")[0],
+        branchId: selectedBranchId || null,
       });
       setShowGiftCardModal(false);
       setGiftCardForm({ code: "", title: "", amount: "", validityDays: 30, activationDate: new Date().toISOString().slice(0, 10), staffId: "", online: "", offline: "", balance: "" });
