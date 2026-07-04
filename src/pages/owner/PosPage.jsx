@@ -386,6 +386,23 @@ export default function PosPage() {
     } catch (_) {}
   };
 
+  const openPackageDetails = async (customerPkg) => {
+    if (!customerPkg) return;
+    if (!form.customerId) {
+      setShowPkgDetailModal(customerPkg);
+      return;
+    }
+
+    try {
+      const response = await api.get(`/owner/customers/${form.customerId}/packages`);
+      const packages = Array.isArray(response.data) ? response.data : [];
+      const freshPackage = packages.find((pkg) => pkg.id === customerPkg.id) || customerPkg;
+      setShowPkgDetailModal(freshPackage);
+    } catch (_) {
+      setShowPkgDetailModal(customerPkg);
+    }
+  };
+
   // === Apply Gift Card ===
   const validateGiftCard = async () => {
     if (!gcRedemptionCode.trim()) {
@@ -1499,7 +1516,7 @@ export default function PosPage() {
                     </div>
                     <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
                       <div><strong style={{color:"#0f172a"}}>Adv :</strong> {standaloneAdvance > 0 ? <span style={{color: "#10b981", fontWeight: 700}}>{formatMoney(Number(standaloneAdvance.toFixed(0)))}</span> : "NA"}</div>
-                      <div><strong style={{color:"#0f172a"}}>Package :</strong> {activePackage ? <span style={{color:"#2563eb", cursor:"pointer"}} onClick={() => setShowPkgDetailModal(activePackage)}>{activePackage?.package?.name || "NA"}</span> : cartPackage ? <span style={{color:"#10b981", fontWeight:"600"}}>{cartPackage.name} (In Cart)</span> : "NA"} {activePackage && <span title="Package Details" onClick={() => setShowPkgDetailModal(activePackage)} style={{display:"inline-flex", alignItems:"center", justifyContent:"center", width:18, height:18, borderRadius:"50%", background:"#e2e8f0", color:"#475569", fontSize:11, fontWeight:700, cursor:"pointer", marginLeft:4, verticalAlign:"middle"}}>&#9432;</span>}</div>
+                      <div><strong style={{color:"#0f172a"}}>Package :</strong> {activePackage ? <span style={{color:"#2563eb", cursor:"pointer"}} onClick={() => void openPackageDetails(activePackage)}>{activePackage?.package?.name || "NA"}</span> : cartPackage ? <span style={{color:"#10b981", fontWeight:"600"}}>{cartPackage.name} (In Cart)</span> : "NA"} {activePackage && <span title="Package Details" onClick={() => void openPackageDetails(activePackage)} style={{display:"inline-flex", alignItems:"center", justifyContent:"center", width:18, height:18, borderRadius:"50%", background:"#e2e8f0", color:"#475569", fontSize:11, fontWeight:700, cursor:"pointer", marginLeft:4, verticalAlign:"middle"}}>&#9432;</span>}</div>
                     </div>
                     <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
                       <div><strong style={{color:"#0f172a"}}>Membership :</strong> {activeMembership?.membershipPlan?.name || "NA"}</div>
@@ -2395,13 +2412,17 @@ export default function PosPage() {
                   </thead>
                   <tbody>
                     {(showPkgDetailModal?.package?.services || []).map((s, i) => {
-                      const totalSessions = s.sessions || 1;
-                      const usageLogs = showPkgDetailModal?.usageLogs || [];
-                      const used = usageLogs.filter(u => u.serviceId === s.serviceId).reduce((sum, u) => sum + (u.sessionsUsed || 0), 0);
+                      const totalSessions = Number(s.sessions || 1);
+                      const savedUsed = Number(s.sessionsUsed || 0);
+                      const pendingUsed = form.packageRedemptions.filter(
+                        (r) => r.customerPackageId === showPkgDetailModal?.id && r.serviceId === (s.serviceId || s.service?.id)
+                      ).length;
+                      const used = savedUsed + pendingUsed;
+                      const available = Math.max(0, totalSessions - used);
                       return (
                         <tr key={i} style={{ borderBottom:"1px solid #f1f5f9" }}>
                           <td style={{ padding:"6px 8px", color:"#334155" }}>- {s.service?.name || s.serviceId}</td>
-                          <td style={{ padding:"6px 8px", textAlign:"right", fontWeight:600 }}>{totalSessions}</td>
+                          <td style={{ padding:"6px 8px", textAlign:"right", fontWeight:600 }}>{available}</td>
                           <td style={{ padding:"6px 8px", textAlign:"right", fontWeight:600 }}>{used}</td>
                         </tr>
                       );
