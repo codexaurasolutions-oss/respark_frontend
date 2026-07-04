@@ -516,31 +516,31 @@ export default function ProductCategoriesPage() {
                 {/* Description + Video Link */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
                   <div className="hub-form-group">
-                    <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 4, display: "block" }}>Description</label>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 4, display: "block" }}>Description <span style={{ fontWeight: 400, color: "#94a3b8", fontSize: 11 }}>(Optional)</span></label>
                     <textarea className="hub-input" value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} placeholder="Product description" rows={3} style={{ width: "100%", resize: "vertical" }} />
                   </div>
                   <div className="hub-form-group">
-                    <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 4, display: "block" }}>Video Link</label>
-                    <input type="text" className="hub-input" value={productForm.videoLink} onChange={e => setProductForm({...productForm, videoLink: e.target.value})} placeholder="Video Link" style={{ width: "100%" }} />
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 4, display: "block" }}>Video Link <span style={{ fontWeight: 400, color: "#94a3b8", fontSize: 11 }}>(Optional)</span></label>
+                    <input type="text" className="hub-input" value={productForm.videoLink} onChange={e => setProductForm({...productForm, videoLink: e.target.value})} placeholder="YouTube or other video URL" style={{ width: "100%" }} />
                   </div>
                 </div>
 
                 {/* Benefits */}
                 <div className="hub-form-group" style={{ marginBottom: 20 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 4, display: "block" }}>Benefits</label>
-                  <textarea className="hub-input" value={productForm.benefits} onChange={e => setProductForm({...productForm, benefits: e.target.value})} placeholder="Benefits" rows={2} style={{ width: "100%", resize: "vertical" }} />
+                  <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 4, display: "block" }}>Benefits <span style={{ fontWeight: 400, color: "#94a3b8", fontSize: 11 }}>(Optional)</span></label>
+                  <textarea className="hub-input" value={productForm.benefits} onChange={e => setProductForm({...productForm, benefits: e.target.value})} placeholder="Key benefits of this product" rows={2} style={{ width: "100%", resize: "vertical" }} />
                 </div>
 
                 {/* Ingredients */}
                 <div className="hub-form-group" style={{ marginBottom: 20 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 4, display: "block" }}>Ingredients</label>
-                  <textarea className="hub-input" value={productForm.ingredients} onChange={e => setProductForm({...productForm, ingredients: e.target.value})} placeholder="Ingredients" rows={2} style={{ width: "100%", resize: "vertical" }} />
+                  <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 4, display: "block" }}>Ingredients <span style={{ fontWeight: 400, color: "#94a3b8", fontSize: 11 }}>(Optional)</span></label>
+                  <textarea className="hub-input" value={productForm.ingredients} onChange={e => setProductForm({...productForm, ingredients: e.target.value})} placeholder="List of ingredients" rows={2} style={{ width: "100%", resize: "vertical" }} />
                 </div>
 
                 {/* Usage Instructions */}
                 <div className="hub-form-group" style={{ marginBottom: 20 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 4, display: "block" }}>Usage Instructions</label>
-                  <textarea className="hub-input" value={productForm.usageInstructions} onChange={e => setProductForm({...productForm, usageInstructions: e.target.value})} placeholder="Usage Instructions" rows={2} style={{ width: "100%", resize: "vertical" }} />
+                  <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 4, display: "block" }}>Usage Instructions <span style={{ fontWeight: 400, color: "#94a3b8", fontSize: 11 }}>(Optional)</span></label>
+                  <textarea className="hub-input" value={productForm.usageInstructions} onChange={e => setProductForm({...productForm, usageInstructions: e.target.value})} placeholder="How to use this product" rows={2} style={{ width: "100%", resize: "vertical" }} />
                 </div>
 
                 {/* Display Images */}
