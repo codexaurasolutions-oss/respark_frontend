@@ -57,7 +57,7 @@ export default function ReferralCouponsPage() {
       setCoupons(couponRes.data || []);
       setCategories(catRes.data || []);
       setServices(svcRes.data || []);
-      setCustomers(custRes.data || []);
+      setCustomers(Array.isArray(custRes.data) ? custRes.data : (custRes.data?.data || []));
     } catch (err) {
       setStatus({ error: formatApiError(err, "Could not load referral coupons"), success: "" });
     } finally {
@@ -274,7 +274,7 @@ export default function ReferralCouponsPage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
             <h3 style={{ margin: 0 }}>
               Referral Coupons
-              <span style={{ fontSize: 14, fontWeight: 400, marginLeft: 8, color: "#94a3b8" }}>
+              <span style={{ fontSize: 14, fontWeight: 400, marginLeft: 8, color: "#475569" }}>
                 {filteredCoupons.length} coupon{filteredCoupons.length !== 1 ? "s" : ""}
               </span>
             </h3>
@@ -284,9 +284,9 @@ export default function ReferralCouponsPage() {
                 placeholder="Search coupons..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, width: 200 }}
+                style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 13, width: 200 }}
               />
-              <label style={{ fontSize: 13, color: "#94a3b8", display: "flex", alignItems: "center", gap: 4 }}>
+              <label style={{ fontSize: 13, color: "#475569", display: "flex", alignItems: "center", gap: 4 }}>
                 <input
                   type="checkbox"
                   checked={showArchived}
@@ -312,11 +312,11 @@ export default function ReferralCouponsPage() {
                 <div key={c.id} className="list-item" style={{ opacity: c.isArchived ? 0.5 : 1 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                      <strong style={{ color: "#e2e8f0" }}>{c.code}</strong>
-                      <span style={{ fontSize: 12, color: "#94a3b8" }}>|</span>
-                      <span style={{ fontSize: 13, color: "#cbd5e1" }}>{c.title}</span>
+                      <strong style={{ color: "#0f172a" }}>{c.code}</strong>
+                      <span style={{ fontSize: 12, color: "#475569" }}>|</span>
+                      <span style={{ fontSize: 13, color: "#334155" }}>{c.title}</span>
                       {c.isArchived && (
-                        <span style={{ fontSize: 11, background: "#475569", color: "#94a3b8", padding: "2px 6px", borderRadius: 4 }}>
+                        <span style={{ fontSize: 11, background: "#f1f5f9", color: "#475569", padding: "2px 6px", borderRadius: 4 }}>
                           Archived
                         </span>
                       )}
@@ -376,7 +376,7 @@ export default function ReferralCouponsPage() {
       {!loading && showForm && (
         <div className="panel-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <h3 style={{ margin: 0, color: "#e2e8f0" }}>{editing ? "Edit Referral Coupon" : "New Referral Coupon"}</h3>
+            <h3 style={{ margin: 0, color: "#0f172a" }}>{editing ? "Edit Referral Coupon" : "New Referral Coupon"}</h3>
             <button className="btn btn-ghost" onClick={() => { setShowForm(false); setEditing(null); }} style={{ fontSize: 13 }}>
               Back to list
             </button>
@@ -386,12 +386,12 @@ export default function ReferralCouponsPage() {
             <div className="form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {!editing && (
                 <div style={{ gridColumn: "1 / -1" }}>
-                  <label style={{ fontSize: 12, color: "#94a3b8", marginBottom: 6, display: "block" }}>Coupon Code</label>
+                  <label style={{ fontSize: 12, color: "#475569", marginBottom: 6, display: "block" }}>Coupon Code</label>
                   {form.code ? (
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{
                         flex: 1, padding: "10px 14px", borderRadius: 6, border: "2px solid #22c55e",
-                        background: "#0f172a", color: "#22c55e", fontSize: 18, fontWeight: 700,
+                        background: "#f0fdf4", color: "#16a34a", fontSize: 18, fontWeight: 700,
                         fontFamily: "monospace", letterSpacing: 2,
                       }}>
                         {form.code}
@@ -420,50 +420,50 @@ export default function ReferralCouponsPage() {
               )}
               {editing && (
                 <div>
-                  <label style={{ fontSize: 12, color: "#94a3b8" }}>Coupon Code</label>
+                  <label style={{ fontSize: 12, color: "#475569" }}>Coupon Code</label>
                   <div style={{
-                    padding: "10px 14px", borderRadius: 6, border: "1px solid #334155",
-                    background: "#0f172a", color: "#64748b", fontSize: 13, fontFamily: "monospace",
+                    padding: "10px 14px", borderRadius: 6, border: "1px solid #e2e8f0",
+                    background: "#f8fafc", color: "#475569", fontSize: 13, fontFamily: "monospace",
                   }}>
                     {editing.code}
                   </div>
                 </div>
               )}
               <div>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>Title *</label>
+                <label style={{ fontSize: 12, color: "#475569" }}>Title *</label>
                 <input
                   type="text"
                   required
                   value={form.title}
                   onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="e.g. Referral Discount"
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
               <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>Description</label>
+                <label style={{ fontSize: 12, color: "#475569" }}>Description</label>
                 <input
                   type="text"
                   value={form.description}
                   onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Optional description"
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
 
               <div>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>Discount Type *</label>
+                <label style={{ fontSize: 12, color: "#475569" }}>Discount Type *</label>
                 <select
                   value={form.discountType}
                   onChange={(e) => setForm(prev => ({ ...prev, discountType: e.target.value }))}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
                 >
                   <option value="PERCENT">Percentage (%)</option>
                   <option value="FIXED">Fixed (₹)</option>
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>Discount Value *</label>
+                <label style={{ fontSize: 12, color: "#475569" }}>Discount Value *</label>
                 <input
                   type="number"
                   required
@@ -471,89 +471,89 @@ export default function ReferralCouponsPage() {
                   step="0.01"
                   value={form.discountValue}
                   onChange={(e) => setForm(prev => ({ ...prev, discountValue: e.target.value }))}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>Minimum Bill Amount (₹)</label>
+                <label style={{ fontSize: 12, color: "#475569" }}>Minimum Bill Amount (₹)</label>
                 <input
                   type="number"
                   min="0"
                   value={form.minBillAmount}
                   onChange={(e) => setForm(prev => ({ ...prev, minBillAmount: e.target.value }))}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>Total Usage Limit</label>
+                <label style={{ fontSize: 12, color: "#475569" }}>Total Usage Limit</label>
                 <input
                   type="number"
                   min="0"
                   value={form.usageLimit}
                   onChange={(e) => setForm(prev => ({ ...prev, usageLimit: e.target.value }))}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>Per Customer Limit</label>
+                <label style={{ fontSize: 12, color: "#475569" }}>Per Customer Limit</label>
                 <input
                   type="number"
                   min="0"
                   value={form.customerUsageLimit}
                   onChange={(e) => setForm(prev => ({ ...prev, customerUsageLimit: e.target.value }))}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>Start Date</label>
+                <label style={{ fontSize: 12, color: "#475569" }}>Start Date</label>
                 <input
                   type="date"
                   value={form.startsAt}
                   onChange={(e) => setForm(prev => ({ ...prev, startsAt: e.target.value }))}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>End Date</label>
+                <label style={{ fontSize: 12, color: "#475569" }}>End Date</label>
                 <input
                   type="date"
                   value={form.endsAt}
                   onChange={(e) => setForm(prev => ({ ...prev, endsAt: e.target.value }))}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
 
-              <div style={{ gridColumn: "1 / -1", borderTop: "1px solid #334155", paddingTop: 12, marginTop: 4 }}>
-                <h4 style={{ margin: "0 0 8px 0", color: "#e2e8f0", fontSize: 14 }}>Partner Credits</h4>
+              <div style={{ gridColumn: "1 / -1", borderTop: "1px solid #e2e8f0", paddingTop: 12, marginTop: 4 }}>
+                <h4 style={{ margin: "0 0 8px 0", color: "#0f172a", fontSize: 14 }}>Partner Credits</h4>
               </div>
               <div>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>Credit Type</label>
+                <label style={{ fontSize: 12, color: "#475569" }}>Credit Type</label>
                 <select
                   value={form.partnerCreditType}
                   onChange={(e) => setForm(prev => ({ ...prev, partnerCreditType: e.target.value }))}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
                 >
                   <option value="FIXED">Fixed (₹)</option>
                   <option value="PERCENT">Percentage (%)</option>
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>Credit Value</label>
+                <label style={{ fontSize: 12, color: "#475569" }}>Credit Value</label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
                   value={form.partnerCreditValue}
                   onChange={(e) => setForm(prev => ({ ...prev, partnerCreditValue: e.target.value }))}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
               <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>Partner (Customer)</label>
+                <label style={{ fontSize: 12, color: "#475569" }}>Partner (Customer)</label>
                 <select
                   value={form.partnerCustomerId}
                   onChange={(e) => setForm(prev => ({ ...prev, partnerCustomerId: e.target.value }))}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
                 >
                   <option value="">Select partner (optional)</option>
                   {customers.map((c) => (
@@ -564,11 +564,11 @@ export default function ReferralCouponsPage() {
                 </select>
               </div>
 
-              <div style={{ gridColumn: "1 / -1", borderTop: "1px solid #334155", paddingTop: 12, marginTop: 4 }}>
-                <h4 style={{ margin: "0 0 8px 0", color: "#e2e8f0", fontSize: 14 }}>Eligibility (leave empty for all items)</h4>
+              <div style={{ gridColumn: "1 / -1", borderTop: "1px solid #e2e8f0", paddingTop: 12, marginTop: 4 }}>
+                <h4 style={{ margin: "0 0 8px 0", color: "#0f172a", fontSize: 14 }}>Eligibility (leave empty for all items)</h4>
               </div>
               <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 12, color: "#94a3b8", marginBottom: 6, display: "block" }}>Service Categories</label>
+                <label style={{ fontSize: 12, color: "#475569", marginBottom: 6, display: "block" }}>Service Categories</label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {categories.map((cat) => (
                     <label
@@ -576,8 +576,8 @@ export default function ReferralCouponsPage() {
                       style={{
                         display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6,
                         border: form.categoryIds.includes(cat.id) ? "1px solid #6366f1" : "1px solid #334155",
-                        background: form.categoryIds.includes(cat.id) ? "#6366f120" : "#1e293b",
-                        color: "#e2e8f0", fontSize: 12, cursor: "pointer",
+                        background: form.categoryIds.includes(cat.id) ? "#6366f120" : "#f1f5f9",
+                        color: "#0f172a", fontSize: 12, cursor: "pointer",
                       }}
                     >
                       <input
@@ -593,7 +593,7 @@ export default function ReferralCouponsPage() {
                 </div>
               </div>
               <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 12, color: "#94a3b8", marginBottom: 6, display: "block" }}>Services</label>
+                <label style={{ fontSize: 12, color: "#475569", marginBottom: 6, display: "block" }}>Services</label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, maxHeight: 120, overflowY: "auto" }}>
                   {services.map((svc) => (
                     <label
@@ -601,8 +601,8 @@ export default function ReferralCouponsPage() {
                       style={{
                         display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6,
                         border: form.serviceIds.includes(svc.id) ? "1px solid #6366f1" : "1px solid #334155",
-                        background: form.serviceIds.includes(svc.id) ? "#6366f120" : "#1e293b",
-                        color: "#e2e8f0", fontSize: 12, cursor: "pointer",
+                        background: form.serviceIds.includes(svc.id) ? "#6366f120" : "#f1f5f9",
+                        color: "#0f172a", fontSize: 12, cursor: "pointer",
                       }}
                     >
                       <input
@@ -619,13 +619,13 @@ export default function ReferralCouponsPage() {
               </div>
 
               <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 12, color: "#94a3b8" }}>Notes</label>
+                <label style={{ fontSize: 12, color: "#475569" }}>Notes</label>
                 <input
                   type="text"
                   value={form.notes}
                   onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
                   placeholder="Internal notes"
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#1e293b", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#fff", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
             </div>
@@ -650,54 +650,54 @@ export default function ReferralCouponsPage() {
       {/* Onboard Partner Modal */}
       {showOnboardModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }}>
-          <div style={{ background: "#1e293b", borderRadius: 12, border: "1px solid #334155", padding: 24, width: 420, maxWidth: "90vw" }}>
-            <h3 style={{ margin: "0 0 16px", color: "#e2e8f0", fontSize: 16 }}>Onboard Affiliate Partner</h3>
+          <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 24, width: 420, maxWidth: "90vw" }}>
+            <h3 style={{ margin: "0 0 16px", color: "#0f172a", fontSize: 16 }}>Onboard Affiliate Partner</h3>
 
             <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Partner Name *</label>
+              <label style={{ fontSize: 12, color: "#475569", display: "block", marginBottom: 4 }}>Partner Name *</label>
               <input
                 type="text" value={onboardForm.name}
                 onChange={(e) => setOnboardForm(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g. John Doe"
-                style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
               />
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Phone *</label>
+              <label style={{ fontSize: 12, color: "#475569", display: "block", marginBottom: 4 }}>Phone *</label>
               <input
                 type="text" value={onboardForm.phone}
                 onChange={(e) => setOnboardForm(prev => ({ ...prev, phone: e.target.value }))}
                 placeholder="e.g. 9876543210"
-                style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
               />
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Coupon Title</label>
+              <label style={{ fontSize: 12, color: "#475569", display: "block", marginBottom: 4 }}>Coupon Title</label>
               <input
                 type="text" value={onboardForm.title}
                 onChange={(e) => setOnboardForm(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="Auto from partner name if blank"
-                style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
               />
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
               <div>
-                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Customer Discount %</label>
+                <label style={{ fontSize: 12, color: "#475569", display: "block", marginBottom: 4 }}>Customer Discount %</label>
                 <input
                   type="number" value={onboardForm.discountValue}
                   onChange={(e) => setOnboardForm(prev => ({ ...prev, discountValue: e.target.value }))}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: "#94a3b8", display: "block", marginBottom: 4 }}>Partner Credit %</label>
+                <label style={{ fontSize: 12, color: "#475569", display: "block", marginBottom: 4 }}>Partner Credit %</label>
                 <input
                   type="number" value={onboardForm.partnerCreditValue}
                   onChange={(e) => setOnboardForm(prev => ({ ...prev, partnerCreditValue: e.target.value }))}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: 13, boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#0f172a", fontSize: 13, boxSizing: "border-box" }}
                 />
               </div>
             </div>
