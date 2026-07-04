@@ -1018,8 +1018,10 @@ export default function SettingsPage() {
     setIssuingGiftCard(true);
     setStatus((current) => ({ ...current, error: "", success: "" }));
     try {
+      const payloadCode = giftCardDraft.code || "GC-" + Math.floor(100000 + Math.random() * 900000);
       await api.post("/owner/gift-cards", {
-        ...giftCardDraft,
+        code: payloadCode,
+        title: giftCardDraft.title || "Gift Card",
         originalAmount: Number(giftCardDraft.originalAmount),
         branchId: selectedBranchId || null
       });
