@@ -258,6 +258,7 @@ export default function UsersPage() {
 
   const startCreate = () => {
     resetForm();
+    setForm((current) => ({ ...current, branchId: selectedBranchId || "" }));
     setStatus((current) => ({ ...current, error: "", success: "" }));
     setIsCreateModalOpen(true);
   };

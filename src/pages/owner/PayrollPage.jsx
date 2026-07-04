@@ -6,7 +6,7 @@ import EmptyState from "../../components/EmptyState";
 import ModuleTabs from "../../components/ModuleTabs";
 import { formatApiError } from "../../utils/apiError";
 import PageLoader from "../../components/PageLoader";
-import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, Download, Edit3, FileText, History, LogIn, LogOut, MapPin, PlusCircle, Printer, RotateCcw, Save, Timer, User, UserPlus, Users, XCircle } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, Download, Edit3, Eye, FileText, History, LogIn, LogOut, MapPin, PlusCircle, Printer, RotateCcw, Save, Timer, User, UserPlus, Users, XCircle } from "lucide-react";
 
 const emptyAttendanceSettings = {
   officeStartTime: "09:00",
@@ -828,7 +828,7 @@ export default function PayrollPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <strong style={{ color: "#0f172a" }}>{row.userSalon?.user?.name || row.userSalonId}</strong>
                     <div className="item-meta">{row.checkInAt ? new Date(row.checkInAt).toLocaleString() : "No check-in"} {row.checkOutAt ? `- ${new Date(row.checkOutAt).toLocaleString()}` : ""}</div>
-                    <div className="item-meta">{row.status} | {row.branch?.name || "No branch"} | {row.workedMinutes != null ? `${Math.floor(row.workedMinutes / 60)}h ${row.workedMinutes % 60}m` : "Open shift"}</div>
+                    <div className="item-meta">{row.status} | {row.branch?.name || "Unassigned"} | {row.workedMinutes != null ? `${Math.floor(row.workedMinutes / 60)}h ${row.workedMinutes % 60}m` : "Open shift"}</div>
                     {row.checkInLatitude ? <div className="item-meta" style={{ fontSize: 11 }}>GPS: {Number(row.checkInLatitude).toFixed(4)}, {Number(row.checkInLongitude).toFixed(4)}</div> : null}
                   </div>
                 </button>
@@ -954,12 +954,12 @@ export default function PayrollPage() {
               const statusColors = { PRESENT: { bg: "#dcfce7", color: "#166534" }, COMPLETED_SHIFT: { bg: "#dcfce7", color: "#166534" }, LATE: { bg: "#fef9c3", color: "#854d0e" }, HALF_DAY: { bg: "#ffedd5", color: "#9a3412" }, ABSENT: { bg: "#fee2e2", color: "#991b1b" }, LEAVE: { bg: "#ede9fe", color: "#5b21b6" }, WORKING: { bg: "#e0f2fe", color: "#0369a1" } };
               const sc = statusColors[row.status] || { bg: "#f1f5f9", color: "#475569" };
               return (
-                <div key={`${row.userSalonId}-${row.status}`} className="list-item" style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <button key={`${row.userSalonId}-${row.status}`} type="button" className="list-item" onClick={() => { if (row.attendanceId) loadAttendanceDetail(row.attendanceId); }} style={{ display: "flex", gap: 12, alignItems: "center", textAlign: "left", width: "100%", background: row.attendanceId && selectedAttendanceId === row.attendanceId ? "#eff6ff" : "white", border: "none", borderRadius: 10, padding: "12px 14px", cursor: row.attendanceId ? "pointer" : "default" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <strong>{row.staffName}</strong>
                     <div className="item-meta">
                       <span style={{ display: "inline-block", padding: "1px 8px", borderRadius: 8, fontSize: 11, fontWeight: 700, background: sc.bg, color: sc.color, marginRight: 8 }}>{row.status}</span>
-                      {row.branchName || "No branch"}
+                      {row.branchName || "Unassigned"}
                     </div>
                     <div className="item-meta">
                       {row.checkInAt ? new Date(row.checkInAt).toLocaleString() : "No check-in"}
@@ -967,7 +967,8 @@ export default function PayrollPage() {
                       {row.workedMinutes != null ? ` (${Math.floor(row.workedMinutes / 60)}h ${row.workedMinutes % 60}m)` : ""}
                     </div>
                   </div>
-                </div>
+                  {row.attendanceId && <Eye size={14} color="#64748b" />}
+                </button>
               );
             })}
             {!attendanceDaySheet.length && <EmptyState title="No day sheet rows" message="Staff day sheet will show present, leave, and absent projection for the selected date." />}
