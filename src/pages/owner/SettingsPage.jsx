@@ -487,6 +487,9 @@ export default function SettingsPage() {
   const [cardForm, setCardForm] = useState({ name: "", description: "", active: true, amount: "", validityDays: 30, renewalReminderDays: 7 });
   const [selectedFeedbackTypeId, setSelectedFeedbackTypeId] = useState(null);
   const [draftFeedbackType, setDraftFeedbackType] = useState(null);
+  const [shiftDraft, setShiftDraft] = useState(null);
+  const [shiftSaving, setShiftSaving] = useState(false);
+  const [designationDraft, setDesignationDraft] = useState(null);
   const [buttonColor, setButtonColor] = useState(() => {
     const cached = readSalonSettingsCache(salonId);
     return cached?.advancedSettings?.uiSettings?.buttonColor || "#3b82f6";
@@ -521,6 +524,19 @@ export default function SettingsPage() {
   const canViewSettings = settingsPermissions.includes("view") || settingsPermissions.includes("edit");
   const canEditSettings = settingsPermissions.includes("edit");
   const settingsLocked = canViewSettings && !canEditSettings;
+
+  const selectedShiftForDraft = shifts.find(s => s.id === selectedShiftId) || shifts[0] || null;
+  useEffect(() => {
+    if (selectedShiftForDraft) {
+      setShiftDraft({
+        ...selectedShiftForDraft,
+        days: (selectedShiftForDraft.days || []).map(d => ({ dayOfWeek: d.dayOfWeek, startTime: d.startTime, endTime: d.endTime, active: d.active })),
+        breaks: (selectedShiftForDraft.breaks || []).map(b => ({ name: b.name, active: b.active, fromTime: b.fromTime, toTime: b.toTime }))
+      });
+    } else {
+      setShiftDraft(null);
+    }
+  }, [selectedShiftForDraft?.id]);
 
   const refreshGiftCardsSummary = useCallback(async () => {
     try {
@@ -1656,20 +1672,6 @@ export default function SettingsPage() {
   const renderShiftSection = () => {
     const shiftList = shifts;
     const selectedShift = shiftList.find(s => s.id === selectedShiftId) || shiftList[0] || null;
-    const [shiftDraft, setShiftDraft] = useState(null);
-    const [shiftSaving, setShiftSaving] = useState(false);
-
-    useEffect(() => {
-      if (selectedShift) {
-        setShiftDraft({
-          ...selectedShift,
-          days: (selectedShift.days || []).map(d => ({ dayOfWeek: d.dayOfWeek, startTime: d.startTime, endTime: d.endTime, active: d.active })),
-          breaks: (selectedShift.breaks || []).map(b => ({ name: b.name, active: b.active, fromTime: b.fromTime, toTime: b.toTime }))
-        });
-      } else {
-        setShiftDraft(null);
-      }
-    }, [selectedShift?.id]);
 
     const createShift = async () => {
       try {
@@ -3533,33 +3535,32 @@ export default function SettingsPage() {
 
   const renderDesignationSection = () => {
     const rows = designations;
-    const [draft, setDraft] = useState(null);
 
     const addNew = () => {
-      setDraft({ name: "", description: "", active: true, _isNew: true });
+      setDesignationDraft({ name: "", description: "", active: true, _isNew: true });
     };
 
     const startEdit = (row) => {
-      setDraft({ ...row, _isNew: false });
+      setDesignationDraft({ ...row, _isNew: false });
     };
 
-    const cancel = () => setDraft(null);
+    const cancel = () => setDesignationDraft(null);
 
     const save = async () => {
-      if (!draft || !draft.name?.trim()) return;
+      if (!designationDraft || !designationDraft.name?.trim()) return;
       try {
         const payload = {
-          name: draft.name.trim(),
-          description: draft.description || null,
-          active: draft.active !== false,
+          name: designationDraft.name.trim(),
+          description: designationDraft.description || null,
+          active: designationDraft.active !== false,
           branchId: selectedBranchId || null
         };
-        if (draft._isNew) {
+        if (designationDraft._isNew) {
           const res = await api.post("/owner/designations", payload);
           setDesignations((prev) => [...prev, res.data]);
         } else {
-          const res = await api.patch(`/owner/designations/${draft.id}`, payload);
-          setDesignations((prev) => prev.map((r) => (r.id === draft.id ? res.data : r)));
+          const res = await api.patch(`/owner/designations/${designationDraft.id}`, payload);
+          setDesignations((prev) => prev.map((r) => (r.id === designationDraft.id ? res.data : r)));
         }
         cancel();
         setStatus({ loading: false, error: "", success: "Designation saved." });
@@ -3572,7 +3573,7 @@ export default function SettingsPage() {
       try {
         await api.delete(`/owner/designations/${id}`);
         setDesignations((prev) => prev.filter((r) => r.id !== id));
-        if (draft?.id === id) cancel();
+        if (designationDraft?.id === id) cancel();
         setStatus({ loading: false, error: "", success: "Designation deleted." });
       } catch (err) {
         setStatus({ loading: false, error: formatApiError(err, "Could not delete designation"), success: "" });
@@ -3632,22 +3633,22 @@ export default function SettingsPage() {
         >
           Add New
         </button>
-        {draft && (
+        {designationDraft && (
           <div className="settings-panel-card" style={{ marginTop: 16 }}>
-            <h3 style={{ marginTop: 0 }}>{draft._isNew ? "New Designation" : `Edit: ${draft.name}`}</h3>
+            <h3 style={{ marginTop: 0 }}>{designationDraft._isNew ? "New Designation" : `Edit: ${designationDraft.name}`}</h3>
             <div className="settings-form-grid">
               <label className="settings-input-group">
                 <span className="muted">Name</span>
-                <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="e.g. Senior Stylist" />
+                <input value={designationDraft.name} onChange={(e) => setDesignationDraft({ ...designationDraft, name: e.target.value })} placeholder="e.g. Senior Stylist" />
               </label>
               <label className="settings-input-group">
                 <span className="muted">Description</span>
-                <input value={draft.description || ""} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Optional description" />
+                <input value={designationDraft.description || ""} onChange={(e) => setDesignationDraft({ ...designationDraft, description: e.target.value })} placeholder="Optional description" />
               </label>
               <div className="settings-input-group">
                 <span className="muted">Active</span>
                 <label className="mini-toggle-label" style={{ display: "inline-flex", alignItems: "center" }}>
-                  <input type="checkbox" className="premium-toggle-input" checked={draft.active !== false} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} />
+                  <input type="checkbox" className="premium-toggle-input" checked={designationDraft.active !== false} onChange={(e) => setDesignationDraft({ ...designationDraft, active: e.target.checked })} />
                   <div className="mini-toggle-switch"></div>
                 </label>
               </div>
