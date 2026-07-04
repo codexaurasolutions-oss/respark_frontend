@@ -24,7 +24,6 @@ export default function MySchedulePage() {
           { label: "My Dashboard", to: "/admin/my-dashboard", hint: "Overview" },
           { label: "My Appointments", to: "/admin/my-appointments", hint: "Bookings" },
           { label: "My Schedule", to: "/admin/my-schedule", hint: "Hours" },
-          { label: "My Commission", to: "/admin/my-commission", hint: "Earnings" },
           { label: "My Profile", to: "/admin/my-profile", hint: "Profile" }
         ]}
       />

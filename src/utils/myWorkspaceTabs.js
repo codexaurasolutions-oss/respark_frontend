@@ -6,7 +6,6 @@ export const getMyWorkspaceTabs = (permissions = {}) => {
     can("myDashboard") && { label: "My Dashboard", to: "/admin/my-dashboard" },
     can("myAppointments") && { label: "My Appointments", to: "/admin/my-appointments" },
     can("mySchedule") && { label: "My Schedule", to: "/admin/my-schedule" },
-    can("myCommission") && { label: "My Commission", to: "/admin/my-commission" },
     can("myProfile") && { label: "My Profile", to: "/admin/my-profile" }
   ].filter(Boolean);
 };

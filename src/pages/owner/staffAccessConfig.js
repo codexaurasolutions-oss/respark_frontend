@@ -34,9 +34,7 @@ export const MODULE_GROUPS = [
       { key: "staff", label: "Staff / Users" },
       { key: "staffSchedule", label: "Staff Schedule" },
       { key: "attendance", label: "Attendance" },
-      { key: "leaves", label: "Leaves" },
-      { key: "payroll", label: "Payroll" },
-      { key: "incentives", label: "Incentives" }
+      { key: "leaves", label: "Leaves" }
     ]
   },
   {
@@ -85,11 +83,8 @@ export const MODULE_GROUPS = [
       { key: "myDashboard", label: "My Dashboard" },
       { key: "myAppointments", label: "My Appointments" },
       { key: "mySchedule", label: "My Schedule" },
-      { key: "myCommission", label: "My Commission" },
       { key: "myAttendance", label: "My Attendance" },
       { key: "myLeaves", label: "My Leaves" },
-      { key: "myPayroll", label: "My Payroll" },
-      { key: "myPerformance", label: "My Performance" },
       { key: "myProfile", label: "My Profile" }
     ]
   }
@@ -134,18 +129,14 @@ export const ROLE_PRESETS = {
     expenses: ["view", "create", "edit", "approve"],
     reports: ["view"],
     support: ["view", "create"],
-    payroll: ["view", "create", "edit", "approve", "pay"],
     notifications: ["view"],
     whatsapp: ["view"],
     settings: ["view"],
     myDashboard: ["view"],
     myAppointments: ["view"],
     mySchedule: ["view"],
-    myCommission: ["view"],
     myAttendance: ["view", "create", "edit"],
     myLeaves: ["view", "create"],
-    myPayroll: ["view"],
-    myPerformance: ["view"],
     myProfile: ["view", "edit"]
   }),
   RECEPTIONIST: makePermissions({
@@ -169,11 +160,8 @@ export const ROLE_PRESETS = {
     myDashboard: ["view"],
     myAppointments: ["view"],
     mySchedule: ["view"],
-    myCommission: ["view"],
     myAttendance: ["view", "create", "edit"],
     myLeaves: ["view", "create"],
-    myPayroll: ["view"],
-    myPerformance: ["view"],
     myProfile: ["view", "edit"]
   }),
   STAFF: makePermissions({
@@ -185,11 +173,8 @@ export const ROLE_PRESETS = {
     myDashboard: ["view"],
     myAppointments: ["view"],
     mySchedule: ["view"],
-    myCommission: ["view"],
     myAttendance: ["view", "create", "edit"],
     myLeaves: ["view", "create"],
-    myPayroll: ["view"],
-    myPerformance: ["view"],
     myProfile: ["view", "edit"]
   }),
   INVENTORY_MANAGER: makePermissions({
@@ -207,7 +192,6 @@ export const ROLE_PRESETS = {
     invoices: ["view", "edit"],
     payments: ["view", "create", "edit"],
     expenses: ["view", "create", "edit", "approve"],
-    payroll: ["view", "create", "edit", "approve", "pay"],
     reports: ["view"],
     notifications: ["view"],
     support: ["view", "create"],

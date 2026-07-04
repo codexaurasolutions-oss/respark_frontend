@@ -15,8 +15,7 @@ const reportSections = [
   { key: "loyalty", label: "Loyalty", to: "/admin/reports/loyalty", hint: "Retention" },
   { key: "inventory", label: "Inventory", to: "/admin/reports/stock", hint: "Risk" },
   { key: "finance", label: "Finance", to: "/admin/reports/profit-loss", hint: "P&L" },
-  { key: "engagement", label: "Engagement", to: "/admin/reports/campaigns", hint: "Growth" },
-  { key: "workforce", label: "Payroll", to: "/admin/reports/payroll", hint: "Team Costs" }
+  { key: "engagement", label: "Engagement", to: "/admin/reports/campaigns", hint: "Growth" }
 ];
 
 const initialData = {
@@ -36,7 +35,6 @@ const initialData = {
   advanced: null,
   profitLoss: null,
   campaignRoi: [],
-  payroll: [],
   tax: null,
   loyalty: null,
   coupons: null,
@@ -127,7 +125,6 @@ export default function ReportsPage() {
     if (path.includes("/reports/stock") || path.includes("/reports/low-stock")) return "inventory";
     if (path.includes("/reports/profit-loss") || path.includes("/reports/expenses") || path.includes("/reports/tax")) return "finance";
     if (path.includes("/reports/campaigns") || path.includes("/reports/feedback") || path.includes("/reports/enquiries")) return "engagement";
-    if (path.includes("/reports/payroll")) return "workforce";
     return "overview";
   }, [location.pathname]);
 
@@ -159,7 +156,6 @@ export default function ReportsPage() {
         advanced: api.get("/owner/reports/advanced", { params: sharedParams }),
         profitLoss: api.get("/owner/reports/profit-loss", { params: sharedParams }),
         campaignRoi: api.get("/owner/reports/campaign-roi", { params: sharedParams }),
-        payroll: api.get("/owner/reports/payroll", { params: sharedParams }),
         tax: api.get("/owner/reports/tax", { params: sharedParams }),
         loyalty: api.get("/owner/loyalty/reports", { params: sharedParams }),
         coupons: api.get("/owner/coupons/reports", { params: sharedParams }),
@@ -179,7 +175,7 @@ export default function ReportsPage() {
         const result = results[index];
         if (result.status === "fulfilled") {
           nextData[key] = result.value.data;
-        } else if (!["advanced", "profitLoss", "campaignRoi", "payroll", "tax", "loyalty", "coupons", "giftCards", "feedback", "enquiries", "expenses"].includes(key)) {
+        } else if (!["advanced", "profitLoss", "campaignRoi", "tax", "loyalty", "coupons", "giftCards", "feedback", "enquiries", "expenses"].includes(key)) {
           softErrors.push(key);
         }
       });
@@ -219,7 +215,6 @@ export default function ReportsPage() {
         : location.pathname.includes("/reports/tax")
           ? "tax"
           : "profit-loss",
-      workforce: "payroll",
       engagement: location.pathname.includes("/reports/feedback")
         ? "feedback"
         : location.pathname.includes("/reports/enquiries")
@@ -233,7 +228,7 @@ export default function ReportsPage() {
     };
 
     try {
-      if (["finance", "workforce", "engagement", "loyalty"].includes(reportView)) {
+      if (["finance", "engagement", "loyalty"].includes(reportView)) {
         await downloadFromApi("/owner/reports/export", {
           params: { ...query, module: advancedModuleMap[reportView] || "profit-loss" },
           fallbackFilename: `${reportView}-report.csv`
@@ -272,7 +267,7 @@ export default function ReportsPage() {
     <div className="page-shell">
       <ModuleTabs
         title="Business Reports"
-        description="Operational, financial, loyalty, engagement, payroll, and stock intelligence from one owner dashboard."
+        description="Operational, financial, loyalty, engagement, and stock intelligence from one owner dashboard."
         items={reportSections}
         actions={(
           <>
@@ -327,7 +322,6 @@ export default function ReportsPage() {
             <MetricCard label="Collected" value={cardCurrency(data.sales?.totalPaid)} caption="Captured payments" />
             <MetricCard label="Outstanding" value={cardCurrency(data.sales?.totalDue)} tone="warning" caption="Pending balance still open" />
             <MetricCard label="Expenses" value={cardCurrency(advancedCards.expenses)} caption="Approved and tracked spend" />
-            <MetricCard label="Payroll" value={cardCurrency(advancedCards.payroll)} caption="Current payroll liability" />
             <MetricCard label="Avg Feedback" value={Number(advancedCards.averageFeedback || 0).toFixed(1)} caption="Customer sentiment snapshot" />
             <MetricCard label="Enquiries" value={advancedCards.enquiries || 0} caption="Leads in pipeline" />
           </div>
@@ -493,29 +487,6 @@ export default function ReportsPage() {
                       <div className="item-meta">{value} leads</div>
                     </div>
                   ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {reportView === "workforce" && (
-            <div className="two-col" style={{ marginTop: 18 }}>
-              <ReportList
-                title="Payroll Runs"
-                rows={data.payroll.slice(0, 8)}
-                emptyText="No payroll runs created yet."
-                renderMeta={(row) => `${new Date(row.periodStart).toLocaleDateString()} - ${new Date(row.periodEnd).toLocaleDateString()} | ${row.status} | Net ${cardCurrency(row.totalNet)}`}
-              />
-              <div className="panel-card report-panel">
-                <h3>Advanced Cost Snapshot</h3>
-                <div className="stats-grid compact-stats">
-                  <MetricCard label="Payroll" value={cardCurrency(advancedCards.payroll)} />
-                  <MetricCard label="Expenses" value={cardCurrency(advancedCards.expenses)} />
-                  <MetricCard label="Coupon Savings" value={cardCurrency(advancedCards.couponSavings)} />
-                  <MetricCard label="Gift Card Use" value={cardCurrency(advancedCards.giftCardUse)} />
-                </div>
-                <div className="item-meta" style={{ marginTop: 14 }}>
-                  Use this panel to compare payroll load against salon spend, campaign incentives, and discount pressure in the same reporting window.
                 </div>
               </div>
             </div>

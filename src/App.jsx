@@ -48,10 +48,10 @@ const MembershipsPage = lazyWithRetry(() => import("./pages/owner/MembershipsPag
 const ReferralCouponsPage = lazyWithRetry(() => import("./pages/owner/ReferralCouponsPage.jsx"));
 const AffiliateWalletPage = lazyWithRetry(() => import("./pages/owner/AffiliateWalletPage.jsx"));
 const MyAppointmentsPage = lazyWithRetry(() => import("./pages/owner/MyAppointmentsPage.jsx"));
-const MyCommissionPage = lazyWithRetry(() => import("./pages/owner/MyCommissionPage.jsx"));
+
 const MyDashboardPage = lazyWithRetry(() => import("./pages/owner/MyDashboardPage.jsx"));
 const MyAttendanceHistoryPage = lazyWithRetry(() => import("./pages/owner/MyAttendanceHistoryPage.jsx"));
-const MyPayrollPage = lazyWithRetry(() => import("./pages/owner/MyPayrollPage.jsx"));
+
 const MyProfilePage = lazyWithRetry(() => import("./pages/owner/MyProfilePage.jsx"));
 const MySchedulePage = lazyWithRetry(() => import("./pages/owner/MySchedulePage.jsx"));
 const ServiceCategoriesPage = lazyWithRetry(() => import("./pages/owner/ServiceCategoriesPage.jsx"));
@@ -117,7 +117,6 @@ const Protected = () => {
     { label: "My Attendance", to: "/admin/my-attendance" },
     { label: "My Appointments", to: "/admin/my-appointments" },
     { label: "My Schedule", to: "/admin/my-schedule" },
-    { label: "My Commission", to: "/admin/my-commission" },
     { label: "My Profile", to: "/admin/my-profile" }
   ];
   const groups = [
@@ -151,10 +150,6 @@ const Protected = () => {
             can("leaves") && enabled("leaves") && {
               label: "Leaves",
               to: "/admin/leaves"
-            },
-            can("payroll") && enabled("payroll") && {
-              label: "Payroll",
-              to: "/admin/payroll"
             }
           ].filter(Boolean)
         },
@@ -482,11 +477,8 @@ export default function App() {
           <Route path="/admin/expenses/accounts" element={<OwnerRoute moduleKey="expenses" featureKey="expenses" element={<ExpensesPage />} />} />
           <Route path="/admin/expenses/categories" element={<OwnerRoute moduleKey="expenses" featureKey="expenses" element={<ExpensesPage />} />} />
           <Route path="/admin/expenses/reports" element={<OwnerRoute moduleKey="expenses" featureKey="expenses" element={<ExpensesPage />} />} />
-          <Route path="/admin/payroll" element={<OwnerRoute moduleKey="payroll" featureKey="payroll" element={<PayrollPage />} />} />
           <Route path="/admin/attendance" element={<OwnerRoute moduleKey="attendance" featureKey="attendance" element={<PayrollPage />} />} />
           <Route path="/admin/leaves" element={<OwnerRoute moduleKey="leaves" featureKey="leaves" element={<PayrollPage />} />} />
-          <Route path="/admin/incentives" element={<OwnerRoute moduleKey="incentives" featureKey="incentives" element={<PayrollPage />} />} />
-          <Route path="/admin/staff-performance" element={<OwnerRoute moduleKey="advancedReports" featureKey="advancedReports" element={<PayrollPage />} />} />
           <Route path="/admin/notifications" element={<OwnerRoute moduleKey="notifications" featureKey="notifications" element={<NotificationsPage />} />} />
           <Route path="/admin/audit-logs" element={<OwnerRoute moduleKey="auditLogs" featureKey="auditLogs" element={<OwnerAuditLogsPage />} />} />
           <Route path="/admin/whatsapp" element={<OwnerRoute moduleKey="whatsapp" featureKey="whatsapp" element={<WhatsAppPage />} />} />
@@ -514,7 +506,6 @@ export default function App() {
           <Route path="/admin/reports/enquiries" element={<OwnerRoute moduleKey="reports" featureKey="reports" element={<ReportsPage />} />} />
           <Route path="/admin/reports/expenses" element={<OwnerRoute moduleKey="reports" featureKey="reports" element={<ReportsPage />} />} />
           <Route path="/admin/reports/profit-loss" element={<OwnerRoute moduleKey="reports" featureKey="reports" element={<ReportsPage />} />} />
-          <Route path="/admin/reports/payroll" element={<OwnerRoute moduleKey="reports" featureKey="reports" element={<ReportsPage />} />} />
           <Route path="/admin/reports/tax" element={<OwnerRoute moduleKey="reports" featureKey="reports" element={<ReportsPage />} />} />
 
           <Route path="/admin/orders" element={<OwnerRoute moduleKey="orders" featureKey="onlineOrders" element={<OrdersPage />} />} />
@@ -545,8 +536,6 @@ export default function App() {
           <Route path="/admin/my-attendance" element={<StaffWorkspaceRoute moduleKey="myAttendance" featureKey="attendance" element={<MyAttendanceHistoryPage />} />} />
           <Route path="/admin/my-appointments" element={<StaffWorkspaceRoute moduleKey="myAppointments" featureKey="appointments" element={<MyAppointmentsPage />} />} />
           <Route path="/admin/my-schedule" element={<StaffWorkspaceRoute moduleKey="mySchedule" featureKey="appointments" element={<MySchedulePage />} />} />
-          <Route path="/admin/my-commission" element={<StaffWorkspaceRoute moduleKey="myCommission" element={<MyCommissionPage />} />} />
-          <Route path="/admin/my-payroll" element={<StaffWorkspaceRoute moduleKey="myPayroll" element={<MyPayrollPage />} />} />
           <Route path="/admin/my-profile" element={<StaffWorkspaceRoute moduleKey="myProfile" element={<MyProfilePage />} />} />
           <Route path="/branches" element={<Navigate to="/admin/branches" replace />} />
           <Route path="/services" element={<Navigate to="/admin/services" replace />} />

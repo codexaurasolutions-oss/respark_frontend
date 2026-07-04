@@ -19,7 +19,6 @@ export const SETTINGS_WORKSPACE_SECTIONS = [
   { key: "terms-and-conditions", label: "Terms & Conditions", to: "/admin/settings/terms-and-conditions", hint: "Policies" },
   { key: "pnl-categories", label: "PNL Categories", to: "/admin/settings/pnl-categories", hint: "Profit buckets" },
   { key: "pnl-income-taxes", label: "PNL Income Taxes", to: "/admin/settings/pnl-income-taxes", hint: "Tax buckets" },
-  { key: "incentive", label: "Incentive", to: "/admin/settings/incentive", hint: "Payout defaults" },
   { key: "footer-content", label: "Footer Content", to: "/admin/settings/footer-content", hint: "Brand footer" },
   { key: "ui-settings", label: "UI Settings", to: "/admin/settings/ui-settings", hint: "Theme customizer" }
 ];
@@ -31,7 +30,6 @@ const legacyPathMap = {
   "/admin/settings/booking": "generic",
   "/admin/settings/notifications": "notification-settings",
   "/admin/settings/whatsapp": "sms-center",
-  "/admin/settings/payroll": "incentive",
   "/admin/settings/advanced": "access-control"
 };
 

@@ -36,7 +36,6 @@ export default function MyProfilePage() {
           { label: "My Dashboard", to: "/admin/my-dashboard", hint: "Overview" },
           { label: "My Appointments", to: "/admin/my-appointments", hint: "Queue" },
           { label: "My Schedule", to: "/admin/my-schedule", hint: "Hours" },
-          { label: "My Commission", to: "/admin/my-commission", hint: "Earnings" },
           { label: "My Profile", to: "/admin/my-profile", hint: "Profile" }
         ]}
       />

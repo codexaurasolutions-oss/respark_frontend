@@ -6,13 +6,7 @@ import EmptyState from "../../components/EmptyState";
 import ModuleTabs from "../../components/ModuleTabs";
 import { formatApiError } from "../../utils/apiError";
 import PageLoader from "../../components/PageLoader";
-import { BarChart2, CalendarDays, CalendarOff, CheckCircle2, ChevronLeft, ChevronRight, Clock, Download, Edit3, Eye, FileText, Filter, History, LogIn, LogOut, MapPin, PlusCircle, Printer, RotateCcw, Save, Search, Timer, User, UserPlus, Users, X, XCircle } from "lucide-react";
-
-const emptyRun = {
-  periodStart: new Date().toISOString().slice(0, 10),
-  periodEnd: new Date().toISOString().slice(0, 10),
-  notes: ""
-};
+import { CalendarDays, CalendarOff, CheckCircle2, ChevronLeft, ChevronRight, Clock, Download, Edit3, FileText, History, LogIn, LogOut, MapPin, PlusCircle, Printer, RotateCcw, Save, Timer, User, UserPlus, Users, XCircle } from "lucide-react";
 
 const emptyAttendanceSettings = {
   officeStartTime: "09:00",
@@ -115,13 +109,10 @@ const toIsoDateFromMonthDay = (monthValue, day) => `${monthValue}-${String(day).
 export default function PayrollPage() {
   const location = useLocation();
   const { selectedBranchId, selectedBranchName } = useBranch();
-  const [runs, setRuns] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [attendanceMeta, setAttendanceMeta] = useState({ total: 0, page: 1, limit: 50, totalPages: 1 });
   const [attendancePage, setAttendancePage] = useState(1);
   const [leaves, setLeaves] = useState([]);
-  const [incentives, setIncentives] = useState([]);
-  const [report, setReport] = useState([]);
   const [attendanceSummary, setAttendanceSummary] = useState({ totalStaff: 0, presentToday: 0, absentToday: 0, lateStaff: 0, currentlyWorking: 0, completedShift: 0, onLeave: 0 });
   const [attendanceSettings, setAttendanceSettings] = useState(emptyAttendanceSettings);
   const [attendanceReport, setAttendanceReport] = useState(emptyAttendanceReport);
@@ -131,8 +122,7 @@ export default function PayrollPage() {
   const [staffUsers, setStaffUsers] = useState([]);
   const [attendanceDaySheet, setAttendanceDaySheet] = useState([]);
   const [daySheetDate, setDaySheetDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [filters, setFilters] = useState({ payrollStatus: "", attendanceQ: "", attendanceStatus: "", attendanceDate: "", leaveStatus: "", leaveQ: "", incentiveQ: "" });
-  const [form, setForm] = useState(emptyRun);
+  const [filters, setFilters] = useState({ attendanceQ: "", attendanceStatus: "", attendanceDate: "", leaveStatus: "", leaveQ: "" });
   const [status, setStatus] = useState({ error: "", success: "" });
   const [loading, setLoading] = useState(true);
   const [settingsSaving, setSettingsSaving] = useState(false);
@@ -151,11 +141,7 @@ export default function PayrollPage() {
     ? "attendance"
     : location.pathname.includes("/leaves")
       ? "leaves"
-      : location.pathname.includes("/incentives")
-        ? "incentives"
-        : location.pathname.includes("/staff-performance")
-          ? "performance"
-          : "payroll";
+      : "attendance";
 
   const load = useCallback(async () => {
     try {
@@ -166,12 +152,9 @@ export default function PayrollPage() {
         try { return (await api.get(url, { params })).data; } catch { return null; }
       };
 
-      const [runData, attendanceData, leaveData, incentiveData, reportData, summaryData, settingsData, staffData, daySheetData, attendanceReportData, attendanceCalData] = await Promise.all([
-        safeGet("/owner/payroll", { ...branchParams, ...(filters.payrollStatus ? { status: filters.payrollStatus } : {}) }),
+      const [attendanceData, leaveData, summaryData, settingsData, staffData, daySheetData, attendanceReportData, attendanceCalData] = await Promise.all([
         safeGet("/owner/attendance", { ...branchParams, page: attendancePage, limit: 50, ...(filters.attendanceQ ? { q: filters.attendanceQ } : {}), ...(filters.attendanceStatus ? { status: filters.attendanceStatus } : {}), ...(filters.attendanceDate ? { date: filters.attendanceDate } : {}) }),
         safeGet("/owner/leaves", { ...branchParams, ...(filters.leaveStatus ? { status: filters.leaveStatus } : {}), ...(filters.leaveQ ? { q: filters.leaveQ } : {}) }),
-        safeGet("/owner/incentives", { ...branchParams, ...(filters.incentiveQ ? { q: filters.incentiveQ } : {}) }),
-        safeGet("/owner/payroll/reports", branchParams),
         safeGet("/owner/attendance/summary", { ...branchParams, ...(filters.attendanceDate ? { date: filters.attendanceDate } : {}) }),
         safeGet("/owner/attendance/settings"),
         safeGet("/owner/staff-users", branchParams),
@@ -179,12 +162,9 @@ export default function PayrollPage() {
         safeGet("/owner/attendance/reports", { ...branchParams, period: attendanceReportPeriod, ...(filters.attendanceDate ? { date: filters.attendanceDate } : {}) }),
         safeGet("/owner/attendance/reports", { ...branchParams, period: "monthly", date: calendarDate })
       ]);
-      setRuns(runData || []);
       setAttendance(attendanceData?.rows || attendanceData || []);
       setAttendanceMeta({ total: attendanceData?.total || 0, page: attendanceData?.page || 1, limit: attendanceData?.limit || 50, totalPages: attendanceData?.totalPages || 1 });
       setLeaves(leaveData || []);
-      setIncentives(incentiveData || []);
-      setReport(reportData?.rows || []);
       setAttendanceSummary(summaryData || {});
       setAttendanceSettings((current) => ({ ...current, ...(settingsData || {}) }));
       setStaffUsers(staffData || []);
@@ -193,7 +173,7 @@ export default function PayrollPage() {
       setAttendanceCalendar(attendanceCalData || emptyAttendanceCalendar);
       setLoading(false);
     } catch (error) {
-      setStatus({ error: formatApiError(error, "Could not load payroll workspace"), success: "" });
+      setStatus({ error: formatApiError(error, "Could not load attendance & leaves workspace"), success: "" });
       setLoading(false);
     }
   }, [attendanceCalendarMonth, attendancePage, attendanceReportPeriod, filters, selectedBranchId, daySheetDate]);
@@ -287,18 +267,6 @@ export default function PayrollPage() {
       setStatus({ error: formatApiError(error, "Could not load attendance details"), success: "" });
     } finally {
       setDetailLoading(false);
-    }
-  };
-
-  const createRun = async (event) => {
-    event.preventDefault();
-    try {
-      await api.post("/owner/payroll", form);
-      setForm(emptyRun);
-      setStatus({ error: "", success: "Payroll run created." });
-      await load();
-    } catch (error) {
-      setStatus({ error: formatApiError(error, "Could not create payroll run"), success: "" });
     }
   };
 
@@ -493,56 +461,15 @@ export default function PayrollPage() {
   return (
     <div className="page-shell">
       <ModuleTabs
-        title="Payroll & Attendance"
-        description="Attendance, leaves, incentive rules, payroll runs and staff performance."
+        title="Attendance & Leaves"
+        description="Attendance tracking, leave management, and manual attendance editing."
         items={[
-          { label: "Payroll", to: "/admin/payroll" },
           { label: "Attendance", to: "/admin/attendance" },
-          { label: "Leaves", to: "/admin/leaves" },
-          { label: "Incentives", to: "/admin/incentives" },
-          { label: "Performance", to: "/admin/staff-performance" }
+          { label: "Leaves", to: "/admin/leaves" }
         ]}
       />
       {status.error && <div className="panel-card"><p className="error-text">{status.error}</p></div>}
       {status.success && <div className="panel-card"><p className="success-text">{status.success}</p></div>}
-
-      {mode === "payroll" && (
-        <div className="panel-card">
-          <h3>Create Payroll Run</h3>
-          {loading ? <PageLoader compact title="Loading payroll workspace" message="Preparing payroll runs, attendance, leaves, incentives, and team-cost reporting." /> : null}
-          <form className="form-grid" onSubmit={createRun}>
-            <input type="date" value={form.periodStart} onChange={(e) => setForm({ ...form, periodStart: e.target.value })} max={form.periodEnd || undefined} />
-            <input type="date" value={form.periodEnd} onChange={(e) => setForm({ ...form, periodEnd: e.target.value })} min={form.periodStart || undefined} />
-            <label>
-              <span className="muted">Notes</span>
-              <input placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-            </label>
-            <button>Create Run</button>
-          </form>
-          <div className="form-grid" style={{ marginTop: 16 }}>
-            <label>
-              <span className="muted">Payroll statuses</span>
-              <select value={filters.payrollStatus} onChange={(e) => setFilters((current) => ({ ...current, payrollStatus: e.target.value }))}>
-                <option value="">All payroll statuses</option>
-                <option value="DRAFT">Draft</option>
-                <option value="CALCULATED">Calculated</option>
-                <option value="APPROVED">Approved</option>
-                <option value="PAID">Paid</option>
-              </select>
-            </label>
-            <button type="button" className="secondary-button" onClick={() => setFilters((current) => ({ ...current, payrollStatus: "" }))}><RotateCcw size={12} /> Reset</button>
-          </div>
-          <div className="list-stack" style={{ marginTop: 16 }}>
-            {runs.map((row) => (
-              <div key={row.id} className="list-item">
-                <strong>{new Date(row.periodStart).toLocaleDateString()} - {new Date(row.periodEnd).toLocaleDateString()}</strong>
-                <div className="item-meta">{row.status} | Net {row.totalNet}</div>
-              </div>
-            ))}
-            {!loading && !runs.length && <EmptyState title="No payroll runs yet" message="Create a run to start calculating salary, incentives, and period totals." />}
-          </div>
-        </div>
-      )}
 
       {mode === "attendance" && (
         <div style={{ display: "grid", gap: 18 }}>
@@ -1092,42 +1019,6 @@ export default function PayrollPage() {
         </div>
       )}
 
-      {mode === "incentives" && (
-        <div className="panel-card">
-          <h3>Incentive Rules</h3>
-          <div className="form-grid" style={{ marginBottom: 16 }}>
-            <label>
-              <span className="muted">Search rule name, target type, or note</span>
-              <input value={filters.incentiveQ} placeholder="Search rule name, target type, or note" onChange={(e) => setFilters((current) => ({ ...current, incentiveQ: e.target.value }))} />
-            </label>
-            <button type="button" className="secondary-button" onClick={() => setFilters((current) => ({ ...current, incentiveQ: "" }))}><RotateCcw size={12} /> Reset</button>
-          </div>
-          <div className="list-stack">
-            {incentives.map((row) => (
-              <div key={row.id} className="list-item">
-                <strong>{row.name}</strong>
-                <div className="item-meta">{row.targetType} | {row.incentiveAmount}</div>
-              </div>
-            ))}
-            {!loading && !incentives.length && <EmptyState title="No incentive rules yet" message="Create incentive rules to reward staff performance and milestone achievements." />}
-          </div>
-        </div>
-      )}
-
-      {mode === "performance" && (
-        <div className="panel-card">
-          <h3>Payroll Reports</h3>
-          <div className="list-stack">
-            {report.map((row) => (
-              <div key={row.id} className="list-item">
-                <strong>{new Date(row.periodStart).toLocaleDateString()} - {new Date(row.periodEnd).toLocaleDateString()}</strong>
-                <div className="item-meta">{row.totalNet}</div>
-              </div>
-            ))}
-            {!loading && !report.length && <EmptyState title="No payroll reports yet" message="Payroll report rows will appear here once runs are created and processed." />}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

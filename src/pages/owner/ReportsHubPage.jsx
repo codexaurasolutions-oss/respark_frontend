@@ -15,7 +15,6 @@ const ALL_REPORTS = [
   { key: "customers", label: "Guest Collection" },
   { key: "feedback", label: "Feedback" },
   { key: "staff_performance", label: "Stylist Revenue" },
-  { key: "incentive_report", label: "Incentive Report" },
   { key: "monthly_sale", label: "Monthly Sale" },
   { key: "staff_attendance", label: "Staff Attendance" },
   { key: "memberships", label: "Membership Sold" },
@@ -65,7 +64,6 @@ const COLUMNS = {
   guest_followups: ["Customer", "Phone", "Last Visit", "Days Since", "Follow-up Status"],
   appointments: ["Date", "Customer", "Service", "Staff", "Branch", "Status", "Amount"],
   staff_attendance: ["SR. NO.", "STAFF", "DESIGNATION", "STAFF NUMBER", "TOTAL WORKING HOURS", "TOTAL BREAK TIME"],
-  incentive_report: ["Staff", "Month", "Revenue Generated", "Commission %", "Commission Amt", "Bonus", "Total"],
   memberships: ["Date", "Customer", "Membership Plan", "Price", "Validity", "Branch"],
   membership_redemption: ["Date", "Customer", "Membership", "Service Redeemed", "Sessions Used", "Remaining"],
   inter_store_membership: ["Date", "Customer", "Home Branch", "Redeemed Branch", "Service", "Value Transfer"],
@@ -116,14 +114,6 @@ const REPORT_FILTERS = {
   ],
   staff_performance: [
     { key: "stylistId", label: "Stylist", type: "select", endpoint: "/owner/staff-users", optionLabel: "name", defaultLabel: "All" }
-  ],
-  incentive_report: [
-    { key: "stylistId", label: "Stylist", type: "select", endpoint: "/owner/staff-users", optionLabel: "name", defaultLabel: "All" },
-    { key: "type", label: "Type", type: "select", options: [{ value: "all", label: "All" }, { value: "service", label: "Service" }, { value: "product", label: "Product" }, { value: "package", label: "Package" }], defaultValue: "all" },
-    { key: "categoryId", label: "Category", type: "select", endpoint: "/owner/service-categories", optionLabel: "name", defaultLabel: "All" },
-    { key: "upgraded", label: "Upgraded", type: "select", options: [{ value: "all", label: "All" }, { value: "yes", label: "Yes" }, { value: "no", label: "No" }], defaultValue: "all" },
-    { key: "status", label: "Status", type: "select", options: [{ value: "all", label: "All" }, { value: "active", label: "Active" }, { value: "expired", label: "Expired" }], defaultValue: "all" },
-    { key: "basedOn", label: "Based ON", type: "select", options: [{ value: "purchased", label: "Purchased" }, { value: "created", label: "Created" }], defaultValue: "purchased" }
   ],
   memberships: [
     { key: "stylistId", label: "Stylist", type: "select", endpoint: "/owner/staff-users", optionLabel: "name", defaultLabel: "All" },
@@ -197,7 +187,7 @@ const REPORTS_WITH_CHARTS = new Set([
   "sales_summary", "product_sales", "service_sales", "customers", "staff_performance",
   "monthly_sale", "day_wise", "memberships", "packages", "gift_card_sold",
   "membership_redemption", "package_redemption", "tip_report", "appointments",
-  "daily_stock", "material_received", "feedback", "pnl_report", "incentive_report",
+  "daily_stock", "material_received", "feedback", "pnl_report",
   "balance_received", "advance_received", "coupon_redemption", "complimentary",
   "cancelled_invoices", "service_reminder", "guest_followups", "gst_returns",
   "gst_outwards", "reconcile_stock", "consumable_tracking", "total_consumed",
@@ -226,7 +216,6 @@ const REPORT_ENDPOINTS = {
   customers: "/reports/customers",
   feedback: "/reports/feedback",
   staff_performance: "/reports/staff-performance",
-  incentive_report: "/reports/incentive",
   monthly_sale: "/reports/sales-summary-list",
   staff_attendance: "/reports/staff-attendance",
   memberships: "/reports/memberships",

@@ -248,13 +248,6 @@ const defaultAdvancedSettings = {
   pnlIncomeTaxes: [
     { id: makeId("taxbucket"), slabFrom: 0, slabTo: 100000, rate: 18, active: true }
   ],
-  incentiveSettings: {
-    enabled: true,
-    autoApprove: false,
-    payoutBasis: "revenue",
-    defaultAmount: 0,
-    notes: ""
-  },
   footerContent: {
     supportLine: "",
     copyrightLine: "",
@@ -321,7 +314,6 @@ const mergeAdvancedSettings = (raw = {}) => {
     rate: item.rate !== undefined ? Number(item.rate) : 18,
     active: item.active !== undefined ? Boolean(item.active) : true
   })),
-  incentiveSettings: { ...defaultAdvancedSettings.incentiveSettings, ...(raw.incentiveSettings || {}) },
   footerContent: { ...defaultAdvancedSettings.footerContent, ...(raw.footerContent || {}) },
   uiSettings: { ...defaultAdvancedSettings.uiSettings, ...(raw.uiSettings || {}) }
   };
@@ -363,7 +355,6 @@ const liveSummaryFallback = {
   loyaltyRules: [],
   coupons: [],
   giftCards: [],
-  incentives: [],
   notifications: [],
   feedbackSummary: {
     total: 0,
@@ -587,7 +578,6 @@ export default function SettingsPage() {
           api.get("/owner/loyalty/rules", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
           api.get("/owner/coupons", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
           api.get("/owner/gift-cards", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
-          api.get("/owner/incentives"),
           api.get("/owner/notifications"),
           api.get("/owner/feedback/reports"),
           api.get("/owner/expenses/accounts"),
@@ -643,19 +633,18 @@ export default function SettingsPage() {
           loyaltyRules: rowsFromResponse(summaryResponses[7]),
           coupons: rowsFromResponse(summaryResponses[8]),
           giftCards: rowsFromResponse(summaryResponses[9]),
-          incentives: rowsFromResponse(summaryResponses[10]),
-          notifications: rowsFromResponse(summaryResponses[11]),
-          feedbackSummary: objectFromResponse(summaryResponses[12], liveSummaryFallback.feedbackSummary).summary || liveSummaryFallback.feedbackSummary,
-          expenseAccountInjections: objectFromResponse(summaryResponses[13], { injections: [] }).injections || []
+          notifications: rowsFromResponse(summaryResponses[10]),
+          feedbackSummary: objectFromResponse(summaryResponses[11], liveSummaryFallback.feedbackSummary).summary || liveSummaryFallback.feedbackSummary,
+          expenseAccountInjections: objectFromResponse(summaryResponses[12], { injections: [] }).injections || []
         };
         setSummary(nextSummary);
-        setTaxRates(rowsFromResponse(summaryResponses[14]));
-        setDesignations(rowsFromResponse(summaryResponses[15]));
-        setFeedbackTypes(rowsFromResponse(summaryResponses[16]));
-        setShifts(rowsFromResponse(summaryResponses[17]));
-        setReferralRule(objectFromResponse(summaryResponses[18], null));
-        setTaxSlabs(rowsFromResponse(summaryResponses[19]));
-        setPnlCategories(rowsFromResponse(summaryResponses[20]));
+        setTaxRates(rowsFromResponse(summaryResponses[13]));
+        setDesignations(rowsFromResponse(summaryResponses[14]));
+        setFeedbackTypes(rowsFromResponse(summaryResponses[15]));
+        setShifts(rowsFromResponse(summaryResponses[16]));
+        setReferralRule(objectFromResponse(summaryResponses[17], null));
+        setTaxSlabs(rowsFromResponse(summaryResponses[18]));
+        setPnlCategories(rowsFromResponse(summaryResponses[19]));
         setStatus({ loading: false, error: "", success: "" });
       } catch (error) {
         if (!active) return;
@@ -4585,35 +4574,6 @@ export default function SettingsPage() {
     );
   };
 
-  const renderIncentiveSection = () => {
-    const incentive = form.advancedSettings.incentiveSettings;
-    return (
-      <>
-        <SectionHeader title="Incentive" description="Set the default payout logic and approval approach before deeper incentive rules are configured." badges={[`${summary.incentives.length} live incentive rules`]} action={<Link className="secondary-button" to="/admin/incentives">Open Incentives</Link>} />
-        <div className="muted" style={{ marginBottom: 12, fontSize: 12 }}>
-          Saving here updates the default incentive rule that the live incentive/payroll modules can build on top of.
-        </div>
-        <div className="settings-panel-card">
-          <div className="settings-toggle-grid">
-            <ToggleRow checked={incentive.enabled} label="Enable incentives" onChange={(value) => updateAdvancedObject("incentiveSettings", { enabled: value })} />
-            <ToggleRow checked={incentive.autoApprove} label="Auto-approve incentives" onChange={(value) => updateAdvancedObject("incentiveSettings", { autoApprove: value })} />
-            <label className="settings-input-group">
-              <span className="muted">Payout basis</span>
-              <select value={incentive.payoutBasis} onChange={(event) => updateAdvancedObject("incentiveSettings", { payoutBasis: event.target.value })}>
-                <option value="revenue">Revenue</option>
-                <option value="services">Services</option>
-                <option value="memberships">Memberships</option>
-                <option value="fixed">Fixed</option>
-              </select>
-            </label>
-            <label className="settings-input-group"><span className="muted">Default amount</span><input type="number" value={incentive.defaultAmount} onChange={(event) => updateAdvancedObject("incentiveSettings", { defaultAmount: Number(event.target.value) })} /></label>
-            <label className="settings-input-group"><span className="muted">Notes</span><textarea rows="4" value={incentive.notes} onChange={(event) => updateAdvancedObject("incentiveSettings", { notes: event.target.value })} /></label>
-          </div>
-        </div>
-      </>
-    );
-  };
-
   const renderFooterSection = () => {
     const footer = form.advancedSettings.footerContent;
     return (
@@ -4883,8 +4843,6 @@ export default function SettingsPage() {
         return renderPnlCategoriesSection();
       case "pnl-income-taxes":
         return renderPnlIncomeTaxesSection();
-      case "incentive":
-        return renderIncentiveSection();
       case "footer-content":
         return renderFooterSection();
       case "ui-settings":
@@ -4910,7 +4868,7 @@ export default function SettingsPage() {
       {status.success ? <div className="settings-panel-card"><p className="success-text">{status.success}</p></div> : null}
 
       {!canViewSettings ? null : status.loading ? (
-        <PageLoader title="Loading settings workspace" message="Bringing together generic settings, staff controls, incentives, tax mappings, and communication defaults." />
+        <PageLoader title="Loading settings workspace" message="Bringing together generic settings, staff controls, tax mappings, and communication defaults." />
       ) : (
         <div className="settings-layout">
           <aside className="settings-sidebar">
