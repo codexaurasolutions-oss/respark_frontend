@@ -45,15 +45,18 @@ export default function MyAttendanceHistoryPage() {
   const [filter, setFilter] = useState({ status: "", month: "" });
 
   useEffect(() => {
-    api.get("/owner/my-attendance")
+    const controller = new AbortController();
+    api.get("/owner/my-attendance", { signal: controller.signal })
       .then((res) => {
         setRecords(Array.isArray(res.data) ? res.data : []);
         setLoading(false);
       })
       .catch((err) => {
+        if (err?.name === "CanceledError" || err?.name === "AbortError") return;
         setError(formatApiError(err, "Failed to load attendance history."));
         setLoading(false);
       });
+    return () => controller.abort();
   }, []);
 
   const filteredRecords = useMemo(() => {

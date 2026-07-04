@@ -21,13 +21,18 @@ export default function MyAppointmentsPage() {
     };
   }, []);
 
+  const [updatingId, setUpdatingId] = useState(null);
+
   const updateStatus = async (id, status) => {
+    setUpdatingId(id);
     try {
       await api.patch(`/owner/appointments/${id}/status`, { status });
       const response = await api.get("/owner/my-appointments");
       setRows(response.data);
     } catch (err) {
       alert("Failed to update appointment status.");
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -72,8 +77,8 @@ export default function MyAppointmentsPage() {
             </div>
             <div className="item-meta">{item.customerPreferences || item.customer?.notes || "No customer notes shared."}</div>
             <div className="badge-row">
-              <button type="button" className="secondary-button" onClick={() => updateStatus(item.id, "IN_PROGRESS")}>Start</button>
-              <button type="button" onClick={() => updateStatus(item.id, "COMPLETED")}>Complete</button>
+              <button type="button" className="secondary-button" disabled={updatingId === item.id} onClick={() => updateStatus(item.id, "IN_PROGRESS")}>{updatingId === item.id ? "Updating..." : "Start"}</button>
+              <button type="button" disabled={updatingId === item.id} onClick={() => updateStatus(item.id, "COMPLETED")}>{updatingId === item.id ? "Updating..." : "Complete"}</button>
             </div>
           </div>
         ))}

@@ -55,7 +55,7 @@ export const BranchProvider = ({ children }) => {
 
   const setSelectedBranchId = useCallback((id) => {
     if (!isOwner && staffBranchId) return;
-    const next = typeof id === "function" ? id : id;
+    const next = id;
     setSelectedBranchIdState((prev) => {
       const val = typeof id === "function" ? id(prev) : id;
       try { localStorage.setItem(STORAGE_KEY, val); } catch {}

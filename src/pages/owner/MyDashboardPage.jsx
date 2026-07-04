@@ -136,7 +136,7 @@ export default function MyDashboardPage() {
     const branch = data.profile?.branch;
     const lat = Number(branch?.latitude);
     const lng = Number(branch?.longitude);
-    const radius = Number(branch?.geofenceRadiusMeters || 75);
+    const radius = Number(branch?.geofenceRadiusMeters || 75); // default geofence radius in meters
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) {
       return { valid: true, distance: 0, warning: "Branch GPS coordinates are not set. Geofence check skipped. Please ask your manager to set the branch location." };
     }
@@ -204,8 +204,8 @@ export default function MyDashboardPage() {
     }
     const canvas = canvasRef.current;
     const video = videoRef.current;
-    canvas.width = video.videoWidth || 720;
-    canvas.height = video.videoHeight || 960;
+    canvas.width = video.videoWidth || 720; // default selfie dimensions
+    canvas.height = video.videoHeight || 960; // default selfie dimensions
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       setFlow((c) => ({ ...c, error: "Failed to access camera capture. Please try again." }));

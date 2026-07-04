@@ -16,6 +16,8 @@ export default function StaffSchedulePage() {
   const [scheduleForm, setScheduleForm] = useState(emptySchedule);
   const [breakForm, setBreakForm] = useState(emptyBreak);
   const [loading, setLoading] = useState(true);
+  const [savingSchedule, setSavingSchedule] = useState(false);
+  const [savingBreak, setSavingBreak] = useState(false);
 
   const reload = async () => {
     try {
@@ -78,12 +80,15 @@ export default function StaffSchedulePage() {
           <h3>Weekly Schedule</h3>
           <form onSubmit={async (event) => {
             event.preventDefault();
+            setSavingSchedule(true);
             try {
               await api.post("/owner/staff-schedule", { ...scheduleForm, weekday: Number(scheduleForm.weekday) });
               setScheduleForm(emptySchedule);
               await reload();
             } catch (err) {
               alert("Failed to save schedule.");
+            } finally {
+              setSavingSchedule(false);
             }
           }} style={{ display: "grid", gap: 10 }}>
             <select value={scheduleForm.userSalonId} onChange={(event) => setScheduleForm((current) => ({ ...current, userSalonId: event.target.value }))}>
@@ -98,7 +103,7 @@ export default function StaffSchedulePage() {
             <input type="time" value={scheduleForm.startTime} onChange={(event) => setScheduleForm((current) => ({ ...current, startTime: event.target.value }))} />
             <input type="time" value={scheduleForm.endTime} onChange={(event) => setScheduleForm((current) => ({ ...current, endTime: event.target.value }))} />
             <label><input type="checkbox" checked={scheduleForm.isOffDay} onChange={(event) => setScheduleForm((current) => ({ ...current, isOffDay: event.target.checked }))} /> Off day</label>
-            <button>Save Schedule</button>
+            <button disabled={savingSchedule}>{savingSchedule ? "Saving..." : "Save Schedule"}</button>
           </form>
         </div>
 
@@ -106,12 +111,15 @@ export default function StaffSchedulePage() {
           <h3>Breaks</h3>
           <form onSubmit={async (event) => {
             event.preventDefault();
+            setSavingBreak(true);
             try {
               await api.post("/owner/staff-breaks", { ...breakForm, weekday: Number(breakForm.weekday) });
               setBreakForm(emptyBreak);
               await reload();
             } catch (err) {
               alert("Failed to save break.");
+            } finally {
+              setSavingBreak(false);
             }
           }} style={{ display: "grid", gap: 10 }}>
             <select value={breakForm.userSalonId} onChange={(event) => setBreakForm((current) => ({ ...current, userSalonId: event.target.value }))}>
@@ -121,7 +129,7 @@ export default function StaffSchedulePage() {
             <input type="number" min="0" max="6" value={breakForm.weekday} onChange={(event) => setBreakForm((current) => ({ ...current, weekday: event.target.value }))} />
             <input type="time" value={breakForm.startTime} onChange={(event) => setBreakForm((current) => ({ ...current, startTime: event.target.value }))} />
             <input type="time" value={breakForm.endTime} onChange={(event) => setBreakForm((current) => ({ ...current, endTime: event.target.value }))} />
-            <button>Add Break</button>
+            <button disabled={savingBreak}>{savingBreak ? "Saving..." : "Add Break"}</button>
           </form>
         </div>
 

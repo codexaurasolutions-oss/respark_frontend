@@ -500,7 +500,7 @@ export default function StaffRolesPage() {
                 {rows.map((row) => {
                   const isExpanded = expandedUser === row.id;
                   const isSaving   = savingId === row.id;
-                  const initials   = row.user.name?.substring(0, 2).toUpperCase() || "??";
+                  const initials   = row.user?.name?.substring(0, 2).toUpperCase() || "??";
                   const roleLabel  = row.roleTitle || row.customRole?.name || row.salonRole;
 
                   return (
@@ -511,7 +511,7 @@ export default function StaffRolesPage() {
                           <div className="srp-user-avatar">{initials}</div>
                           <div>
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{row.user.name}</span>
+                              <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{row.user?.name}</span>
                               <span style={{ fontSize: 11, background: "#f1f5f9", color: "#475569", padding: "2px 8px", borderRadius: 20, fontWeight: 600 }}>
                                 {roleLabel}
                               </span>
