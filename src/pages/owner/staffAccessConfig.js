@@ -33,8 +33,7 @@ export const MODULE_GROUPS = [
       { key: "services", label: "Services" },
       { key: "staff", label: "Staff / Users" },
       { key: "staffSchedule", label: "Staff Schedule" },
-      { key: "attendance", label: "Attendance" },
-      { key: "leaves", label: "Leaves" }
+      { key: "attendance", label: "Attendance" }
     ]
   },
   {
@@ -84,7 +83,6 @@ export const MODULE_GROUPS = [
       { key: "myAppointments", label: "My Appointments" },
       { key: "mySchedule", label: "My Schedule" },
       { key: "myAttendance", label: "My Attendance" },
-      { key: "myLeaves", label: "My Leaves" },
       { key: "myProfile", label: "My Profile" }
     ]
   }
@@ -117,7 +115,6 @@ export const ROLE_PRESETS = {
     staff: ["view"],
     staffSchedule: ["view", "edit"],
     attendance: ["view", "create", "edit"],
-    leaves: ["view", "edit", "approve"],
     inventory: ["view", "edit"],
     purchases: ["view", "create"],
     memberships: ["view", "create", "edit"],
@@ -136,7 +133,6 @@ export const ROLE_PRESETS = {
     myAppointments: ["view"],
     mySchedule: ["view"],
     myAttendance: ["view", "create", "edit"],
-    myLeaves: ["view", "create"],
     myProfile: ["view", "edit"]
   }),
   RECEPTIONIST: makePermissions({
@@ -161,7 +157,6 @@ export const ROLE_PRESETS = {
     myAppointments: ["view"],
     mySchedule: ["view"],
     myAttendance: ["view", "create", "edit"],
-    myLeaves: ["view", "create"],
     myProfile: ["view", "edit"]
   }),
   STAFF: makePermissions({
@@ -174,7 +169,6 @@ export const ROLE_PRESETS = {
     myAppointments: ["view"],
     mySchedule: ["view"],
     myAttendance: ["view", "create", "edit"],
-    myLeaves: ["view", "create"],
     myProfile: ["view", "edit"]
   }),
   INVENTORY_MANAGER: makePermissions({

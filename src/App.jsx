@@ -146,10 +146,6 @@ const Protected = () => {
             can("attendance") && enabled("attendance") && {
               label: "Attendance",
               to: "/admin/attendance"
-            },
-            can("leaves") && enabled("leaves") && {
-              label: "Leaves",
-              to: "/admin/leaves"
             }
           ].filter(Boolean)
         },
@@ -478,7 +474,6 @@ export default function App() {
           <Route path="/admin/expenses/categories" element={<OwnerRoute moduleKey="expenses" featureKey="expenses" element={<ExpensesPage />} />} />
           <Route path="/admin/expenses/reports" element={<OwnerRoute moduleKey="expenses" featureKey="expenses" element={<ExpensesPage />} />} />
           <Route path="/admin/attendance" element={<OwnerRoute moduleKey="attendance" featureKey="attendance" element={<PayrollPage />} />} />
-          <Route path="/admin/leaves" element={<OwnerRoute moduleKey="leaves" featureKey="leaves" element={<PayrollPage />} />} />
           <Route path="/admin/notifications" element={<OwnerRoute moduleKey="notifications" featureKey="notifications" element={<NotificationsPage />} />} />
           <Route path="/admin/audit-logs" element={<OwnerRoute moduleKey="auditLogs" featureKey="auditLogs" element={<OwnerAuditLogsPage />} />} />
           <Route path="/admin/whatsapp" element={<OwnerRoute moduleKey="whatsapp" featureKey="whatsapp" element={<WhatsAppPage />} />} />
