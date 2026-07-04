@@ -28,7 +28,7 @@ export default function PaymentsPage() {
         ...(filters.type ? { type: filters.type } : {})
       };
       const response = await api.get("/owner/payments", { params });
-      setRows(response.data);
+      setRows(Array.isArray(response.data) ? response.data : (response.data?.data || []));
     } catch (err) {
       setStatus({ error: formatApiError(err, "Could not load payments"), success: "" });
     } finally {

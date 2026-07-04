@@ -492,7 +492,7 @@ export default function AppointmentsPage() {
           branchId: selectedBranchId || undefined
         }
       });
-      const data = response.data || [];
+      const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
       setRows(data);
       if (data.length > 0) {
         setTimeout(() => {

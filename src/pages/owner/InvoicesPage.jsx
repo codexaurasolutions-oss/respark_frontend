@@ -26,7 +26,8 @@ export default function InvoicesPage() {
         ...(filters.status ? { status: filters.status } : {})
       };
       const response = await api.get("/owner/invoices", { params });
-      setRows(response.data);
+      const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      setRows(data);
       setStatus((current) => ({ ...current, loading: false, error: "" }));
     } catch (error) {
       setStatus((current) => ({ ...current, loading: false, error: formatApiError(error, "Failed to load invoices") }));
@@ -42,7 +43,8 @@ export default function InvoicesPage() {
     };
     api.get("/owner/invoices", { params }).then((response) => {
       if (!active) return;
-      setRows(response.data);
+      const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      setRows(data);
       setStatus((current) => ({ ...current, loading: false, error: "" }));
     }).catch((error) => {
       if (!active) return;
