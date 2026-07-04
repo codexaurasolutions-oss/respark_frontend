@@ -587,7 +587,7 @@ export default function PayrollPage() {
                       <tr key={row.staffCode} style={{ background: rowIdx % 2 === 0 ? "white" : "#fafbfc" }}>
                         <td style={{ padding: "10px 14px", borderRight: "1px solid #e2e8f0", borderBottom: "1px solid #f1f5f9", verticalAlign: "middle", background: "inherit" }}>
                           <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a" }}>{row.staffName}</div>
-                          <div style={{ fontSize: 11, color: "#94a3b8" }}>{row.branchName || "No branch"}</div>
+                          <div style={{ fontSize: 11, color: "#94a3b8" }}>{row.branchName || "Unassigned"}</div>
                           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
                             {attendanceMetricKeys.filter((k) => row.totals[k] > 0).map((metricKey) => (
                               <span key={metricKey} style={{ fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 6, background: statusTheme[metricKey.toUpperCase()]?.bg || "#f1f5f9", color: statusTheme[metricKey.toUpperCase()]?.color || "#475569" }}>
@@ -649,7 +649,7 @@ export default function PayrollPage() {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 20px" }}>
                 {[
-                  ["Branch", selectedCalendarCell.branchName || "No branch"],
+                  ["Branch", selectedCalendarCell.branchName || "Unassigned"],
                   ["Status", selectedCalendarCell.record?.status || "No mark"],
                   ["Date", selectedCalendarCell.record?.date ? new Date(selectedCalendarCell.record.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : `${attendanceCalendarMonth}-${String(selectedCalendarCell.day).padStart(2, "0")}`],
                   ["Worked Hours", selectedCalendarCell.record?.workedHours || "-"],
@@ -715,7 +715,7 @@ export default function PayrollPage() {
             {(attendanceReport.rows || []).slice(0, 12).map((row, index) => (
               <div key={`${row.staffCode}-${row.date}-${index}`} className="list-item">
                 <strong>{row.staffName}</strong>
-                <div className="item-meta">{new Date(row.date).toLocaleDateString()} | {row.status} | {row.branchName || "No branch"}</div>
+                <div className="item-meta">{new Date(row.date).toLocaleDateString()} | {row.status} | {row.branchName || "Unassigned"}</div>
                 <div className="item-meta">
                   {row.checkInAt ? new Date(row.checkInAt).toLocaleString() : "No check-in"}
                   {row.checkOutAt ? ` - ${new Date(row.checkOutAt).toLocaleString()}` : ""}
@@ -786,7 +786,7 @@ export default function PayrollPage() {
           </form>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, alignItems: "start", minWidth: 0, overflow: "hidden" }}>
           <div className="panel-card">
             <h3>Attendance Records</h3>
             <div className="form-grid" style={{ marginBottom: 16 }}>
@@ -844,7 +844,7 @@ export default function PayrollPage() {
             </div>
           </div>
 
-          <div className="panel-card" ref={detailPanelRef} style={{ maxHeight: "80vh", overflowY: "auto", position: "sticky", top: 16 }}>
+          <div className="panel-card" ref={detailPanelRef} style={{ maxHeight: "80vh", overflowY: "auto" }}>
             <h3>Attendance Detail</h3>
             {detailLoading ? <PageLoader compact title="Loading attendance detail" message="Fetching record, GPS evidence, and audit history." /> : null}
             {!detailLoading && !selectedAttendance && (

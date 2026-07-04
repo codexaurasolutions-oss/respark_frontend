@@ -97,10 +97,10 @@ export default function ExpensesPage() {
         api.get("/owner/expenses/accounts", { params: branchParams }).catch(() => ({ data: { injections: [] } }))
       ]);
 
-      setRows(expenseRes.data || []);
-      setCategories(categoryRes.data || []);
-      setPayments(paymentRes.data || []);
-      setAccountInjections(injectionRes.data?.injections || []);
+      setRows(Array.isArray(expenseRes.data) ? expenseRes.data : (expenseRes.data?.data || []));
+      setCategories(Array.isArray(categoryRes.data) ? categoryRes.data : (categoryRes.data?.data || []));
+      setPayments(Array.isArray(paymentRes.data) ? paymentRes.data : (paymentRes.data?.data || []));
+      setAccountInjections(Array.isArray(injectionRes.data?.injections) ? injectionRes.data.injections : (injectionRes.data?.data || []));
 
       // If categories exist and none selected, select first
       if (categoryRes.data?.length > 0 && !selectedCategory) {
