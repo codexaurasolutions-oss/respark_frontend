@@ -140,23 +140,23 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
         }
         .respark-top-row {
           background: var(--navbar-bg, white);
-          height: 52px;
+          height: 60px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 16px;
+          padding: 0 24px;
           border-bottom: 1px solid #e2e8f0;
           position: relative;
         }
         .respark-logo-area {
           display: flex;
           align-items: center;
-          gap: 12px;
-          flex: 0 0 auto;
+          gap: 16px;
+          flex: 1;
         }
         .respark-brand-image {
-          height: 34px;
-          max-width: 140px;
+          height: 42px;
+          max-width: 160px;
           width: auto;
           object-fit: contain;
           display: block;
@@ -175,7 +175,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           background: #f1f5f9;
           border-radius: 24px;
           padding: 6px 18px;
-          width: 420px;
+          width: 480px;
           border: 1px solid transparent;
           transition: all 0.2s;
           position: relative;
@@ -362,25 +362,22 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
         .respark-top-right {
           display: flex;
           align-items: center;
-          gap: 12px;
-          flex: 0 0 auto;
+          gap: 16px;
+          flex: 1;
           justify-content: flex-end;
         }
         .respark-date {
-          font-size: 0.8rem;
-          color: #64748b;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 6px 14px;
+          font-size: 0.85rem;
+          color: #475569;
+          font-weight: 600;
+          padding: 6px 12px;
           background: #f8fafc;
-          border-radius: 20px;
+          border-radius: 16px;
           border: 1px solid #e2e8f0;
         }
         .respark-icon-btn {
-          width: 34px;
-          height: 34px;
+          width: 40px;
+          height: 40px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -490,7 +487,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
         
         .respark-nav-row {
           background: var(--sidebar-bg, #334155); /* Slightly darker and richer than #475569 */
-          height: 40px;
+          height: 48px;
           display: flex;
           align-items: center;
           padding: 0;
@@ -519,8 +516,8 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           text-decoration: none;
           display: flex;
           align-items: center;
-          padding: 0 16px;
-          font-size: 0.72rem;
+          padding: 0 24px;
+          font-size: 0.78rem;
           font-weight: 600;
           letter-spacing: 0.05em;
           border-right: 1px solid rgba(255,255,255,0.1);
@@ -534,32 +531,6 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           background: #0f172a;
           border-bottom: 3px solid var(--accent, #ef4444);
           color: white;
-        }
-        @media (max-width: 768px) {
-          .respark-header-container { overflow: hidden; }
-          .respark-top-row { padding: 0 12px; height: auto; min-height: 50px; flex-wrap: wrap; gap: 8px 0; position: relative; }
-          .respark-logo-area { flex: 1; min-width: 0; overflow: hidden; }
-          .respark-salon-name { font-size: 0.8rem; padding-left: 8px; border-left: none; display: none; }
-          .respark-search-wrap { position: relative !important; left: auto !important; transform: none !important; width: 100% !important; order: 3; flex: 1 1 100%; padding: 0; }
-          .respark-search-bar { width: 100% !important; max-width: 100%; }
-          .respark-search-dropdown { position: fixed !important; left: 8px !important; right: 8px !important; top: auto !important; transform: none !important; width: auto !important; max-width: none !important; }
-          .respark-top-right { flex: 0 0 auto; justify-content: flex-end; gap: 8px; }
-          .respark-branch-btn { font-size: 0.75rem; padding: 4px 10px; }
-          .respark-date { display: none; }
-          .respark-nav-row { height: 42px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
-          .respark-nav-row::-webkit-scrollbar { display: none; }
-          .respark-tabs { flex-wrap: nowrap; flex-shrink: 0; }
-          .respark-tab { padding: 0 12px; font-size: 11px; white-space: nowrap; flex-shrink: 0; border-bottom: none; }
-          .respark-tab.active { border-bottom: 3px solid var(--accent, #ef4444); }
-          .respark-icon-btn { width: 36px; height: 36px; }
-          .notif-dropdown { width: 280px; }
-        }
-        @media (max-width: 480px) {
-          .respark-top-row { padding: 0 8px; gap: 6px 0; }
-          .respark-search-wrap { display: none !important; }
-          .respark-tab { padding: 0 10px; font-size: 10px; }
-          .respark-branch-btn { font-size: 0.7rem; padding: 3px 8px; }
-          .respark-brand-image { height: 24px !important; }
         }
       `}</style>
 

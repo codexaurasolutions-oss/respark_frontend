@@ -19,10 +19,6 @@
   box-sizing: border-box;
 }
 
-html, body {
-  overflow-x: hidden;
-}
-
 body {
   margin: 0;
   min-height: 100vh;
@@ -36,11 +32,11 @@ body {
 }
 
 input, button, select, textarea {
-  padding: 7px 10px;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
   border: 1px solid #cbd5e1;
   font: inherit;
-  min-height: 34px;
+  min-height: 44px;
   transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
 }
 
@@ -123,8 +119,8 @@ textarea {
 label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 0.85rem;
+  gap: 6px;
+  font-size: 0.94rem;
 }
 
 label span.muted {
@@ -184,7 +180,7 @@ pre {
 }
 
 .page-shell {
-  padding: 16px;
+  padding: 24px;
   animation: riseIn 320ms ease;
 }
 
@@ -447,19 +443,16 @@ pre {
   display: block;
   min-height: 100vh;
   position: relative;
-  overflow-x: hidden;
 }
 
 .app-content-wrapper {
   width: 100%;
   min-width: 0;
-  overflow-x: hidden;
 }
 
 .app-main {
-  padding: 16px;
+  padding: 22px;
   min-width: 0;
-  overflow-x: hidden;
 }
 
 .sidebar-mobile-toggle-shell,
@@ -1829,10 +1822,9 @@ pre {
 .data-table th,
 .data-table td {
   text-align: left;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-bottom: 1px solid #e2e8f0;
   vertical-align: top;
-  font-size: 0.82rem;
 }
 
 .data-table th {
@@ -3583,161 +3575,6 @@ pre {
   }
   .no-print {
     display: none !important;
-  }
-}
-
-@media (max-width: 768px) {
-  .page-shell {
-    padding: 12px !important;
-  }
-
-  .app-main {
-    padding: 12px !important;
-  }
-
-  .hero-card, .panel-card {
-    padding: 16px !important;
-    border-radius: 12px !important;
-  }
-
-  .item-head {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 12px !important;
-  }
-
-  .item-head .badge-row {
-    flex-wrap: wrap !important;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
-    gap: 8px !important;
-  }
-
-  .stat-card {
-    padding: 12px !important;
-    min-height: auto !important;
-  }
-
-  .stat-value {
-    font-size: 18px !important;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .two-col, .three-col {
-    grid-template-columns: 1fr !important;
-  }
-
-  .list-stack {
-    max-height: 400px !important;
-    overflow-y: auto !important;
-  }
-
-  .module-tabs {
-    grid-template-columns: 1fr !important;
-    gap: 6px !important;
-  }
-
-  .module-tab {
-    padding: 8px 12px !important;
-    font-size: 12px !important;
-  }
-
-  h1 { font-size: 20px !important; }
-  h2 { font-size: 17px !important; }
-  h3 { font-size: 15px !important; }
-
-  .staff-management-layout {
-    grid-template-columns: 1fr !important;
-  }
-
-  .settings-workspace {
-    grid-template-columns: 1fr !important;
-  }
-
-  .settings-section-grid, .settings-toggle-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .auth-layout {
-    grid-template-columns: 1fr !important;
-    padding: 16px !important;
-  }
-
-  .two-panel {
-    grid-template-columns: 1fr !important;
-  }
-
-  table {
-    font-size: 12px !important;
-  }
-
-  th, td {
-    padding: 6px 8px !important;
-  }
-
-  .table-wrap {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-
-  .modal-content, .panel-card {
-    max-height: 90vh !important;
-    overflow-y: auto !important;
-  }
-
-  .hub-input, .hub-select {
-    font-size: 14px !important;
-    padding: 10px 12px !important;
-  }
-
-  button {
-    min-height: 40px !important;
-  }
-
-  .secondary-button, .blue-btn, .primary-button {
-    padding: 8px 16px !important;
-    font-size: 13px !important;
-  }
-}
-
-@media (max-width: 480px) {
-  .page-shell {
-    padding: 8px !important;
-  }
-
-  .hero-card, .panel-card {
-    padding: 12px !important;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-
-  .stat-card {
-    padding: 8px !important;
-  }
-
-  .stat-value {
-    font-size: 16px !important;
-  }
-
-  .stat-label {
-    font-size: 10px !important;
-  }
-
-  .list-item {
-    padding: 10px !important;
-  }
-
-  h1 { font-size: 18px !important; }
-
-  .badge-row {
-    gap: 4px !important;
   }
 }
 
