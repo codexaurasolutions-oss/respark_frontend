@@ -588,7 +588,23 @@ export default function ReferralProgramPage() {
           <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 24, width: 420, maxWidth: "90vw" }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ margin: "0 0 16px", fontSize: 16 }}>Onboard Affiliate Partner</h3>
             <div style={{ marginBottom: 12 }}><label style={{ fontSize: 12, color: "#475569", display: "block", marginBottom: 4 }}>Name *</label><input value={onboardForm.name} onChange={(e) => setOnboardForm(prev => ({ ...prev, name: e.target.value }))} placeholder="e.g. John Doe" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }} /></div>
-            <div style={{ marginBottom: 12 }}><label style={{ fontSize: 12, color: "#475569", display: "block", marginBottom: 4 }}>Phone *</label><input value={onboardForm.phone} onChange={(e) => setOnboardForm(prev => ({ ...prev, phone: e.target.value }))} placeholder="e.g. 9876543210" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }} /></div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 12, color: "#475569", display: "block", marginBottom: 4 }}>Phone *</label>
+              <div style={{ display: "flex", alignItems: "center", border: "1px solid #e2e8f0", borderRadius: 6, background: "#fff", overflow: "hidden" }}>
+                <span style={{ padding: "8px 12px", background: "#f8fafc", color: "#475569", fontSize: 13, borderRight: "1px solid #e2e8f0", fontWeight: 500 }}>+91</span>
+                <input 
+                  type="text"
+                  maxLength={10}
+                  value={onboardForm.phone} 
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setOnboardForm(prev => ({ ...prev, phone: val }));
+                  }} 
+                  placeholder="e.g. 9876543210" 
+                  style={{ width: "100%", padding: "8px 12px", border: "none", fontSize: 13, outline: "none", boxSizing: "border-box" }} 
+                />
+              </div>
+            </div>
             <div style={{ marginBottom: 12 }}><label style={{ fontSize: 12, color: "#475569", display: "block", marginBottom: 4 }}>Coupon Title</label><input value={onboardForm.title} onChange={(e) => setOnboardForm(prev => ({ ...prev, title: e.target.value }))} placeholder="Auto from name if blank" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }} /></div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
               <div><label style={{ fontSize: 12, color: "#475569", display: "block", marginBottom: 4 }}>Customer Discount %</label><input type="number" value={onboardForm.discountValue} onChange={(e) => setOnboardForm(prev => ({ ...prev, discountValue: e.target.value }))} style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }} /></div>
