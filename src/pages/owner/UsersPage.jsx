@@ -387,7 +387,7 @@ export default function UsersPage() {
         phone: form.phone || undefined,
         avatarUrl: form.avatarUrl || undefined,
         profileNote: form.profileNote || undefined,
-        branchId: selectedBranchId || null,
+        branchId: selectedBranchId || branches[0]?.id || null,
         customRoleId: form.customRoleId || undefined,
         showInCatalog: Boolean(form.showInCatalog),
         attendanceEnabled: Boolean(form.attendanceEnabled),
@@ -410,7 +410,7 @@ export default function UsersPage() {
       } else {
         await api.post("/owner/users/create-login", {
           ...payload,
-          branchId: selectedBranchId || undefined,
+          branchId: selectedBranchId || branches[0]?.id || undefined,
           name: form.name.trim(),
           email: form.email.trim(),
           password: form.password,
