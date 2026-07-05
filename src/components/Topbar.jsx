@@ -175,7 +175,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           background: #f1f5f9;
           border-radius: 24px;
           padding: 6px 18px;
-          width: 100%;
+          width: 480px;
           border: 1px solid transparent;
           transition: all 0.2s;
           position: relative;
@@ -569,7 +569,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
 
         {/* Centered Search Bar */}
         {canGlobalSearch ? (
-          <div className="respark-search-wrap" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", width: "min(480px, 40vw)" }}>
+          <div className="respark-search-wrap" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
             <div className="respark-search-bar">
               <Search size={16} color="#64748b" />
               <input
