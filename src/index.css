@@ -3578,4 +3578,159 @@ pre {
   }
 }
 
+@media (max-width: 768px) {
+  .page-shell {
+    padding: 12px !important;
+  }
+
+  .app-main {
+    padding: 12px !important;
+  }
+
+  .hero-card, .panel-card {
+    padding: 16px !important;
+    border-radius: 12px !important;
+  }
+
+  .item-head {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .item-head .badge-row {
+    flex-wrap: wrap !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .stat-card {
+    padding: 12px !important;
+    min-height: auto !important;
+  }
+
+  .stat-value {
+    font-size: 18px !important;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .two-col, .three-col {
+    grid-template-columns: 1fr !important;
+  }
+
+  .list-stack {
+    max-height: 400px !important;
+    overflow-y: auto !important;
+  }
+
+  .module-tabs {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+
+  .module-tab {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+  }
+
+  h1 { font-size: 20px !important; }
+  h2 { font-size: 17px !important; }
+  h3 { font-size: 15px !important; }
+
+  .staff-management-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .settings-workspace {
+    grid-template-columns: 1fr !important;
+  }
+
+  .settings-section-grid, .settings-toggle-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .auth-layout {
+    grid-template-columns: 1fr !important;
+    padding: 16px !important;
+  }
+
+  .two-panel {
+    grid-template-columns: 1fr !important;
+  }
+
+  table {
+    font-size: 12px !important;
+  }
+
+  th, td {
+    padding: 6px 8px !important;
+  }
+
+  .table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .modal-content, .panel-card {
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+
+  .hub-input, .hub-select {
+    font-size: 14px !important;
+    padding: 10px 12px !important;
+  }
+
+  button {
+    min-height: 40px !important;
+  }
+
+  .secondary-button, .blue-btn, .primary-button {
+    padding: 8px 16px !important;
+    font-size: 13px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-shell {
+    padding: 8px !important;
+  }
+
+  .hero-card, .panel-card {
+    padding: 12px !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .stat-card {
+    padding: 8px !important;
+  }
+
+  .stat-value {
+    font-size: 16px !important;
+  }
+
+  .stat-label {
+    font-size: 10px !important;
+  }
+
+  .list-item {
+    padding: 10px !important;
+  }
+
+  h1 { font-size: 18px !important; }
+
+  .badge-row {
+    gap: 4px !important;
+  }
+}
+
 

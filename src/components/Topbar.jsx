@@ -532,6 +532,21 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           border-bottom: 3px solid var(--accent, #ef4444);
           color: white;
         }
+        @media (max-width: 768px) {
+          .respark-top-row { padding: 0 12px; height: 50px; }
+          .respark-search-bar { width: 100% !important; max-width: 100%; position: static; transform: none; order: 3; }
+          .respark-nav-row { height: 40px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+          .respark-nav-row::-webkit-scrollbar { display: none; }
+          .respark-tab { padding: 0 12px; font-size: 12px; white-space: nowrap; }
+          .respark-top-logo { width: auto !important; }
+          .respark-top-logo img { height: 24px !important; }
+          .topbar-date-pill { display: none; }
+        }
+        @media (max-width: 480px) {
+          .respark-search-bar { display: none !important; }
+          .respark-search-dropdown { display: none !important; }
+          .respark-top-row { padding: 0 8px; }
+        }
       `}</style>
 
       {/* Top White Row */}

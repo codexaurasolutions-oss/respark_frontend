@@ -142,7 +142,7 @@ export default function PayrollPage() {
       const branchParams = selectedBranchId ? { branchId: selectedBranchId } : {};
 
       const safeGet = async (url, params = {}) => {
-        try { return (await api.get(url, { params })).data; } catch { return null; }
+        try { return (await api.get(url, { params })).data; } catch (err) { console.warn(`safeGet failed: ${url}`, err?.message); return null; }
       };
 
       const [attendanceData, summaryData, settingsData, staffData, daySheetData, attendanceReportData, attendanceCalData] = await Promise.all([
@@ -571,7 +571,7 @@ export default function PayrollPage() {
               const today = new Date();
               const todayDay = today.getMonth() + 1 === parseInt(attendanceCalendarMonth.split("-")[1]) && today.getFullYear() === parseInt(attendanceCalendarMonth.split("-")[0]) ? today.getDate() : null;
               return (
-                <table style={{ borderCollapse: "collapse", minWidth: Math.max(900, 280 + attendanceCalendarDays.length * 40) }}>
+                <table style={{ borderCollapse: "collapse", minWidth: Math.min(900, 280 + attendanceCalendarDays.length * 40) }}>
                   <thead>
                     <tr>
                       <th style={{ position: "sticky", top: 0, zIndex: 5, background: "#f8fafc", padding: "10px 14px", fontWeight: 800, fontSize: 12, color: "#475569", textTransform: "uppercase", letterSpacing: 0.5, textAlign: "left", borderBottom: "2px solid #e2e8f0", borderRight: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>Staff Member</th>
@@ -647,7 +647,7 @@ export default function PayrollPage() {
                 </div>
                 <button type="button" onClick={() => setSelectedCalendarCell(null)} style={{ width: 28, height: 28, borderRadius: 8, border: "1px solid #e2e8f0", background: "white", cursor: "pointer", display: "grid", placeItems: "center", fontSize: 14 }}>✕</button>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 20px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 500px), 1fr))", gap: "10px 20px" }}>
                 {[
                   ["Branch", selectedCalendarCell.branchName || "Unassigned"],
                   ["Status", selectedCalendarCell.record?.status || "No mark"],
@@ -786,7 +786,7 @@ export default function PayrollPage() {
           </form>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, alignItems: "start", minWidth: 0, overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 500px), 1fr))", gap: 18, alignItems: "start", minWidth: 0 }}>
           <div className="panel-card">
             <h3>Attendance Records</h3>
             <div className="form-grid" style={{ marginBottom: 16 }}>
