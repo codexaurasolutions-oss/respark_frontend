@@ -1196,10 +1196,10 @@ export default function CustomersPage() {
           .crm-btn:hover { background:#2563eb; transform:none; filter:none; }
           .crm-btn-light { background:#f8fafc; color:#2563eb; border:1px solid #bfdbfe; box-shadow:none; }
           .crm-btn-light:hover { background:#eff6ff; }
-          .crm-table-container { background:#fff; border-radius:8px; box-shadow: none; overflow:auto; }
-          .crm-table { width:100%; border-collapse:collapse; white-space:nowrap; }
-          .crm-table th { background:#f8fafc; color:#475569; font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; padding:8px 12px; text-align:left; border-bottom:2px solid #e2e8f0; }
-          .crm-table td { padding:8px 12px; font-size:0.78rem; color:#334155; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+          .crm-table-container { background:#fff; border-radius:8px; box-shadow: none; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+          .crm-table { width:100%; border-collapse:collapse; white-space:nowrap; table-layout:auto; min-width:900px; }
+          .crm-table th { background:#f8fafc; color:#475569; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; padding:6px 8px; text-align:left; border-bottom:2px solid #e2e8f0; }
+          .crm-table td { padding:6px 8px; font-size:0.76rem; color:#334155; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
           .crm-table tr:hover { background:#f8fafc; }
           .crm-table-checkbox { width:14px; height:14px; accent-color:#3b82f6; min-height:unset; }
           .crm-pagination { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-top:1px solid #e2e8f0; color:#64748b; font-size:0.78rem; gap:10px; }
