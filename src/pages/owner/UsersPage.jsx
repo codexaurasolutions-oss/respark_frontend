@@ -66,12 +66,14 @@ export default function UsersPage() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [enrollmentCaptureBusy, setEnrollmentCaptureBusy] = useState(false);
   const [enrollmentCameraOpen, setEnrollmentCameraOpen] = useState(false);
+  const [enrollmentCameraError, setEnrollmentCameraError] = useState("");
   const enrollmentVideoRef = useRef(null);
   const enrollmentCanvasRef = useRef(null);
   const enrollmentStreamRef = useRef(null);
   const deferredQuery = useDeferredValue(query.trim().toLowerCase());
 
   const openEnrollmentCamera = async () => {
+    setEnrollmentCameraError("");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
       enrollmentStreamRef.current = stream;
@@ -81,7 +83,7 @@ export default function UsersPage() {
       if (err?.name === "NotAllowedError") msg = "Camera permission denied. Please allow camera access in browser settings.";
       if (err?.name === "NotFoundError") msg = "No camera found. Please connect a camera.";
       if (err?.name === "NotReadableError") msg = "Camera is already in use by another application.";
-      setStatus((s) => ({ ...s, error: msg, success: "" }));
+      setEnrollmentCameraError(msg);
     }
   };
 
@@ -96,8 +98,12 @@ export default function UsersPage() {
   const captureEnrollmentFrame = async () => {
     const video = enrollmentVideoRef.current;
     const canvas = enrollmentCanvasRef.current;
-    if (!video || !canvas) return;
+    if (!video || !canvas) {
+      setEnrollmentCameraError("Camera not ready. Please close and reopen the camera.");
+      return;
+    }
     setEnrollmentCaptureBusy(true);
+    setEnrollmentCameraError("");
     try {
       canvas.width = video.videoWidth || 640;
       canvas.height = video.videoHeight || 480;
@@ -109,10 +115,12 @@ export default function UsersPage() {
       const file = new File([blob], "enrollment-selfie.jpg", { type: "image/jpeg" });
       const url = await uploadEnrollmentImage(file);
       stopEnrollmentCamera();
+      setEnrollmentCameraError("");
       setForm((c) => ({ ...c, attendanceEnrollmentPhotoUrl: url, attendanceEnabled: true }));
       setStatus((s) => ({ ...s, success: "Enrollment selfie captured successfully.", error: "" }));
     } catch (err) {
-      setStatus((s) => ({ ...s, error: formatApiError(err, "Could not capture enrollment selfie"), success: "" }));
+      console.error("[Biometric] Capture failed:", err);
+      setEnrollmentCameraError(formatApiError(err, "Could not capture enrollment selfie"));
     } finally {
       setEnrollmentCaptureBusy(false);
     }
@@ -129,7 +137,9 @@ export default function UsersPage() {
 
   const uploadEnrollmentImage = async (file) => {
     if (!file) return "";
+    console.log("[Biometric] Running face verification...");
     await ensureSingleFaceInImage(file);
+    console.log("[Biometric] Face verified, uploading...");
     const formData = new FormData();
     formData.append("image", file);
     const response = await api.post("/upload", formData, {
@@ -188,7 +198,9 @@ export default function UsersPage() {
   }, [selectedBranchId]);
 
   useEffect(() => {
-    void loadFaceVerificationModels().catch(() => {});
+    loadFaceVerificationModels()
+      .then(() => console.log("[Biometric] Face verification models loaded"))
+      .catch((err) => console.error("[Biometric] Failed to load face models:", err));
   }, []);
 
   const filteredRows = useMemo(() => {
@@ -471,6 +483,11 @@ export default function UsersPage() {
               </div>
             </div>
             <canvas ref={enrollmentCanvasRef} style={{ display: 'none' }} />
+            {enrollmentCameraError && (
+              <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(220,38,38,0.15)', border: '1px solid rgba(220,38,38,0.3)', color: '#fca5a5', fontSize: 12, fontWeight: 500, lineHeight: 1.5 }}>
+                {enrollmentCameraError}
+              </div>
+            )}
             <button
               type="button"
               onClick={() => void captureEnrollmentFrame()}
