@@ -140,23 +140,23 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
         }
         .respark-top-row {
           background: var(--navbar-bg, white);
-          height: 52px;
+          height: 60px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0 16px;
+          padding: 0 24px;
           border-bottom: 1px solid #e2e8f0;
           position: relative;
         }
         .respark-logo-area {
           display: flex;
           align-items: center;
-          gap: 12px;
-          flex: 0 0 auto;
+          gap: 16px;
+          flex: 1;
         }
         .respark-brand-image {
-          height: 34px;
-          max-width: 140px;
+          height: 42px;
+          max-width: 160px;
           width: auto;
           object-fit: contain;
           display: block;
@@ -174,8 +174,8 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           align-items: center;
           background: #f1f5f9;
           border-radius: 24px;
-          padding: 6px 18px;
-          width: 420px;
+          padding: 6px 16px;
+          width: 380px;
           border: 1px solid transparent;
           transition: all 0.2s;
           position: relative;
