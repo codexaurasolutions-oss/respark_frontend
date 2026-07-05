@@ -33,6 +33,16 @@ export default function ReferralProgramPage() {
   const [onboardForm, setOnboardForm] = useState({ name: "", phone: "", discountValue: 10, partnerCreditValue: 5, title: "" });
   const [onboardLoading, setOnboardLoading] = useState(false);
 
+  const [showRedeemModal, setShowRedeemModal] = useState(false);
+  const [redeemType, setRedeemType] = useState("");
+  const [redeemAmount, setRedeemAmount] = useState("");
+  const [redeemLoading, setRedeemLoading] = useState(false);
+
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectPayoutId, setRejectPayoutId] = useState("");
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectLoading, setRejectLoading] = useState(false);
+
   const [wallets, setWallets] = useState([]);
   const [payouts, setPayouts] = useState([]);
   const [walletSearch, setWalletSearch] = useState("");
@@ -183,18 +193,37 @@ export default function ReferralProgramPage() {
     catch (err) { setStatus({ error: formatApiError(err, "Could not update payout"), success: "" }); }
   };
 
-  const handleRedeemService = async (partnerId) => {
-    const amount = prompt("Enter credits to redeem for services (1 credit = ₹1):");
-    if (!amount || isNaN(amount) || Number(amount) <= 0) return;
-    try { await api.post(`/owner/referrals/wallets/${partnerId}/redeem-service`, { amount: Number(amount), note: "Manual service redemption" }); setStatus({ error: "", success: `${amount} credits redeemed.` }); await loadWallets(); if (selectedWallet) await loadWalletDetail(partnerId); }
-    catch (err) { setStatus({ error: formatApiError(err, "Could not redeem"), success: "" }); }
+  const handleRedeemService = () => {
+    setRedeemType("service");
+    setRedeemAmount("");
+    setShowRedeemModal(true);
   };
 
-  const handleRequestPayout = async (partnerId) => {
-    const amount = prompt("Enter credits for cash payout (1 credit = ₹0.50):");
-    if (!amount || isNaN(amount) || Number(amount) <= 0) return;
-    try { await api.post(`/owner/referrals/wallets/${partnerId}/payout`, { creditsRedeemed: Number(amount) }); setStatus({ error: "", success: `Payout requested for ${amount} credits.` }); await loadWallets(); if (selectedWallet) await loadWalletDetail(partnerId); }
-    catch (err) { setStatus({ error: formatApiError(err, "Could not request payout"), success: "" }); }
+  const handleRequestPayout = () => {
+    setRedeemType("cash");
+    setRedeemAmount("");
+    setShowRedeemModal(true);
+  };
+
+  const submitRedeem = async () => {
+    if (!redeemAmount || isNaN(redeemAmount) || Number(redeemAmount) <= 0) return;
+    setRedeemLoading(true);
+    try {
+      if (redeemType === "service") {
+        await api.post(`/owner/referrals/wallets/${selectedWallet}/redeem-service`, { amount: Number(redeemAmount), note: "Manual service redemption" });
+        setStatus({ error: "", success: `${redeemAmount} credits redeemed for services.` });
+      } else {
+        await api.post(`/owner/referrals/wallets/${selectedWallet}/payout`, { creditsRedeemed: Number(redeemAmount) });
+        setStatus({ error: "", success: `Payout requested for ${redeemAmount} credits.` });
+      }
+      setShowRedeemModal(false);
+      await loadWallets();
+      if (selectedWallet) await loadWalletDetail(selectedWallet);
+    } catch (err) {
+      setStatus({ error: formatApiError(err, redeemType === "service" ? "Could not redeem" : "Could not request payout"), success: "" });
+    } finally {
+      setRedeemLoading(false);
+    }
   };
 
   const statusColors = { PENDING: "#eab308", APPROVED: "#22c55e", REJECTED: "#ef4444", PAID: "#6366f1" };
@@ -409,7 +438,7 @@ export default function ReferralProgramPage() {
                       {p.status === "PENDING" && (
                         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                           <button onClick={() => handlePayoutAction(p.id, "APPROVED")} className="btn btn-ghost" style={{ fontSize: 12, color: "#22c55e" }}>Approve</button>
-                          <button onClick={() => { const r = prompt("Rejection reason:"); if (r !== null) handlePayoutAction(p.id, "REJECTED", r); }} className="btn btn-ghost" style={{ fontSize: 12, color: "#ef4444" }}>Reject</button>
+                          <button onClick={() => { setRejectPayoutId(p.id); setRejectReason(""); setShowRejectModal(true); }} className="btn btn-ghost" style={{ fontSize: 12, color: "#ef4444" }}>Reject</button>
                         </div>
                       )}
                       {p.status === "APPROVED" && <button onClick={() => handlePayoutAction(p.id, "PAID")} className="btn btn-ghost" style={{ fontSize: 12, color: "#6366f1" }}>Mark Paid</button>}
@@ -426,8 +455,8 @@ export default function ReferralProgramPage() {
         <div className="panel-card">
           <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
             <button onClick={() => { setSelectedWallet(null); setWalletDetail(null); }} className="btn btn-ghost" style={{ fontSize: 13 }}>← Back</button>
-            <button onClick={() => handleRedeemService(selectedWallet)} className="btn btn-primary" style={{ fontSize: 13 }}>Redeem for Services</button>
-            <button onClick={() => handleRequestPayout(selectedWallet)} className="btn btn-ghost" style={{ fontSize: 13, border: "1px solid #eab308", color: "#eab308" }}>Request Cash Payout</button>
+            <button onClick={handleRedeemService} className="btn btn-primary" style={{ fontSize: 13 }}>Redeem for Services</button>
+            <button onClick={handleRequestPayout} className="btn btn-ghost" style={{ fontSize: 13, border: "1px solid #eab308", color: "#eab308" }}>Request Cash Payout</button>
           </div>
           {detailLoading ? <PageLoader title="Loading wallet..." message="Please wait" /> : walletDetail?.wallet ? (
             <>
@@ -478,6 +507,96 @@ export default function ReferralProgramPage() {
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button onClick={() => setShowOnboardModal(false)} className="btn btn-ghost" style={{ fontSize: 13 }}>Cancel</button>
               <button onClick={submitOnboard} disabled={onboardLoading} className="btn btn-primary" style={{ fontSize: 13 }}>{onboardLoading ? "Onboarding..." : "Onboard"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRedeemModal && walletDetail?.wallet && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }} onClick={() => setShowRedeemModal(false)}>
+          <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 24, width: 400, maxWidth: "90vw" }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: "0 0 12px", fontSize: 16 }}>{redeemType === "service" ? "Redeem for Services" : "Request Cash Payout"}</h3>
+            <div style={{ background: "#f8fafc", borderRadius: 8, padding: 12, marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: "#64748b" }}>Available Balance</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#16a34a" }}>{Number(walletDetail.wallet.balance)} credits</div>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 12, color: "#475569", display: "block", marginBottom: 4 }}>Credits to {redeemType === "service" ? "redeem" : "withdraw"}</label>
+              <input
+                type="number"
+                min="1"
+                max={Number(walletDetail.wallet.balance)}
+                value={redeemAmount}
+                onChange={(e) => setRedeemAmount(e.target.value)}
+                placeholder={`Max: ${Number(walletDetail.wallet.balance)}`}
+                autoFocus
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 14, boxSizing: "border-box" }}
+              />
+            </div>
+            {redeemAmount && Number(redeemAmount) > 0 && (
+              <div style={{ background: redeemType === "service" ? "#f0fdf4" : "#fefce8", borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13 }}>
+                <div style={{ fontWeight: 600, color: redeemType === "service" ? "#166534" : "#854d0e" }}>
+                  {redeemType === "service"
+                    ? `${redeemAmount} credits = ₹${Number(redeemAmount) * ratios.service} service discount`
+                    : `${redeemAmount} credits = ₹${(Number(redeemAmount) * ratios.cash).toFixed(2)} cash payout`
+                  }
+                </div>
+                {redeemType === "cash" && (
+                  <div style={{ fontSize: 11, color: "#92400e", marginTop: 4 }}>50% conversion rate applies</div>
+                )}
+              </div>
+            )}
+            {redeemAmount && (Number(redeemAmount) > Number(walletDetail.wallet.balance) || Number(redeemAmount) <= 0) && (
+              <div style={{ fontSize: 12, color: "#ef4444", marginBottom: 12 }}>Invalid amount. Must be between 1 and {Number(walletDetail.wallet.balance)}.</div>
+            )}
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setShowRedeemModal(false)} className="btn btn-ghost" style={{ fontSize: 13 }}>Cancel</button>
+              <button
+                onClick={submitRedeem}
+                disabled={redeemLoading || !redeemAmount || isNaN(redeemAmount) || Number(redeemAmount) <= 0 || Number(redeemAmount) > Number(walletDetail.wallet.balance)}
+                className="btn btn-primary"
+                style={{ fontSize: 13, background: redeemType === "service" ? "#16a34a" : "#eab308", color: redeemType === "service" ? "#fff" : "#000" }}
+              >
+                {redeemLoading ? "Processing..." : redeemType === "service" ? "Redeem" : "Request Payout"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRejectModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)" }} onClick={() => setShowRejectModal(false)}>
+          <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 24, width: 400, maxWidth: "90vw" }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: "0 0 12px", fontSize: 16, color: "#ef4444" }}>Reject Payout Request</h3>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, color: "#475569", display: "block", marginBottom: 4 }}>Rejection Reason</label>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Enter reason for rejection..."
+                rows={3}
+                autoFocus
+                style={{ width: "100%", padding: "10px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box", resize: "vertical" }}
+              />
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setShowRejectModal(false)} className="btn btn-ghost" style={{ fontSize: 13 }}>Cancel</button>
+              <button
+                onClick={async () => {
+                  setRejectLoading(true);
+                  try {
+                    await handlePayoutAction(rejectPayoutId, "REJECTED", rejectReason || null);
+                    setShowRejectModal(false);
+                  } finally {
+                    setRejectLoading(false);
+                  }
+                }}
+                disabled={rejectLoading}
+                className="btn btn-primary"
+                style={{ fontSize: 13, background: "#ef4444" }}
+              >
+                {rejectLoading ? "Rejecting..." : "Reject"}
+              </button>
             </div>
           </div>
         </div>

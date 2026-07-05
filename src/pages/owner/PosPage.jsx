@@ -1582,7 +1582,14 @@ export default function PosPage() {
                     const total = subTotal + tax;
                     return (
                       <tr key={index}>
-                        <td style={{ color: "#334155" }}>{baseObj.name}</td>
+                        <td style={{ color: "#334155" }}>
+                          {baseObj.name}
+                          {couponValidation?.eligibleItems?.find(ei => ei.index === index && ei.isEligible) && (
+                            <span style={{ display: "inline-block", marginLeft: 6, padding: "1px 6px", borderRadius: 4, fontSize: 9, fontWeight: 700, background: "#dcfce7", color: "#166534", whiteSpace: "nowrap", verticalAlign: "middle" }}>
+                              {couponValidation.coupon.code}
+                            </span>
+                          )}
+                        </td>
                         <td>
                           {item.itemType === "SERVICE" || item.itemType === "PACKAGE" || item.itemType === "MEMBERSHIP" || item.itemType === "GIFT_CARD" ? (
                             <select className="pos-cart-select" value={item.staffUserSalonId || item.staffUserId || ""} onChange={(e) => updateItem(index, { staffUserSalonId: e.target.value, staffUserId: e.target.value })}>
