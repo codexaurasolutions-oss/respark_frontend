@@ -90,7 +90,7 @@ const statusTheme = {
   LEAVE: { label: "LV", bg: "#dbeafe", color: "#1d4ed8" },
   WORKING: { label: "W", bg: "#cffafe", color: "#0f766e" },
   COMPLETED_SHIFT: { label: "C", bg: "#e9d5ff", color: "#6d28d9" },
-  OFF: { label: "-", bg: "#f8fafc", color: "#64748b" }
+  OFF: { label: "OFF", bg: "#e2e8f0", color: "#475569" }
 };
 
 const attendanceMetricKeys = ["present", "late", "halfDay", "absent", "leave", "working", "completedShift"];
@@ -199,7 +199,7 @@ export default function PayrollPage() {
     return Object.fromEntries(
       attendanceCalendarDays.map((day) => {
         const dow = new Date(year, month - 1, day).getDay();
-        return [day, dow === 0 || dow === 6];
+        return [day, dow === 0];
       })
     );
   }, [attendanceCalendarDays, attendanceCalendarMonth]);
@@ -576,7 +576,7 @@ export default function PayrollPage() {
                     <tr>
                       <th style={{ position: "sticky", top: 0, zIndex: 5, background: "#f8fafc", padding: "10px 14px", fontWeight: 800, fontSize: 12, color: "#475569", textTransform: "uppercase", letterSpacing: 0.5, textAlign: "left", borderBottom: "2px solid #e2e8f0", borderRight: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>Staff Member</th>
                       {attendanceCalendarDays.map((day) => (
-                        <th key={day} className={`att-cal-day-hdr${todayDay === day ? " today" : ""}`} style={{ position: "sticky", top: 0, zIndex: 4, background: todayDay === day ? undefined : attendanceCalendarWeekendMap[day] ? "#f1f5f9" : "#f8fafc", textAlign: "center", padding: "8px 0", fontSize: 11, fontWeight: 700, color: todayDay === day ? "white" : attendanceCalendarWeekendMap[day] ? "#94a3b8" : "#475569", borderBottom: "2px solid #e2e8f0", minWidth: 40, whiteSpace: "nowrap" }}>
+                        <th key={day} className={`att-cal-day-hdr${todayDay === day ? " today" : ""}`} style={{ position: "sticky", top: 0, zIndex: 4, background: todayDay === day ? undefined : attendanceCalendarWeekendMap[day] ? "#e2e8f0" : "#f8fafc", textAlign: "center", padding: "8px 0", fontSize: 11, fontWeight: 700, color: todayDay === day ? "white" : attendanceCalendarWeekendMap[day] ? "#475569" : "#475569", borderBottom: "2px solid #e2e8f0", minWidth: 40, whiteSpace: "nowrap" }}>
                           {day}
                         </th>
                       ))}
@@ -600,12 +600,20 @@ export default function PayrollPage() {
                           const cell = row.cells[day] || null;
                           const isWeekend = attendanceCalendarWeekendMap[day];
                           const isToday = todayDay === day;
-                          const theme = statusTheme[cell?.status] || (isWeekend ? { label: "-", bg: "#f1f5f9", color: "#94a3b8" } : statusTheme.OFF);
+                          const isFuture = todayDay !== null && day > todayDay;
+                          let theme;
+                          if (isFuture) {
+                            theme = { label: "", bg: "#f8fafc", color: "#d1d5db" };
+                          } else if (isWeekend) {
+                            theme = statusTheme.OFF;
+                          } else {
+                            theme = statusTheme[cell?.status] || { label: "-", bg: "#f1f5f9", color: "#94a3b8" };
+                          }
                           return (
                             <td key={`${row.staffCode}-${day}`} style={{ textAlign: "center", padding: "4px 0", borderBottom: "1px solid #f1f5f9", borderLeft: "1px solid #f8fafc", background: "inherit" }}>
                               <button
                                 type="button"
-                                title={cell ? `${row.staffName} | ${cell.status} | ${new Date(cell.date).toLocaleDateString()}` : `${row.staffName} | ${isWeekend ? "Weekend" : "No mark"}`}
+                                title={cell ? `${row.staffName} | ${cell.status} | ${new Date(cell.date).toLocaleDateString()}` : isFuture ? `${row.staffName} | Future` : isWeekend ? `${row.staffName} | Off` : `${row.staffName} | No mark`}
                                 onClick={() => setSelectedCalendarCell({ staffName: row.staffName, branchName: row.branchName, staffCode: row.staffCode, record: cell, day, isWeekend })}
                                 className="att-cal-cell"
                                 style={{
