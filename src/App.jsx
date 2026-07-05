@@ -44,8 +44,7 @@ const BranchesPage = lazyWithRetry(() => import("./pages/owner/BranchesPage.jsx"
 const InventoryPage = lazyWithRetry(() => import("./pages/owner/InventoryPage.jsx"));
 const ProductCategoriesPage = lazyWithRetry(() => import("./pages/owner/ProductCategoriesPage.jsx"));
 const MembershipsPage = lazyWithRetry(() => import("./pages/owner/MembershipsPage.jsx"));
-const ReferralCouponsPage = lazyWithRetry(() => import("./pages/owner/ReferralCouponsPage.jsx"));
-const AffiliateWalletPage = lazyWithRetry(() => import("./pages/owner/AffiliateWalletPage.jsx"));
+const ReferralProgramPage = lazyWithRetry(() => import("./pages/owner/ReferralProgramPage.jsx"));
 const MyAppointmentsPage = lazyWithRetry(() => import("./pages/owner/MyAppointmentsPage.jsx"));
 
 const MyDashboardPage = lazyWithRetry(() => import("./pages/owner/MyDashboardPage.jsx"));
@@ -233,7 +232,8 @@ const Protected = () => {
           ]
         },
         { label: "Memberships / Packages", to: "/admin/memberships", children: [{ label: "Packages", to: "/admin/packages" }] },
-        { label: "Coupons & Wallets", to: "/admin/coupons", children: [{ label: "Coupons", to: "/admin/coupons" }, { label: "Gift Cards", to: "/admin/gift-cards" }, { label: "Referral Coupons", to: "/admin/referral-coupons" }, { label: "Affiliate Wallets", to: "/admin/affiliate-wallets" }] },
+        { label: "Coupons & Gift Cards", to: "/admin/coupons", children: [{ label: "Coupons", to: "/admin/coupons" }, { label: "Gift Cards", to: "/admin/gift-cards" }] },
+        { label: "Referral Program", to: "/admin/referral-coupons", children: [{ label: "Coupons", to: "/admin/referral-coupons" }, { label: "Partners", to: "/admin/referral-coupons" }, { label: "Wallets", to: "/admin/referral-coupons" }] },
         {
           label: "WhatsApp / Notifications",
           to: "/admin/whatsapp",
@@ -454,8 +454,7 @@ export default function App() {
           <Route path="/admin/coupons" element={<OwnerRoute moduleKey="couponsGiftCards" featureKey="couponsGiftCards" element={<CouponsPage />} />} />
           <Route path="/admin/coupons/reports" element={<OwnerRoute moduleKey="couponsGiftCards" featureKey="couponsGiftCards" element={<CouponsPage />} />} />
           <Route path="/admin/gift-cards" element={<OwnerRoute moduleKey="couponsGiftCards" featureKey="couponsGiftCards" element={<CouponsPage />} />} />
-          <Route path="/admin/referral-coupons" element={<OwnerRoute moduleKey="couponsGiftCards" featureKey="couponsGiftCards" element={<ReferralCouponsPage />} />} />
-          <Route path="/admin/affiliate-wallets" element={<OwnerRoute moduleKey="couponsGiftCards" featureKey="couponsGiftCards" element={<AffiliateWalletPage />} />} />
+          <Route path="/admin/referral-coupons" element={<OwnerRoute moduleKey="couponsGiftCards" featureKey="couponsGiftCards" element={<ReferralProgramPage />} />} />
           <Route path="/admin/feedback" element={<OwnerRoute moduleKey="feedback" featureKey="feedback" element={<FeedbackPage />} />} />
           <Route path="/admin/feedback/reports" element={<OwnerRoute moduleKey="feedback" featureKey="feedback" element={<FeedbackPage />} />} />
           <Route path="/admin/feedback/settings" element={<OwnerRoute moduleKey="feedback" featureKey="feedback" element={<FeedbackPage />} />} />
