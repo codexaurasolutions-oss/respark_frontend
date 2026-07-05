@@ -174,8 +174,8 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           align-items: center;
           background: #f1f5f9;
           border-radius: 24px;
-          padding: 6px 16px;
-          width: 380px;
+          padding: 6px 18px;
+          width: 480px;
           border: 1px solid transparent;
           transition: all 0.2s;
           position: relative;
@@ -362,8 +362,8 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
         .respark-top-right {
           display: flex;
           align-items: center;
-          gap: 12px;
-          flex: 0 0 auto;
+          gap: 16px;
+          flex: 1;
           justify-content: flex-end;
         }
         .respark-date {
@@ -376,8 +376,8 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           border: 1px solid #e2e8f0;
         }
         .respark-icon-btn {
-          width: 34px;
-          height: 34px;
+          width: 40px;
+          height: 40px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -486,8 +486,8 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
         }
         
         .respark-nav-row {
-          background: var(--sidebar-bg, #334155);
-          height: 40px;
+          background: var(--sidebar-bg, #334155); /* Slightly darker and richer than #475569 */
+          height: 48px;
           display: flex;
           align-items: center;
           padding: 0;
@@ -516,8 +516,8 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           text-decoration: none;
           display: flex;
           align-items: center;
-          padding: 0 16px;
-          font-size: 0.72rem;
+          padding: 0 24px;
+          font-size: 0.78rem;
           font-weight: 600;
           letter-spacing: 0.05em;
           border-right: 1px solid rgba(255,255,255,0.1);
