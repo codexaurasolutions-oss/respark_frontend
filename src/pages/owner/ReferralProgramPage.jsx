@@ -404,17 +404,31 @@ export default function ReferralProgramPage() {
           {customers.filter(c => c.source === "AFFILIATE_PARTNER" || c.tags?.includes("AFFILIATE_PARTNER")).length === 0 ? (
             <EmptyState title="No partners yet" description="Onboard your first affiliate partner to start the referral program." />
           ) : (
-            <div className="list-stack">
+            <div className="list-stack" style={{ gap: 12 }}>
               {customers.filter(c => c.source === "AFFILIATE_PARTNER" || c.tags?.includes("AFFILIATE_PARTNER")).map((p) => {
                 const wallet = wallets.find(w => w.partnerId === p.id);
                 return (
-                  <div key={p.id} className="list-item" style={{ cursor: "pointer" }} onClick={() => { setActiveTab("wallets"); if (wallet) loadWalletDetail(wallet.partnerId); }}>
-                    <div style={{ flex: 1 }}>
-                      <strong>{p.name}</strong>
-                      <span style={{ fontSize: 12, color: "#64748b", marginLeft: 8 }}>{p.phone || ""}</span>
-                      {wallet && <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Balance: {Number(wallet.balance)} cr | Earned: {Number(wallet.totalEarned)} cr</div>}
+                  <div key={p.id} className="list-item" style={{ cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", transition: "all 0.2s" }} onClick={() => { setActiveTab("wallets"); if (wallet) loadWalletDetail(wallet.partnerId); }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#e0e7ff", color: "#4338ca", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 600, flexShrink: 0 }}>
+                        {p.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <strong style={{ fontSize: 15, color: "#0f172a" }}>{p.name}</strong>
+                          {p.phone && <span style={{ fontSize: 13, color: "#64748b", background: "#f1f5f9", padding: "2px 8px", borderRadius: 12 }}>{p.phone}</span>}
+                        </div>
+                        {wallet ? (
+                          <div style={{ display: "flex", gap: 16, marginTop: 6, fontSize: 13 }}>
+                            <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#16a34a", fontWeight: 500 }}><div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }}></div> Balance: {Number(wallet.balance)} cr</span>
+                            <span style={{ color: "#64748b" }}>Earned: {Number(wallet.totalEarned)} cr</span>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 6 }}>No wallet created yet</div>
+                        )}
+                      </div>
                     </div>
-                    <span style={{ fontSize: 12, color: "#64748b" }}>View Wallet →</span>
+                    <button className="btn btn-ghost" style={{ fontSize: 13, color: "#3b82f6", padding: "6px 12px", border: "1px solid #eff6ff", background: "#eff6ff" }}>View Wallet →</button>
                   </div>
                 );
               })}
@@ -445,19 +459,26 @@ export default function ReferralProgramPage() {
               {wallets.length === 0 ? (
                 <EmptyState title="No wallets" description="Wallets are created automatically when partners earn credits." />
               ) : (
-                <div className="list-stack">
+                <div className="list-stack" style={{ gap: 12 }}>
                   {wallets.map((w) => (
-                    <div key={w.id} className="list-item" style={{ cursor: "pointer" }} onClick={() => loadWalletDetail(w.partnerId)}>
-                      <div style={{ flex: 1 }}>
-                        <strong>{w.partner?.name}</strong>
-                        <span style={{ fontSize: 12, color: "#64748b", marginLeft: 8 }}>{w.partner?.phone || ""}</span>
-                        <div style={{ display: "flex", gap: 16, marginTop: 4, fontSize: 13 }}>
-                          <span style={{ color: "#22c55e" }}>Balance: {Number(w.balance)} cr</span>
-                          <span style={{ color: "#64748b" }}>Earned: {Number(w.totalEarned)} cr</span>
-                          <span style={{ color: "#64748b" }}>Redeemed: {Number(w.totalRedeemed)} cr</span>
+                    <div key={w.id} className="list-item" style={{ cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", transition: "all 0.2s" }} onClick={() => loadWalletDetail(w.partnerId)}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#f0fdf4", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 600, flexShrink: 0 }}>
+                          {(w.partner?.name || "?").charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <strong style={{ fontSize: 15, color: "#0f172a" }}>{w.partner?.name || "Unknown Partner"}</strong>
+                            {w.partner?.phone && <span style={{ fontSize: 13, color: "#64748b", background: "#f1f5f9", padding: "2px 8px", borderRadius: 12 }}>{w.partner.phone}</span>}
+                          </div>
+                          <div style={{ display: "flex", gap: 16, marginTop: 6, fontSize: 13 }}>
+                            <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#16a34a", fontWeight: 600 }}><div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }}></div> {Number(w.balance)} cr</span>
+                            <span style={{ color: "#64748b" }}>Earned: {Number(w.totalEarned)} cr</span>
+                            <span style={{ color: "#64748b" }}>Redeemed: {Number(w.totalRedeemed)} cr</span>
+                          </div>
                         </div>
                       </div>
-                      <span style={{ fontSize: 12, color: "#64748b" }}>Details →</span>
+                      <button className="btn btn-ghost" style={{ fontSize: 13, color: "#16a34a", padding: "6px 12px", border: "1px solid #f0fdf4", background: "#f0fdf4" }}>Ledger →</button>
                     </div>
                   ))}
                 </div>
@@ -470,27 +491,36 @@ export default function ReferralProgramPage() {
               {payouts.length === 0 ? (
                 <EmptyState title="No payout requests" description="Partners can request cash withdrawal from their wallet." />
               ) : (
-                <div className="list-stack">
+                <div className="list-stack" style={{ gap: 12 }}>
                   {payouts.map((p) => (
-                    <div key={p.id} className="list-item">
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <strong>{p.partner?.name}</strong>
-                          <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 4, background: `${statusColors[p.status]}20`, color: statusColors[p.status] }}>{p.status}</span>
+                    <div key={p.id} className="list-item" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                          💸
                         </div>
-                        <div style={{ fontSize: 13, color: "#475569", marginTop: 4 }}>
-                          Credits: {Number(p.creditsRedeemed ?? 0)} → Cash: ₹{Number(p.cashAmount ?? 0).toFixed(2)}
-                          <span style={{ marginLeft: 8, fontSize: 12, color: "#94a3b8" }}>{new Date(p.createdAt).toLocaleDateString()}</span>
+                        <div>
+                          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                            <strong style={{ fontSize: 15, color: "#0f172a" }}>{p.partner?.name}</strong>
+                            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 12, background: `${statusColors[p.status]}20`, color: statusColors[p.status], fontWeight: 600 }}>{p.status}</span>
+                            <span style={{ fontSize: 12, color: "#94a3b8" }}>{new Date(p.createdAt).toLocaleDateString()}</span>
+                          </div>
+                          <div style={{ fontSize: 14, color: "#475569", marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontWeight: 600, color: "#0f172a" }}>{Number(p.creditsRedeemed ?? 0)} cr</span> 
+                            <span style={{ color: "#94a3b8" }}>→</span> 
+                            <span style={{ fontWeight: 600, color: "#16a34a" }}>₹{Number(p.cashAmount ?? 0).toFixed(2)}</span>
+                          </div>
+                          {p.rejectionReason && <div style={{ fontSize: 12, color: "#ef4444", marginTop: 6, background: "#fef2f2", padding: "4px 8px", borderRadius: 4 }}>Reason: {p.rejectionReason}</div>}
                         </div>
-                        {p.rejectionReason && <div style={{ fontSize: 12, color: "#ef4444", marginTop: 2 }}>Reason: {p.rejectionReason}</div>}
                       </div>
-                      {p.status === "PENDING" && (
-                        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                          <button onClick={() => handlePayoutAction(p.id, "APPROVED")} className="btn btn-ghost" style={{ fontSize: 12, color: "#22c55e" }}>Approve</button>
-                          <button onClick={() => { setRejectPayoutId(p.id); setRejectReason(""); setShowRejectModal(true); }} className="btn btn-ghost" style={{ fontSize: 12, color: "#ef4444" }}>Reject</button>
-                        </div>
-                      )}
-                      {p.status === "APPROVED" && <button onClick={() => handlePayoutAction(p.id, "PAID")} className="btn btn-ghost" style={{ fontSize: 12, color: "#6366f1" }}>Mark Paid</button>}
+                      <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                        {p.status === "PENDING" && (
+                          <>
+                            <button onClick={() => handlePayoutAction(p.id, "APPROVED")} className="btn btn-ghost" style={{ fontSize: 13, color: "#16a34a", padding: "6px 12px", border: "1px solid #dcfce7", background: "#f0fdf4" }}>Approve</button>
+                            <button onClick={() => { setRejectPayoutId(p.id); setRejectReason(""); setShowRejectModal(true); }} className="btn btn-ghost" style={{ fontSize: 13, color: "#ef4444", padding: "6px 12px", border: "1px solid #fee2e2", background: "#fef2f2" }}>Reject</button>
+                          </>
+                        )}
+                        {p.status === "APPROVED" && <button onClick={() => handlePayoutAction(p.id, "PAID")} className="btn btn-ghost" style={{ fontSize: 13, color: "#4338ca", padding: "6px 12px", border: "1px solid #e0e7ff", background: "#eef2ff" }}>Mark as Paid</button>}
+                      </div>
                     </div>
                   ))}
                 </div>
