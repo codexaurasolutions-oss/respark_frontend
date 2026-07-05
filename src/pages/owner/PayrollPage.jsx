@@ -722,18 +722,38 @@ export default function PayrollPage() {
               <div className="stat-card"><div className="stat-label">Half Day</div><div className="stat-value">{attendanceReport.summary?.halfDay || 0}</div></div>
             </div>
           </div>
-          <div className="list-stack" style={{ marginTop: 16 }}>
-            {(attendanceReport.rows || []).slice(0, 12).map((row, index) => (
-              <div key={`${row.staffCode}-${row.date}-${index}`} className="list-item">
-                <strong>{row.staffName}</strong>
-                <div className="item-meta">{new Date(row.date).toLocaleDateString()} | {row.status} | {row.branchName || "Unassigned"}</div>
-                <div className="item-meta">
-                  {row.checkInAt ? new Date(row.checkInAt).toLocaleString() : "No check-in"}
-                  {row.checkOutAt ? ` - ${new Date(row.checkOutAt).toLocaleString()}` : ""}
-                  {` | ${row.workedHours}`}
+          <div className="list-stack" style={{ gap: 12, marginTop: 16 }}>
+            {(attendanceReport.rows || []).slice(0, 12).map((row, index) => {
+              const statusColors = { PRESENT: { bg: "#dcfce7", color: "#166534" }, COMPLETED_SHIFT: { bg: "#f3e8ff", color: "#6b21a8" }, LATE: { bg: "#fef9c3", color: "#854d0e" }, HALF_DAY: { bg: "#ffedd5", color: "#9a3412" }, ABSENT: { bg: "#fee2e2", color: "#991b1b" }, LEAVE: { bg: "#ede9fe", color: "#5b21b6" }, WORKING: { bg: "#e0f2fe", color: "#0369a1" } };
+              const sc = statusColors[row.status] || { bg: "#f1f5f9", color: "#475569" };
+              return (
+                <div key={`${row.staffCode}-${row.date}-${index}`} className="list-item" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: sc.bg, color: sc.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 600, flexShrink: 0 }}>
+                      {row.staffName?.charAt(0)?.toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <strong style={{ fontSize: 15, color: "#0f172a" }}>{row.staffName}</strong>
+                        <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 12, background: sc.bg, color: sc.color, fontWeight: 600 }}>{row.status}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#64748b", marginTop: 4 }}>
+                        <CalendarDays size={14} /> {new Date(row.date).toLocaleDateString()}
+                        <span style={{ color: "#cbd5e1" }}>|</span>
+                        <MapPin size={14} /> {row.branchName || "Unassigned"}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", marginTop: 4 }}>
+                        <Clock size={14} /> 
+                        {row.checkInAt ? new Date(row.checkInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "No check-in"}
+                        {row.checkOutAt ? ` → ${new Date(row.checkOutAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ""}
+                        <span style={{ color: "#cbd5e1" }}>|</span>
+                        <strong>{row.workedHours}</strong>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {!attendanceReport.rows?.length && <EmptyState title="No attendance report rows" message="Pick a date and report period to generate attendance rows for export." />}
           </div>
         </div>
@@ -829,24 +849,40 @@ export default function PayrollPage() {
                 <button type="button" className="secondary-button" onClick={() => setFilters((current) => ({ ...current, attendanceQ: "", attendanceStatus: "", attendanceDate: "" }))}><RotateCcw size={12} /> Reset</button>
               </div>
             </div>
-            <div className="list-stack">
-              {attendance.map((row) => (
-                <button
-                  key={row.id}
-                  type="button"
-                  className="list-item"
-                  onClick={() => loadAttendanceDetail(row.id)}
-                  style={{ textAlign: "left", width: "100%", background: selectedAttendanceId === row.id ? "#eff6ff" : "white", border: "1px solid #e2e8f0", borderRadius: 12, display: "flex", gap: 12, alignItems: "flex-start", color: "#0f172a", cursor: "pointer" }}
-                >
-                  {row.checkInSelfieUrl ? <img src={row.checkInSelfieUrl.startsWith("http") ? row.checkInSelfieUrl : `${api.defaults.baseURL?.replace("/api/v1", "") || ""}${row.checkInSelfieUrl}`} alt="" style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover", border: "1px solid #e2e8f0", flexShrink: 0 }} onError={(e) => { e.target.style.display = "none"; }} /> : <div style={{ width: 40, height: 40, borderRadius: 8, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#94a3b8", flexShrink: 0 }}>--</div>}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <strong style={{ color: "#0f172a" }}>{row.userSalon?.user?.name || row.userSalonId}</strong>
-                    <div className="item-meta">{row.checkInAt ? new Date(row.checkInAt).toLocaleString() : "No check-in"} {row.checkOutAt ? `- ${new Date(row.checkOutAt).toLocaleString()}` : ""}</div>
-                    <div className="item-meta">{row.status} | {row.branch?.name || "Unassigned"} | {row.workedMinutes != null ? `${Math.floor(row.workedMinutes / 60)}h ${row.workedMinutes % 60}m` : "Open shift"}</div>
-                    {row.checkInLatitude ? <div className="item-meta" style={{ fontSize: 11 }}>GPS: {Number(row.checkInLatitude).toFixed(4)}, {Number(row.checkInLongitude).toFixed(4)}</div> : null}
-                  </div>
-                </button>
-              ))}
+            <div className="list-stack" style={{ gap: 12 }}>
+              {attendance.map((row) => {
+                const statusColors = { PRESENT: { bg: "#dcfce7", color: "#166534" }, COMPLETED_SHIFT: { bg: "#f3e8ff", color: "#6b21a8" }, LATE: { bg: "#fef9c3", color: "#854d0e" }, HALF_DAY: { bg: "#ffedd5", color: "#9a3412" }, ABSENT: { bg: "#fee2e2", color: "#991b1b" }, LEAVE: { bg: "#ede9fe", color: "#5b21b6" }, WORKING: { bg: "#e0f2fe", color: "#0369a1" } };
+                const sc = statusColors[row.status] || { bg: "#f1f5f9", color: "#475569" };
+                const name = row.userSalon?.user?.name || row.userSalonId;
+                return (
+                  <button
+                    key={row.id}
+                    type="button"
+                    className="list-item"
+                    onClick={() => loadAttendanceDetail(row.id)}
+                    style={{ textAlign: "left", width: "100%", background: selectedAttendanceId === row.id ? "#eff6ff" : "white", border: selectedAttendanceId === row.id ? "1px solid #bfdbfe" : "1px solid #e2e8f0", borderRadius: 12, padding: "16px 20px", display: "flex", gap: 16, alignItems: "center", color: "#0f172a", cursor: "pointer", transition: "all 0.2s" }}
+                  >
+                    {row.checkInSelfieUrl ? <img src={row.checkInSelfieUrl.startsWith("http") ? row.checkInSelfieUrl : `${api.defaults.baseURL?.replace("/api/v1", "") || ""}${row.checkInSelfieUrl}`} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "2px solid #e2e8f0", flexShrink: 0 }} onError={(e) => { e.target.style.display = "none"; }} /> : <div style={{ width: 44, height: 44, borderRadius: "50%", background: sc.bg, color: sc.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 600, flexShrink: 0 }}>{name?.charAt(0)?.toUpperCase()}</div>}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <strong style={{ fontSize: 15, color: "#0f172a" }}>{name}</strong>
+                        <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 12, background: sc.bg, color: sc.color, fontWeight: 600 }}>{row.status}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", marginTop: 6 }}>
+                        <Clock size={14} /> 
+                        {row.checkInAt ? new Date(row.checkInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "No check-in"}
+                        {row.checkOutAt ? ` → ${new Date(row.checkOutAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ""}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#64748b", marginTop: 4 }}>
+                        <MapPin size={14} /> {row.branch?.name || "Unassigned"}
+                        <span style={{ color: "#cbd5e1" }}>|</span>
+                        {row.workedMinutes != null ? <strong>{`${Math.floor(row.workedMinutes / 60)}h ${row.workedMinutes % 60}m`}</strong> : "Open shift"}
+                      </div>
+                    </div>
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: selectedAttendanceId === row.id ? "#bfdbfe" : "#f1f5f9", display: "grid", placeItems: "center", color: selectedAttendanceId === row.id ? "#1d4ed8" : "#64748b", flexShrink: 0 }}><ChevronRight size={16} /></div>
+                  </button>
+                );
+              })}
               {!loading && !attendance.length && <EmptyState title="No attendance records yet" message="Attendance check-ins and check-outs will appear here once recorded." />}
               {attendanceMeta.totalPages > 1 && (
                 <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, padding: "12px 0", borderTop: "1px solid #e2e8f0", marginTop: 8 }}>
@@ -963,25 +999,31 @@ export default function PayrollPage() {
               <button type="button" className="secondary-button" onClick={() => downloadDaySheetExport("pdf")}><Download size={12} /> Daily PDF</button>
             </div>
           </div>
-          <div className="list-stack">
+          <div className="list-stack" style={{ gap: 12 }}>
             {attendanceDaySheet.map((row) => {
-              const statusColors = { PRESENT: { bg: "#dcfce7", color: "#166534" }, COMPLETED_SHIFT: { bg: "#dcfce7", color: "#166534" }, LATE: { bg: "#fef9c3", color: "#854d0e" }, HALF_DAY: { bg: "#ffedd5", color: "#9a3412" }, ABSENT: { bg: "#fee2e2", color: "#991b1b" }, LEAVE: { bg: "#ede9fe", color: "#5b21b6" }, WORKING: { bg: "#e0f2fe", color: "#0369a1" } };
+              const statusColors = { PRESENT: { bg: "#dcfce7", color: "#166534" }, COMPLETED_SHIFT: { bg: "#f3e8ff", color: "#6b21a8" }, LATE: { bg: "#fef9c3", color: "#854d0e" }, HALF_DAY: { bg: "#ffedd5", color: "#9a3412" }, ABSENT: { bg: "#fee2e2", color: "#991b1b" }, LEAVE: { bg: "#ede9fe", color: "#5b21b6" }, WORKING: { bg: "#e0f2fe", color: "#0369a1" } };
               const sc = statusColors[row.status] || { bg: "#f1f5f9", color: "#475569" };
               return (
-                <button key={`${row.userSalonId}-${row.status}`} type="button" className="list-item" onClick={() => { if (row.attendanceId) loadAttendanceDetail(row.attendanceId); }} style={{ display: "flex", gap: 12, alignItems: "center", textAlign: "left", width: "100%", background: row.attendanceId && selectedAttendanceId === row.attendanceId ? "#eff6ff" : "white", border: "none", borderRadius: 10, padding: "12px 14px", cursor: row.attendanceId ? "pointer" : "default" }}>
+                <button key={`${row.userSalonId}-${row.status}`} type="button" className="list-item" onClick={() => { if (row.attendanceId) loadAttendanceDetail(row.attendanceId); }} style={{ display: "flex", gap: 16, alignItems: "center", textAlign: "left", width: "100%", background: row.attendanceId && selectedAttendanceId === row.attendanceId ? "#eff6ff" : "white", border: row.attendanceId && selectedAttendanceId === row.attendanceId ? "1px solid #bfdbfe" : "1px solid #e2e8f0", borderRadius: 12, padding: "16px 20px", cursor: row.attendanceId ? "pointer" : "default", transition: "all 0.2s" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: sc.bg, color: sc.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 600, flexShrink: 0 }}>
+                    {row.staffName?.charAt(0)?.toUpperCase()}
+                  </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <strong>{row.staffName}</strong>
-                    <div className="item-meta">
-                      <span style={{ display: "inline-block", padding: "1px 8px", borderRadius: 8, fontSize: 11, fontWeight: 700, background: sc.bg, color: sc.color, marginRight: 8 }}>{row.status}</span>
-                      {row.branchName || "Unassigned"}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <strong style={{ fontSize: 15, color: "#0f172a" }}>{row.staffName}</strong>
+                      <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 12, background: sc.bg, color: sc.color, fontWeight: 600 }}>{row.status}</span>
                     </div>
-                    <div className="item-meta">
-                      {row.checkInAt ? new Date(row.checkInAt).toLocaleString() : "No check-in"}
-                      {row.checkOutAt ? ` - ${new Date(row.checkOutAt).toLocaleString()}` : ""}
-                      {row.workedMinutes != null ? ` (${Math.floor(row.workedMinutes / 60)}h ${row.workedMinutes % 60}m)` : ""}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#64748b", marginTop: 6 }}>
+                      <MapPin size={14} /> {row.branchName || "Unassigned"}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", marginTop: 4 }}>
+                      <Clock size={14} /> 
+                      {row.checkInAt ? new Date(row.checkInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "No check-in"}
+                      {row.checkOutAt ? ` → ${new Date(row.checkOutAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ""}
+                      {row.workedMinutes != null ? <><span style={{ color: "#cbd5e1" }}>|</span><strong>{`${Math.floor(row.workedMinutes / 60)}h ${row.workedMinutes % 60}m`}</strong></> : null}
                     </div>
                   </div>
-                  {row.attendanceId && <Eye size={14} color="#64748b" />}
+                  {row.attendanceId && <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#f1f5f9", display: "grid", placeItems: "center", color: "#64748b", flexShrink: 0 }}><Eye size={16} /></div>}
                 </button>
               );
             })}
