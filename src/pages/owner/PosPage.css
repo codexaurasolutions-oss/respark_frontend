@@ -1,10 +1,10 @@
 .pos-layout {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 108px);
+  height: calc(100vh - 92px);
   background: #f1f5f9;
   overflow: hidden;
-  margin: -22px;
+  margin: -16px;
   font-family: 'Poppins', 'Segoe UI', sans-serif;
   font-size: 12px;
 }

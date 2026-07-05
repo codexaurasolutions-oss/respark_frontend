@@ -36,11 +36,11 @@ body {
 }
 
 input, button, select, textarea {
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 7px 10px;
+  border-radius: 8px;
   border: 1px solid #cbd5e1;
   font: inherit;
-  min-height: 44px;
+  min-height: 34px;
   transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
 }
 
@@ -123,8 +123,8 @@ textarea {
 label {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 0.94rem;
+  gap: 4px;
+  font-size: 0.85rem;
 }
 
 label span.muted {
@@ -184,7 +184,7 @@ pre {
 }
 
 .page-shell {
-  padding: 24px;
+  padding: 16px;
   animation: riseIn 320ms ease;
 }
 
@@ -457,7 +457,7 @@ pre {
 }
 
 .app-main {
-  padding: 22px;
+  padding: 16px;
   min-width: 0;
   overflow-x: hidden;
 }
@@ -1829,9 +1829,10 @@ pre {
 .data-table th,
 .data-table td {
   text-align: left;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-bottom: 1px solid #e2e8f0;
   vertical-align: top;
+  font-size: 0.82rem;
 }
 
 .data-table th {
