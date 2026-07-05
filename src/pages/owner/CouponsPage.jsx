@@ -217,15 +217,15 @@ export default function CouponsPage() {
         ]}
       />
       <div className="hero-card" style={{ padding: 24, marginBottom: 20 }}>
-        <div className="item-head">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
           <div>
             <h1 style={{ marginTop: 0 }}>Coupons & Gift Cards</h1>
             <p style={{ marginBottom: 0 }}>Manage promotions, vouchers, balances, and redemption performance without leaving the revenue workspace.</p>
           </div>
-          <div className="badge-row">
-            <span className="badge">Coupons {coupons.length}</span>
-            <span className="badge">Gift Cards {giftCards.length}</span>
-            <span className="badge">{mode === "reports" ? "Reports" : "Active Setup"}</span>
+          <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center" }}>
+            <span style={{ padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: "#e0f2fe", color: "#0369a1", whiteSpace: "nowrap" }}>Coupons {coupons.length}</span>
+            <span style={{ padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: "#f0fdf4", color: "#15803d", whiteSpace: "nowrap" }}>Gift Cards {giftCards.length}</span>
+            <span style={{ padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: "#f5f3ff", color: "#6d28d9", whiteSpace: "nowrap" }}>{mode === "reports" ? "Reports" : "Active Setup"}</span>
           </div>
         </div>
       </div>

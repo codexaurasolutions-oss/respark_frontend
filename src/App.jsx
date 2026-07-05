@@ -164,6 +164,15 @@ const Protected = () => {
             { label: "Enquiries", to: "/admin/enquiries" }
           ]
         },
+        can("couponsGiftCards") && {
+          label: "Coupons & Gift Cards",
+          hint: "Promotions & vouchers",
+          items: [
+            { label: "Coupons", to: "/admin/coupons" },
+            { label: "Gift Cards", to: "/admin/gift-cards" },
+            { label: "Referral Program", to: "/admin/referral-coupons" }
+          ]
+        },
         /*
         {
           label: "Website",

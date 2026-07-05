@@ -4825,10 +4825,6 @@ export default function SettingsPage() {
         return renderSmsSection();
       case "crm-segment":
         return renderSegmentSection();
-      case "coupons":
-        return renderCouponsSection();
-      case "referrals":
-        return renderReferralSection();
       case "designation":
         return renderDesignationSection();
       case "privacy-policy":
