@@ -43,12 +43,12 @@ const detectSingleFaceDescriptor = async (source) => {
   await loadFaceVerificationModels();
   const image = await toImageElement(source);
   const detections = await faceapi
-    .detectAllFaces(image, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+    .detectAllFaces(image, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }))
     .withFaceLandmarks(true)
     .withFaceDescriptors();
 
   if (!detections.length) {
-    throw new Error("A clear face is required for attendance verification.");
+    throw new Error("No face detected. Ensure your face is well-lit and centered in the frame.");
   }
   if (detections.length > 1) {
     throw new Error("Only one face should be visible during attendance verification.");
