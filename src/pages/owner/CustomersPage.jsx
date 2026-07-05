@@ -635,7 +635,8 @@ export default function CustomersPage() {
     setFamilySearchLoading(true);
     try {
       const response = await api.get("/owner/customers", { params: { q: queryVal } });
-      const filtered = (response.data || []).filter(c => c.id !== selectedCustomer?.id);
+      const allCustomers = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      const filtered = allCustomers.filter(c => c.id !== selectedCustomer?.id);
       setFamilySearchResults(filtered);
     } catch (e) {
       console.error("Failed to search guests", e);

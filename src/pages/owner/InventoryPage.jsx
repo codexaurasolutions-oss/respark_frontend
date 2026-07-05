@@ -267,7 +267,10 @@ export default function InventoryPage() {
       if (productsResponse.status === "fulfilled") setProducts(productsResponse.value.data);
       else console.error(productsResponse.reason);
 
-      if (movementsResponse.status === "fulfilled") setMovements(movementsResponse.value.data);
+      if (movementsResponse.status === "fulfilled") {
+        const body = movementsResponse.value.data;
+        setMovements(Array.isArray(body) ? body : (body?.data || []));
+      }
       else console.error(movementsResponse.reason);
 
       if (lowStockResponse.status === "fulfilled") setLowStock(lowStockResponse.value.data);
