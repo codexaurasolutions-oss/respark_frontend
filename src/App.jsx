@@ -385,8 +385,10 @@ export default function App() {
           <Route path="book" element={<HomePage />} /> {/* Placeholder */}
         </Route>
 
-        <Route path="/terms" element={<LegalContentPage scope="global" title="Terms & Conditions" contentKey="termsUrl" />} />
-        <Route path="/privacy" element={<LegalContentPage scope="global" title="Privacy Policy" contentKey="privacyUrl" />} />
+        <Route path="/terms" element={<LegalContentPage scope="global" title="Terms & Conditions" contentKey="termsAndConditions" />} />
+        <Route path="/terms-and-conditions" element={<LegalContentPage scope="global" title="Terms & Conditions" contentKey="termsAndConditions" />} />
+        <Route path="/privacy" element={<LegalContentPage scope="global" title="Privacy Policy" contentKey="privacyPolicy" />} />
+        <Route path="/privacy-policy" element={<LegalContentPage scope="global" title="Privacy Policy" contentKey="privacyPolicy" />} />
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />

@@ -25,7 +25,9 @@ export default function SuperAdminSettingsPage() {
     supportEmail: "",
     notificationEmail: "",
     termsUrl: "/terms",
+    termsContent: "",
     privacyUrl: "/privacy",
+    privacyContent: "",
     demoBookingUrl: "/book-demo",
     blogTitle: "",
     blogIntro: "",
@@ -53,7 +55,9 @@ export default function SuperAdminSettingsPage() {
         supportEmail: response.data?.supportEmail || "",
         notificationEmail: response.data?.notificationEmail || "",
         termsUrl: response.data?.termsUrl || "/terms",
+        termsContent: response.data?.termsContent || "",
         privacyUrl: response.data?.privacyUrl || "/privacy",
+        privacyContent: response.data?.privacyContent || "",
         demoBookingUrl: response.data?.demoBookingUrl || "/book-demo",
         blogTitle: response.data?.blogTitle || "",
         blogIntro: response.data?.blogIntro || "",
@@ -87,7 +91,9 @@ export default function SuperAdminSettingsPage() {
         supportEmail: form.supportEmail,
         notificationEmail: form.notificationEmail,
         termsUrl: form.termsUrl,
+        termsContent: form.termsContent,
         privacyUrl: form.privacyUrl,
+        privacyContent: form.privacyContent,
         demoBookingUrl: form.demoBookingUrl,
         blogTitle: form.blogTitle,
         blogIntro: form.blogIntro,
@@ -147,7 +153,9 @@ export default function SuperAdminSettingsPage() {
             <input value={form.notificationEmail} placeholder="Notification email" onChange={(event) => setForm({ ...form, notificationEmail: event.target.value })} />
 
             <input value={form.termsUrl} placeholder="Terms URL" onChange={(event) => setForm({ ...form, termsUrl: event.target.value })} />
+            <textarea rows="6" value={form.termsContent} placeholder="Terms & Conditions content (shown on public page)" onChange={(event) => setForm({ ...form, termsContent: event.target.value })} style={{ minHeight: 100 }} />
             <input value={form.privacyUrl} placeholder="Privacy URL" onChange={(event) => setForm({ ...form, privacyUrl: event.target.value })} />
+            <textarea rows="6" value={form.privacyContent} placeholder="Privacy Policy content (shown on public page)" onChange={(event) => setForm({ ...form, privacyContent: event.target.value })} style={{ minHeight: 100 }} />
             <input value={form.demoBookingUrl} placeholder="Demo booking URL" onChange={(event) => setForm({ ...form, demoBookingUrl: event.target.value })} />
             <input value={form.invoicePrefix} placeholder="Invoice Prefix" onChange={(event) => setForm({ ...form, invoicePrefix: event.target.value })} />
             <input value={form.blogTitle} placeholder="Blog title" onChange={(event) => setForm({ ...form, blogTitle: event.target.value })} />

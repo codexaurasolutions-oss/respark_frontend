@@ -26,12 +26,20 @@ export default function LegalContentPage({ scope = "global", title, contentKey }
 
         const response = await api.get("/public/settings");
         if (!active) return;
+        const settingsData = response.data || {};
+        const contentMap = {
+          termsAndConditions: settingsData.termsContent || "",
+          privacyPolicy: settingsData.privacyContent || "",
+          termsUrl: settingsData.termsUrl || "",
+          privacyUrl: settingsData.privacyUrl || ""
+        };
+        const resolvedContent = contentMap[contentKey] || "";
         setState({
           loading: false,
           titleText: title,
-          content: "",
-          supportEmail: response.data?.supportEmail || "",
-          businessName: response.data?.systemName || "Respark"
+          content: resolvedContent,
+          supportEmail: settingsData.supportEmail || "",
+          businessName: settingsData.systemName || "Respark"
         });
       } catch {
         if (!active) return;
