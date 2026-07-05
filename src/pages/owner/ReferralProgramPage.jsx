@@ -265,32 +265,45 @@ export default function ReferralProgramPage() {
               {filteredCoupons.length === 0 ? (
                 <EmptyState title="No referral coupons" description="Create your first referral coupon to start rewarding partners." />
               ) : (
-                <div className="list-stack">
+                <div className="list-stack" style={{ gap: 12 }}>
                   {filteredCoupons.map((c) => (
-                    <div key={c.id} className="list-item" style={{ opacity: c.isArchived ? 0.5 : 1 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                          <strong>{c.code}</strong>
-                          <span style={{ color: "#334155", fontSize: 13 }}>{c.title}</span>
-                          {c.isArchived && <span style={{ fontSize: 11, background: "#f1f5f9", padding: "2px 6px", borderRadius: 4 }}>Archived</span>}
+                    <div key={c.id} className="list-item" style={{ opacity: c.isArchived ? 0.6 : 1, display: "flex", flexDirection: "column", gap: 12, padding: 16 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+                        <div style={{ flex: 1, minWidth: 260 }}>
+                          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
+                            <strong style={{ fontSize: 14, color: "#0f172a", fontFamily: "monospace", background: "#f1f5f9", padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0" }}>{c.code}</strong>
+                            <span style={{ color: "#334155", fontSize: 14, fontWeight: 600 }}>{c.title}</span>
+                            {c.isArchived && <span style={{ fontSize: 11, background: "#fee2e2", color: "#b91c1c", padding: "2px 8px", borderRadius: 12, fontWeight: 600 }}>Archived</span>}
+                          </div>
+                          <div style={{ fontSize: 13, color: "#64748b", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                            <span style={{ background: "#e0e7ff", color: "#4338ca", padding: "2px 8px", borderRadius: 12, fontWeight: 500, fontSize: 12 }}>
+                              {c.discountType === "PERCENT" ? `${c.discountValue}% OFF` : `₹${c.discountValue} OFF`}
+                            </span>
+                            {c.minBillAmount ? <span>Min Bill: ₹{c.minBillAmount}</span> : null}
+                            <span>Used: <strong>{c._count?.redemptions || 0}</strong> {c.usageLimit ? `/ ${c.usageLimit}` : ""}</span>
+                          </div>
+                          {(c.partnerCreditType || c.partnerCustomerId) && (
+                            <div style={{ fontSize: 12, color: "#64748b", marginTop: 8, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }}></span>
+                              {c.partnerCustomerId ? <span>Partner: <strong>{partnerLabel(c)}</strong></span> : <span>Generic Partner Coupon</span>}
+                              <span style={{ color: "#cbd5e1" }}>|</span>
+                              <span>Partner Earns: <strong>{c.partnerCreditType === "PERCENT" ? `${c.partnerCreditValue}%` : `₹${c.partnerCreditValue}`}</strong></span>
+                            </div>
+                          )}
+                          <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 8, lineHeight: 1.5 }}>
+                            {!c.eligibleCategories?.length && !c.eligibleServices?.length ? "Applies to all services & products" : (
+                              <>
+                                {c.eligibleCategories?.length > 0 && <div>Categories: {c.eligibleCategories.map((e) => e.category?.name).filter(Boolean).join(", ")}</div>}
+                                {c.eligibleServices?.length > 0 && <div>Services: {c.eligibleServices.map((e) => e.service?.name).filter(Boolean).join(", ")}</div>}
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
-                          Discount: {c.discountType === "PERCENT" ? `${c.discountValue}%` : `₹${c.discountValue}`}
-                          {c.minBillAmount ? ` | Min: ₹${c.minBillAmount}` : ""}
-                          {c.partnerCreditType && <span> | Partner: {c.partnerCreditType === "PERCENT" ? `${c.partnerCreditValue}%` : `₹${c.partnerCreditValue}`}</span>}
-                          {c.partnerCustomerId && <span> | Partner: {partnerLabel(c)}</span>}
-                          {` | Used: ${c._count?.redemptions || 0}${c.usageLimit ? `/${c.usageLimit}` : ""}`}
+                        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                          <button onClick={() => handleEditCoupon(c)} className="btn btn-ghost" style={{ fontSize: 12, padding: "6px 12px", border: "1px solid #e2e8f0" }}>Edit</button>
+                          <button onClick={() => handleArchiveToggle(c)} className="btn btn-ghost" style={{ fontSize: 12, padding: "6px 12px", border: "1px solid #e2e8f0", color: c.isArchived ? "#22c55e" : "#eab308" }}>{c.isArchived ? "Restore" : "Archive"}</button>
+                          <button onClick={() => handleDeleteCoupon(c.id)} className="btn btn-ghost" style={{ fontSize: 12, padding: "6px 12px", border: "1px solid #fecaca", color: "#ef4444", background: "#fef2f2" }}>Delete</button>
                         </div>
-                        <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
-                          {!c.eligibleCategories?.length && !c.eligibleServices?.length ? "All items" : ""}
-                          {c.eligibleCategories?.length > 0 && `Categories: ${c.eligibleCategories.map((e) => e.category?.name).filter(Boolean).join(", ")}`}
-                          {c.eligibleServices?.length > 0 && `${c.eligibleCategories?.length > 0 ? " | " : ""}Services: ${c.eligibleServices.map((e) => e.service?.name).filter(Boolean).join(", ")}`}
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                        <button onClick={() => handleEditCoupon(c)} className="btn btn-ghost" style={{ fontSize: 12 }}>Edit</button>
-                        <button onClick={() => handleArchiveToggle(c)} className="btn btn-ghost" style={{ fontSize: 12, color: c.isArchived ? "#22c55e" : "#eab308" }}>{c.isArchived ? "Restore" : "Archive"}</button>
-                        <button onClick={() => handleDeleteCoupon(c.id)} className="btn btn-ghost" style={{ fontSize: 12, color: "#ef4444" }}>Delete</button>
                       </div>
                     </div>
                   ))}
@@ -298,47 +311,83 @@ export default function ReferralProgramPage() {
               )}
             </>
           ) : (
-            <form onSubmit={handleCouponSubmit}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <h3 style={{ margin: 0 }}>{editingCoupon ? "Edit" : "New"} Referral Coupon</h3>
-                <button type="button" onClick={() => { setShowCouponForm(false); setEditingCoupon(null); }} className="btn btn-ghost" style={{ fontSize: 13 }}>Back to list</button>
+            <form onSubmit={handleCouponSubmit} className="panel-card" style={{ padding: "20px 24px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, borderBottom: "1px solid #e2e8f0", paddingBottom: 16 }}>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{editingCoupon ? "Edit Referral Coupon" : "Create New Referral Coupon"}</h3>
+                <button type="button" onClick={() => { setShowCouponForm(false); setEditingCoupon(null); }} className="btn btn-ghost" style={{ fontSize: 12, color: "#64748b" }}>← Back to list</button>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="form-grid" style={{ gap: 16 }}>
                 {!editingCoupon && (
                   <div style={{ gridColumn: "1 / -1" }}>
-                    <label style={{ fontSize: 12, color: "#475569", display: "block", marginBottom: 4 }}>Coupon Code</label>
+                    <label>Coupon Code</label>
                     {couponForm.code ? (
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ flex: 1, padding: "10px 14px", borderRadius: 6, border: "2px solid #22c55e", background: "#f0fdf4", color: "#16a34a", fontSize: 18, fontWeight: 700, fontFamily: "monospace", letterSpacing: 2 }}>{couponForm.code}</div>
-                        <button type="button" onClick={() => setCouponForm(prev => ({ ...prev, code: "" }))} className="btn btn-ghost" style={{ fontSize: 12, color: "#ef4444" }}>Remove</button>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}>
+                        <div style={{ padding: "8px 14px", borderRadius: 8, border: "2px dashed #3b82f6", background: "#eff6ff", color: "#1d4ed8", fontSize: 15, fontWeight: 700, fontFamily: "monospace", letterSpacing: 1.5 }}>{couponForm.code}</div>
+                        <button type="button" onClick={() => setCouponForm(prev => ({ ...prev, code: "" }))} className="btn btn-ghost" style={{ fontSize: 12, color: "#ef4444" }}>Clear</button>
                       </div>
                     ) : (
-                      <button type="button" onClick={handleGenerateCode} disabled={generatingCode} className="btn btn-primary" style={{ width: "100%", padding: "10px 16px", fontSize: 13 }}>{generatingCode ? "Generating..." : "Auto Generate Code"}</button>
+                      <button type="button" onClick={handleGenerateCode} disabled={generatingCode} className="btn secondary-button" style={{ width: "fit-content", marginTop: 4 }}>{generatingCode ? "Generating..." : "Auto Generate Code"}</button>
                     )}
                   </div>
                 )}
-                {editingCoupon && <div><label style={{ fontSize: 12, color: "#475569" }}>Code</label><div style={{ padding: "10px 14px", borderRadius: 6, border: "1px solid #e2e8f0", background: "#f8fafc", fontFamily: "monospace", fontSize: 13 }}>{editingCoupon.code}</div></div>}
-                <div><label style={{ fontSize: 12, color: "#475569" }}>Title *</label><input required value={couponForm.title} onChange={(e) => setCouponForm(prev => ({ ...prev, title: e.target.value }))} placeholder="e.g. Referral Discount" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }} /></div>
-                <div style={{ gridColumn: "1 / -1" }}><label style={{ fontSize: 12, color: "#475569" }}>Description</label><input value={couponForm.description} onChange={(e) => setCouponForm(prev => ({ ...prev, description: e.target.value }))} placeholder="Optional" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }} /></div>
-                <div><label style={{ fontSize: 12, color: "#475569" }}>Discount Type *</label><select value={couponForm.discountType} onChange={(e) => setCouponForm(prev => ({ ...prev, discountType: e.target.value }))} style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }}><option value="PERCENT">Percentage (%)</option><option value="FIXED">Fixed (₹)</option></select></div>
-                <div><label style={{ fontSize: 12, color: "#475569" }}>Discount Value *</label><input type="number" required min="0" step="0.01" value={couponForm.discountValue} onChange={(e) => setCouponForm(prev => ({ ...prev, discountValue: e.target.value }))} style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }} /></div>
-                <div><label style={{ fontSize: 12, color: "#475569" }}>Min Bill (₹)</label><input type="number" min="0" value={couponForm.minBillAmount} onChange={(e) => setCouponForm(prev => ({ ...prev, minBillAmount: e.target.value }))} style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }} /></div>
-                <div><label style={{ fontSize: 12, color: "#475569" }}>Usage Limit</label><input type="number" min="0" value={couponForm.usageLimit} onChange={(e) => setCouponForm(prev => ({ ...prev, usageLimit: e.target.value }))} style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }} /></div>
-                <div><label style={{ fontSize: 12, color: "#475569" }}>Per Customer Limit</label><input type="number" min="0" value={couponForm.customerUsageLimit} onChange={(e) => setCouponForm(prev => ({ ...prev, customerUsageLimit: e.target.value }))} style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }} /></div>
-                <div><label style={{ fontSize: 12, color: "#475569" }}>Start Date</label><input type="date" value={couponForm.startsAt} onChange={(e) => setCouponForm(prev => ({ ...prev, startsAt: e.target.value }))} style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }} /></div>
-                <div><label style={{ fontSize: 12, color: "#475569" }}>End Date</label><input type="date" value={couponForm.endsAt} onChange={(e) => setCouponForm(prev => ({ ...prev, endsAt: e.target.value }))} style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }} /></div>
-                <div style={{ gridColumn: "1 / -1", borderTop: "1px solid #e2e8f0", paddingTop: 12, marginTop: 4 }}><h4 style={{ margin: "0 0 8px", fontSize: 14 }}>Partner Credits</h4></div>
-                <div><label style={{ fontSize: 12, color: "#475569" }}>Credit Type</label><select value={couponForm.partnerCreditType} onChange={(e) => setCouponForm(prev => ({ ...prev, partnerCreditType: e.target.value }))} style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }}><option value="FIXED">Fixed (₹)</option><option value="PERCENT">Percentage (%)</option></select></div>
-                <div><label style={{ fontSize: 12, color: "#475569" }}>Credit Value</label><input type="number" min="0" step="0.01" value={couponForm.partnerCreditValue} onChange={(e) => setCouponForm(prev => ({ ...prev, partnerCreditValue: e.target.value }))} style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }} /></div>
-                <div style={{ gridColumn: "1 / -1" }}><label style={{ fontSize: 12, color: "#475569" }}>Partner</label><select value={couponForm.partnerCustomerId} onChange={(e) => setCouponForm(prev => ({ ...prev, partnerCustomerId: e.target.value }))} style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }}><option value="">Select partner (optional)</option>{customers.map((c) => (<option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ""}</option>))}</select></div>
-                <div style={{ gridColumn: "1 / -1", borderTop: "1px solid #e2e8f0", paddingTop: 12, marginTop: 4 }}><h4 style={{ margin: "0 0 8px", fontSize: 14 }}>Eligibility (empty = all items)</h4></div>
-                <div style={{ gridColumn: "1 / -1" }}><label style={{ fontSize: 12, color: "#475569", display: "block", marginBottom: 6 }}>Categories</label><div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{categories.map((cat) => (<label key={cat.id} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6, border: couponForm.categoryIds.includes(cat.id) ? "1px solid #6366f1" : "1px solid #e2e8f0", background: couponForm.categoryIds.includes(cat.id) ? "#eef2ff" : "#f8fafc", fontSize: 12, cursor: "pointer" }}><input type="checkbox" checked={couponForm.categoryIds.includes(cat.id)} onChange={() => toggleCategory(cat.id)} style={{ accentColor: "#6366f1" }} />{cat.name}</label>))}</div></div>
-                <div style={{ gridColumn: "1 / -1" }}><label style={{ fontSize: 12, color: "#475569", display: "block", marginBottom: 6 }}>Services</label><div style={{ display: "flex", flexWrap: "wrap", gap: 6, maxHeight: 120, overflowY: "auto" }}>{services.map((svc) => (<label key={svc.id} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6, border: couponForm.serviceIds.includes(svc.id) ? "1px solid #6366f1" : "1px solid #e2e8f0", background: couponForm.serviceIds.includes(svc.id) ? "#eef2ff" : "#f8fafc", fontSize: 12, cursor: "pointer" }}><input type="checkbox" checked={couponForm.serviceIds.includes(svc.id)} onChange={() => toggleService(svc.id)} style={{ accentColor: "#6366f1" }} />{svc.name}</label>))}</div></div>
-                <div style={{ gridColumn: "1 / -1" }}><label style={{ fontSize: 12, color: "#475569" }}>Notes</label><input value={couponForm.notes} onChange={(e) => setCouponForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="Internal notes" style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, boxSizing: "border-box" }} /></div>
+                {editingCoupon && <div><label>Coupon Code</label><div style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", fontFamily: "monospace", fontSize: 14, fontWeight: 600, color: "#475569", marginTop: 4, display: "inline-block" }}>{editingCoupon.code}</div></div>}
+                
+                <div style={{ gridColumn: "1 / -1", height: 0 }}></div>
+                
+                <div><label>Title <span className="muted">*</span></label><input required value={couponForm.title} onChange={(e) => setCouponForm(prev => ({ ...prev, title: e.target.value }))} placeholder="e.g. Summer Special" style={{ marginTop: 4 }} /></div>
+                <div style={{ gridColumn: "1 / -1" }}><label>Description</label><input value={couponForm.description} onChange={(e) => setCouponForm(prev => ({ ...prev, description: e.target.value }))} placeholder="Brief description of the coupon..." style={{ marginTop: 4 }} /></div>
+                
+                <div style={{ gridColumn: "1 / -1", height: 1, background: "#f1f5f9", margin: "4px 0" }}></div>
+                <div style={{ gridColumn: "1 / -1" }}><h4 style={{ margin: 0, fontSize: 13, color: "#334155" }}>Customer Discount</h4></div>
+                
+                <div><label>Discount Type <span className="muted">*</span></label><select value={couponForm.discountType} onChange={(e) => setCouponForm(prev => ({ ...prev, discountType: e.target.value }))} style={{ marginTop: 4 }}><option value="PERCENT">Percentage (%)</option><option value="FIXED">Fixed Amount (₹)</option></select></div>
+                <div><label>Discount Value <span className="muted">*</span></label><input type="number" required min="0" step="0.01" value={couponForm.discountValue} onChange={(e) => setCouponForm(prev => ({ ...prev, discountValue: e.target.value }))} style={{ marginTop: 4 }} /></div>
+                <div><label>Min Bill Amount (₹)</label><input type="number" min="0" value={couponForm.minBillAmount} onChange={(e) => setCouponForm(prev => ({ ...prev, minBillAmount: e.target.value }))} style={{ marginTop: 4 }} placeholder="Optional" /></div>
+                
+                <div style={{ gridColumn: "1 / -1", height: 1, background: "#f1f5f9", margin: "4px 0" }}></div>
+                <div style={{ gridColumn: "1 / -1" }}><h4 style={{ margin: 0, fontSize: 13, color: "#334155" }}>Partner Credits</h4></div>
+
+                <div><label>Credit Type</label><select value={couponForm.partnerCreditType} onChange={(e) => setCouponForm(prev => ({ ...prev, partnerCreditType: e.target.value }))} style={{ marginTop: 4 }}><option value="FIXED">Fixed Amount (₹)</option><option value="PERCENT">Percentage (%)</option></select></div>
+                <div><label>Credit Value</label><input type="number" min="0" step="0.01" value={couponForm.partnerCreditValue} onChange={(e) => setCouponForm(prev => ({ ...prev, partnerCreditValue: e.target.value }))} style={{ marginTop: 4 }} /></div>
+                <div><label>Assign to Partner</label><select value={couponForm.partnerCustomerId} onChange={(e) => setCouponForm(prev => ({ ...prev, partnerCustomerId: e.target.value }))} style={{ marginTop: 4 }}><option value="">None (Generic Coupon)</option>{customers.map((c) => (<option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ""}</option>))}</select></div>
+
+                <div style={{ gridColumn: "1 / -1", height: 1, background: "#f1f5f9", margin: "4px 0" }}></div>
+                <div style={{ gridColumn: "1 / -1" }}><h4 style={{ margin: 0, fontSize: 13, color: "#334155" }}>Limits & Validity</h4></div>
+
+                <div><label>Total Usage Limit</label><input type="number" min="0" value={couponForm.usageLimit} onChange={(e) => setCouponForm(prev => ({ ...prev, usageLimit: e.target.value }))} style={{ marginTop: 4 }} placeholder="Unlimited if empty" /></div>
+                <div><label>Per Customer Limit</label><input type="number" min="0" value={couponForm.customerUsageLimit} onChange={(e) => setCouponForm(prev => ({ ...prev, customerUsageLimit: e.target.value }))} style={{ marginTop: 4 }} placeholder="Unlimited if empty" /></div>
+                <div><label>Start Date</label><input type="date" value={couponForm.startsAt} onChange={(e) => setCouponForm(prev => ({ ...prev, startsAt: e.target.value }))} style={{ marginTop: 4 }} /></div>
+                <div><label>End Date</label><input type="date" value={couponForm.endsAt} onChange={(e) => setCouponForm(prev => ({ ...prev, endsAt: e.target.value }))} style={{ marginTop: 4 }} /></div>
+
+                <div style={{ gridColumn: "1 / -1", height: 1, background: "#f1f5f9", margin: "4px 0" }}></div>
+                <div style={{ gridColumn: "1 / -1" }}><h4 style={{ margin: 0, fontSize: 13, color: "#334155" }}>Eligibility (Leave empty for all items)</h4></div>
+                
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={{ marginBottom: 6 }}>Categories</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {categories.map((cat) => (
+                      <label key={cat.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, border: couponForm.categoryIds.includes(cat.id) ? "1px solid #3b82f6" : "1px solid #e2e8f0", background: couponForm.categoryIds.includes(cat.id) ? "#eff6ff" : "#f8fafc", color: couponForm.categoryIds.includes(cat.id) ? "#1d4ed8" : "#475569", fontSize: 12, cursor: "pointer", transition: "all 0.2s" }}>
+                        <input type="checkbox" checked={couponForm.categoryIds.includes(cat.id)} onChange={() => toggleCategory(cat.id)} style={{ margin: 0 }} />{cat.name}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={{ marginBottom: 6 }}>Services</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, maxHeight: 180, overflowY: "auto", padding: 4 }}>
+                    {services.map((svc) => (
+                      <label key={svc.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, border: couponForm.serviceIds.includes(svc.id) ? "1px solid #3b82f6" : "1px solid #e2e8f0", background: couponForm.serviceIds.includes(svc.id) ? "#eff6ff" : "#f8fafc", color: couponForm.serviceIds.includes(svc.id) ? "#1d4ed8" : "#475569", fontSize: 12, cursor: "pointer", transition: "all 0.2s" }}>
+                        <input type="checkbox" checked={couponForm.serviceIds.includes(svc.id)} onChange={() => toggleService(svc.id)} style={{ margin: 0 }} />{svc.name}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ gridColumn: "1 / -1" }}><label>Internal Notes</label><input value={couponForm.notes} onChange={(e) => setCouponForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="Optional notes for staff..." style={{ marginTop: 4 }} /></div>
               </div>
-              <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                <button type="submit" className="btn btn-primary" style={{ fontSize: 13 }}>{editingCoupon ? "Update" : "Create"} Coupon</button>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 24, paddingTop: 16, borderTop: "1px solid #e2e8f0" }}>
                 <button type="button" onClick={() => { setShowCouponForm(false); setEditingCoupon(null); }} className="btn btn-ghost" style={{ fontSize: 13 }}>Cancel</button>
+                <button type="submit" className="btn btn-primary" style={{ fontSize: 13, minWidth: 120 }}>{editingCoupon ? "Save Changes" : "Create Coupon"}</button>
               </div>
             </form>
           )}
