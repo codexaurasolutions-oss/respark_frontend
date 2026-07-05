@@ -5,7 +5,6 @@ export const SETTINGS_WORKSPACE_SECTIONS = [
   { key: "tax-mapping", label: "Tax Mapping", to: "/admin/settings/tax-mapping", hint: "Rates and labels" },
   { key: "feedback-setting", label: "Feedback Setting", to: "/admin/settings/feedback-setting", hint: "Review flow" },
   { key: "access-control", label: "Access Control", to: "/admin/roles-permissions", hint: "Roles and access" },
-  { key: "loyalty", label: "Loyalty", to: "/admin/settings/loyalty", hint: "Points defaults" },
   { key: "gift-card", label: "Gift Card", to: "/admin/settings/gift-card", hint: "Voucher limits" },
   { key: "notification-settings", label: "Notification Settings", to: "/admin/settings/notification-settings", hint: "Alerts" },
   { key: "sms-center", label: "Messaging Center", to: "/admin/settings/sms-center", hint: "Email gateway" },

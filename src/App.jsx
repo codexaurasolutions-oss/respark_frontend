@@ -32,7 +32,6 @@ const AppointmentEditPage = lazyWithRetry(() => import("./pages/owner/Appointmen
 const CustomersPage = lazyWithRetry(() => import("./pages/owner/CustomersPage.jsx"));
 const CustomerHistoryPage = lazyWithRetry(() => import("./pages/owner/CustomerHistoryPage.jsx"));
 const CustomerPortalSettingsPage = lazyWithRetry(() => import("./pages/owner/CustomerPortalSettingsPage.jsx"));
-const LoyaltyPage = lazyWithRetry(() => import("./pages/owner/LoyaltyPage.jsx"));
 const CouponsPage = lazyWithRetry(() => import("./pages/owner/CouponsPage.jsx"));
 const FeedbackPage = lazyWithRetry(() => import("./pages/owner/FeedbackPage.jsx"));
 const EnquiriesPage = lazyWithRetry(() => import("./pages/owner/EnquiriesPage.jsx"));
@@ -234,7 +233,7 @@ const Protected = () => {
           ]
         },
         { label: "Memberships / Packages", to: "/admin/memberships", children: [{ label: "Packages", to: "/admin/packages" }] },
-        { label: "Loyalty / Coupons", to: "/admin/loyalty", children: [{ label: "Coupons", to: "/admin/coupons" }, { label: "Gift Cards", to: "/admin/gift-cards" }, { label: "Referral Coupons", to: "/admin/referral-coupons" }, { label: "Affiliate Wallets", to: "/admin/affiliate-wallets" }] },
+        { label: "Coupons & Wallets", to: "/admin/coupons", children: [{ label: "Coupons", to: "/admin/coupons" }, { label: "Gift Cards", to: "/admin/gift-cards" }, { label: "Referral Coupons", to: "/admin/referral-coupons" }, { label: "Affiliate Wallets", to: "/admin/affiliate-wallets" }] },
         {
           label: "WhatsApp / Notifications",
           to: "/admin/whatsapp",
@@ -365,7 +364,6 @@ export default function App() {
         <Route path="/customer/invoices/:id" element={<CustomerPortalPage />} />
         <Route path="/customer/packages" element={<CustomerPortalPage />} />
         <Route path="/customer/memberships" element={<CustomerPortalPage />} />
-        <Route path="/customer/loyalty" element={<CustomerPortalPage />} />
         <Route path="/customer/orders" element={<CustomerPortalPage />} />
         <Route path="/customer/orders/:id" element={<CustomerPortalPage />} />
         <Route path="/customer/coupons" element={<CustomerPortalPage />} />
@@ -453,11 +451,6 @@ export default function App() {
           <Route path="/admin/packages/:id/edit" element={<OwnerRoute moduleKey="packages" element={<MembershipsPage />} />} />
           <Route path="/admin/customers/:id/memberships" element={<OwnerRoute moduleKey="memberships" element={<MembershipsPage />} />} />
           <Route path="/admin/customers/:id/packages" element={<OwnerRoute moduleKey="packages" element={<MembershipsPage />} />} />
-          <Route path="/admin/customers/:id/loyalty" element={<OwnerRoute moduleKey="loyalty" featureKey="loyalty" element={<LoyaltyPage />} />} />
-          <Route path="/admin/loyalty" element={<OwnerRoute moduleKey="loyalty" featureKey="loyalty" element={<LoyaltyPage />} />} />
-          <Route path="/admin/loyalty/rules" element={<OwnerRoute moduleKey="loyalty" featureKey="loyalty" element={<LoyaltyPage />} />} />
-          <Route path="/admin/loyalty/transactions" element={<OwnerRoute moduleKey="loyalty" featureKey="loyalty" element={<LoyaltyPage />} />} />
-          <Route path="/admin/loyalty/reports" element={<OwnerRoute moduleKey="loyalty" featureKey="loyalty" element={<LoyaltyPage />} />} />
           <Route path="/admin/coupons" element={<OwnerRoute moduleKey="couponsGiftCards" featureKey="couponsGiftCards" element={<CouponsPage />} />} />
           <Route path="/admin/coupons/reports" element={<OwnerRoute moduleKey="couponsGiftCards" featureKey="couponsGiftCards" element={<CouponsPage />} />} />
           <Route path="/admin/gift-cards" element={<OwnerRoute moduleKey="couponsGiftCards" featureKey="couponsGiftCards" element={<CouponsPage />} />} />
@@ -495,7 +488,6 @@ export default function App() {
           <Route path="/admin/reports/branch-sales" element={<OwnerRoute moduleKey="reports" featureKey="reports" element={<ReportsPage />} />} />
           <Route path="/admin/reports/payments" element={<OwnerRoute moduleKey="reports" featureKey="reports" element={<ReportsPage />} />} />
           <Route path="/admin/reports/cancelled-invoices" element={<OwnerRoute moduleKey="reports" featureKey="reports" element={<ReportsPage />} />} />
-          <Route path="/admin/reports/loyalty" element={<OwnerRoute moduleKey="reports" featureKey="reports" element={<ReportsPage />} />} />
           <Route path="/admin/reports/gift-cards" element={<OwnerRoute moduleKey="reports" featureKey="reports" element={<ReportsPage />} />} />
           <Route path="/admin/reports/coupons" element={<OwnerRoute moduleKey="reports" featureKey="reports" element={<ReportsPage />} />} />
           <Route path="/admin/reports/campaigns" element={<OwnerRoute moduleKey="reports" featureKey="reports" element={<ReportsPage />} />} />

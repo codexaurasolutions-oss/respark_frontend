@@ -4819,8 +4819,6 @@ export default function SettingsPage() {
         return renderFeedbackSection();
       case "access-control":
         return renderAccessControlSection();
-      case "loyalty":
-        return renderLoyaltySettingsSection();
       case "gift-card":
         return renderGiftCardSection();
       case "notification-settings":
