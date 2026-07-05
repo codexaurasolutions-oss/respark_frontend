@@ -167,6 +167,17 @@ export default function ReferralProgramPage() {
 
   const submitOnboard = async () => {
     if (!onboardForm.name.trim() || !onboardForm.phone.trim()) { setStatus({ error: "Name and phone required.", success: "" }); return; }
+    
+    let phoneDigits = onboardForm.phone.replace(/\D/g, "");
+    if (phoneDigits.startsWith("0091")) phoneDigits = phoneDigits.slice(4);
+    else if (phoneDigits.startsWith("91") && phoneDigits.length > 12) phoneDigits = phoneDigits.slice(2);
+    else if (phoneDigits.startsWith("0") && phoneDigits.length === 11) phoneDigits = phoneDigits.slice(1);
+    
+    if (phoneDigits.length !== 10) {
+      setStatus({ error: "Please enter a valid 10-digit phone number.", success: "" });
+      return;
+    }
+
     setOnboardLoading(true);
     try {
       const res = await api.post("/owner/referrals/partners/onboard", {
@@ -177,7 +188,7 @@ export default function ReferralProgramPage() {
       });
       setStatus({ error: "", success: `Partner onboarded. Code ${res.data?.coupon?.code || ""} created.` });
       setShowOnboardModal(false); await loadAll();
-    } catch (err) { setStatus({ error: formatApiError(err, "Could not onboard"), success: "" }); }
+    } catch (err) { setStatus({ error: formatApiError(err, "Could not onboard partner (Check phone number)"), success: "" }); }
     finally { setOnboardLoading(false); }
   };
 
