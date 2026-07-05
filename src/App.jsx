@@ -332,7 +332,7 @@ const StaffWorkspaceRoute = ({ moduleKey, action = "view", featureKey, element }
   }
 
   if (!allowed) {
-    return <Navigate to="/admin/my-dashboard" replace />;
+    return <AccessNotice title="Access Restricted" message="You don't have permission to access this page. Contact your salon owner to update your access role." />;
   }
 
   return element;

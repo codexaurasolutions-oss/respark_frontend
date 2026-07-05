@@ -87,8 +87,12 @@ export default function MyDashboardPage() {
 
   useEffect(() => {
     if (!loading && !loadError && data.profile && !data.todayAttendance && !autoOpenedRef.current) {
-      autoOpenedRef.current = true;
-      handleStartCheckIn();
+      const hasGeo = !!navigator.geolocation;
+      const hasCamera = !!navigator.mediaDevices;
+      if (hasGeo && hasCamera) {
+        autoOpenedRef.current = true;
+        handleStartCheckIn();
+      }
     }
   }, [loading, loadError, data.profile, data.todayAttendance]);
 

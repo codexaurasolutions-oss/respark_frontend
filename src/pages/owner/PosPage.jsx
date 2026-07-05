@@ -129,6 +129,7 @@ export default function PosPage() {
   const [gcRedemptionCode, setGcRedemptionCode] = useState("");
   const [gcRedemptionResult, setGcRedemptionResult] = useState(null);
   const [gcRedemptionLoading, setGcRedemptionLoading] = useState(false);
+  const [giftCardDiscount, setGiftCardDiscount] = useState(0);
   const [showTipModal, setShowTipModal] = useState(false);
   const [tipDraft, setTipDraft] = useState({ staffId: "", amount: "", paymentMode: "CASH" });
   const [tipEntries, setTipEntries] = useState([]);
@@ -428,10 +429,17 @@ export default function PosPage() {
     const billTotal = totals.total;
     const applyAmount = Math.min(gcAmount, billTotal);
     setForm(c => ({ ...c, giftVoucherCode: gcRedemptionResult.code }));
+    setGiftCardDiscount(applyAmount);
     setShowGcRedemptionModal(false);
     setGcRedemptionCode("");
+    setToastMessage({ type: "success", title: "Gift Card Applied", message: `${formatMoney(applyAmount)} will be deducted from gift card at checkout.` });
+  };
+
+  const removeGiftCard = () => {
+    setForm(c => ({ ...c, giftVoucherCode: "" }));
+    setGiftCardDiscount(0);
     setGcRedemptionResult(null);
-    setToastMessage({ type: "success", title: "Gift Card Applied", message: `${formatMoney(applyAmount)} deducted from gift card at checkout.` });
+    setGcRedemptionCode("");
   };
 
   // === Add Tip ===
@@ -944,6 +952,8 @@ export default function PosPage() {
         sendInvoiceMessage: true
       }));
 
+      setGiftCardDiscount(0);
+
       // Reset package modal draft values
       setPkgDraft({
         staffId: "",
@@ -1048,10 +1058,11 @@ export default function PosPage() {
     // Note: form.tax is part of the API payload (extra tax) but always 0 in this UI; per-item taxPct handles all tax.
     const discount = Number(form.discount || 0);
     const couponDiscount = Number(couponValidation?.totalDiscount || 0);
-    const total = subtotal + itemTax - discount - couponDiscount;
+    const gcDiscount = Number(giftCardDiscount || 0);
+    const total = subtotal + itemTax - discount - couponDiscount - gcDiscount;
     const paid = form.payments.filter(p => p.mode !== "BALANCE").reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-    return { subtotal, itemTax, total, paid, due: Math.max(0, total - paid), couponDiscount };
-  }, [form, getCatalogBasePrice, context.settings, couponValidation]);
+    return { subtotal, itemTax, total, paid, due: Math.max(0, total - paid), couponDiscount, gcDiscount };
+  }, [form, getCatalogBasePrice, context.settings, couponValidation, giftCardDiscount]);
 
   const getEligibleStaffUsers = useCallback((item) => {
     const selectedBranchId = form.branchId;
@@ -1219,6 +1230,7 @@ export default function PosPage() {
         sendFeedbackMessage: true,
         sendInvoiceMessage: true
       }));
+      setGiftCardDiscount(0);
       await loadContext("", form.branchId);
     } catch (error) {
       setToastMessage({ type: "error", title: "Invoice Failed", message: formatApiError(error, "Could not create invoice") });
@@ -1680,6 +1692,7 @@ export default function PosPage() {
                   return (
                     <div>
                       {totals.couponDiscount > 0 && <div style={{ fontSize: 12, color: "#2563eb", marginBottom: 2 }}>Coupon: −{formatMoney(totals.couponDiscount.toFixed(0))}</div>}
+                      {totals.gcDiscount > 0 && <div style={{ fontSize: 12, color: "#7c3aed", marginBottom: 2, display: "flex", alignItems: "center", gap: 6 }}>Gift Card: −{formatMoney(totals.gcDiscount.toFixed(0))} <button type="button" onClick={removeGiftCard} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 11, padding: 0, fontWeight: 700 }}>Remove</button></div>}
                       {Number(form.discount || 0) > 0 && <div style={{ fontSize: 12, color: "#16a34a", marginBottom: 2 }}>Discount: −{formatMoney(Number(form.discount || 0).toFixed(0))}</div>}
                       Grand Total <strong>{formatMoney(totals.total.toFixed(0))}</strong>
                     </div>
@@ -1945,7 +1958,7 @@ export default function PosPage() {
               {status.error && <span style={{ color: "#ef4444", fontWeight: 500, fontSize: "13px" }}>{status.error}</span>}
               {status.success && <span style={{ color: "#10b981", fontWeight: 500, fontSize: "13px" }}>{status.success}</span>}
             </div>
-            <button type="button" className="pos-btn-clear" onClick={() => { setForm(c => ({ ...c, items: [], discount: 0, giftVoucherCode: "", couponCode: "", packageRedemptions: [] })); setTipEntries([]); setCouponValidation(null); setCouponCodeInput(""); }}>Clear</button>
+            <button type="button" className="pos-btn-clear" onClick={() => { setForm(c => ({ ...c, items: [], discount: 0, giftVoucherCode: "", couponCode: "", packageRedemptions: [] })); setTipEntries([]); setCouponValidation(null); setCouponCodeInput(""); setGiftCardDiscount(0); }}>Clear</button>
             <button type="button" className="pos-btn-create" disabled={submitting} onClick={() => !submitting && submitInvoice("draft")}>Create</button>
             <button type="button" className="pos-btn-complete" disabled={submitting} onClick={() => !submitting && submitInvoice("complete")}>Create & Complete</button>
           </div>
