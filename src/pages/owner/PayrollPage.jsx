@@ -461,8 +461,8 @@ export default function PayrollPage() {
       {status.error && <div className="panel-card"><p className="error-text">{status.error}</p></div>}
       {status.success && <div className="panel-card"><p className="success-text">{status.success}</p></div>}
 
-      <div style={{ display: "grid", gap: 18 }}>
-        <div className="panel-card">
+      <div style={{ display: "grid", gap: 18, minWidth: 0, maxWidth: "100%" }}>
+        <div className="panel-card" style={{ padding: "20px 24px" }}>
           <h3>Attendance Dashboard</h3>
           <div className="stats-grid" style={{ marginBottom: 16 }}>
             <div className="stat-card"><div className="stat-label"><Users size={14} /> Total Staff</div><div className="stat-value">{attendanceSummary.totalStaff || 0}</div></div>
@@ -518,7 +518,7 @@ export default function PayrollPage() {
           </form>
         </div>
 
-        <div className="panel-card" style={{ overflow: "visible" }}>
+        <div className="panel-card" style={{ overflow: "hidden", padding: "20px 24px", maxWidth: "100%" }}>
           <style>{`
             .att-cal-cell { transition: all 0.15s ease; }
             .att-cal-cell:hover { transform: scale(1.15); z-index: 2; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
@@ -566,7 +566,7 @@ export default function PayrollPage() {
               </div>
             ))}
           </div>
-          <div style={{ overflow: "auto", maxHeight: "65vh", marginTop: 16, borderRadius: 12, border: "1px solid #e2e8f0" }}>
+          <div style={{ overflow: "auto", maxHeight: "65vh", marginTop: 16, borderRadius: 12, border: "1px solid #e2e8f0", maxWidth: "100%" }}>
             {(() => {
               const today = new Date();
               const todayDay = today.getMonth() + 1 === parseInt(attendanceCalendarMonth.split("-")[1]) && today.getFullYear() === parseInt(attendanceCalendarMonth.split("-")[0]) ? today.getDate() : null;
@@ -617,18 +617,21 @@ export default function PayrollPage() {
                                 onClick={() => setSelectedCalendarCell({ staffName: row.staffName, branchName: row.branchName, staffCode: row.staffCode, record: cell, day, isWeekend })}
                                 className="att-cal-cell"
                                 style={{
-                                  width: 32,
+                                  minWidth: 32,
                                   height: 32,
+                                  padding: "0 6px",
                                   borderRadius: 8,
-                                  display: "inline-grid",
-                                  placeItems: "center",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
                                   background: theme.bg,
                                   color: theme.color,
                                   border: isToday ? "2px solid #6366f1" : "1px solid rgba(0,0,0,0.04)",
                                   fontSize: 11,
                                   fontWeight: 800,
                                   cursor: "pointer",
-                                  lineHeight: 1
+                                  lineHeight: 1,
+                                  boxSizing: "border-box"
                                 }}
                               >
                                 {theme.label}
@@ -735,9 +738,12 @@ export default function PayrollPage() {
           </div>
         </div>
 
-        <div className="panel-card" ref={manualCreateRef}>
-          <h3>Manual Attendance Entry</h3>
-          <form className="form-grid" onSubmit={saveManualCreate}>
+        <div className="panel-card" ref={manualCreateRef} style={{ padding: "20px 24px" }}>
+          <div style={{ marginBottom: 20 }}>
+            <h3 style={{ margin: 0, fontSize: 18 }}>Manual Attendance Entry</h3>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: "#64748b" }}>Create a new attendance record manually if staff missed check-in/out.</p>
+          </div>
+          <form className="form-grid" onSubmit={saveManualCreate} style={{ background: "#f8fafc", padding: 20, borderRadius: 12, border: "1px solid #e2e8f0" }}>
             <label>
               <span className="muted">Staff member</span>
               <select required value={manualCreate.userSalonId} onChange={(e) => {
@@ -794,9 +800,9 @@ export default function PayrollPage() {
           </form>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, alignItems: "start", minWidth: 0, overflow: "hidden" }}>
-          <div className="panel-card">
-            <h3>Attendance Records</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: 18, alignItems: "start", minWidth: 0 }}>
+          <div className="panel-card" style={{ padding: "20px 24px", minWidth: 0 }}>
+            <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Attendance Records</h3>
             <div className="form-grid" style={{ marginBottom: 16 }}>
               <label>
                 <span className="muted">Search staff name</span>
@@ -852,8 +858,8 @@ export default function PayrollPage() {
             </div>
           </div>
 
-          <div className="panel-card" ref={detailPanelRef} style={{ maxHeight: "80vh", overflowY: "auto" }}>
-            <h3>Attendance Detail</h3>
+          <div className="panel-card" ref={detailPanelRef} style={{ maxHeight: "80vh", overflowY: "auto", padding: "20px 24px" }}>
+            <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Attendance Detail</h3>
             {detailLoading ? <PageLoader compact title="Loading attendance detail" message="Fetching record, GPS evidence, and audit history." /> : null}
             {!detailLoading && !selectedAttendance && (
               <EmptyState title="No record selected" message="Select an attendance row to inspect selfie, GPS, remarks, and manual correction options." />
@@ -941,7 +947,7 @@ export default function PayrollPage() {
           </div>
         </div>
 
-        <div className="panel-card">
+        <div className="panel-card" style={{ padding: "20px 24px" }}>
           <div className="item-head" style={{ alignItems: "flex-end" }}>
             <div>
               <h3 style={{ marginTop: 0, marginBottom: 6 }}>Daily Attendance Sheet</h3>
