@@ -244,7 +244,7 @@ export default function PosDashboardPage() {
         api.get("/owner/invoices/reports/summary", { params: { startDate, endDate, ...(selectedBranchId ? { branchId: selectedBranchId } : {}) } })
       ]);
 
-      setRows(invoiceResponse.data || []);
+      setRows(invoiceResponse.data?.data || invoiceResponse.data || []);
       setSummary(summaryResponse.data || null);
 
       if (params.id) {
