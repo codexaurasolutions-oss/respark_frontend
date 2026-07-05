@@ -175,7 +175,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           background: #f1f5f9;
           border-radius: 24px;
           padding: 6px 18px;
-          width: 480px;
+          width: 100%;
           border: 1px solid transparent;
           transition: all 0.2s;
           position: relative;
@@ -533,19 +533,30 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           color: white;
         }
         @media (max-width: 768px) {
-          .respark-top-row { padding: 0 12px; height: 50px; }
-          .respark-search-bar { width: 100% !important; max-width: 100%; position: static; transform: none; order: 3; }
-          .respark-nav-row { height: 40px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+          .respark-header-container { overflow: hidden; }
+          .respark-top-row { padding: 0 12px; height: auto; min-height: 50px; flex-wrap: wrap; gap: 8px 0; position: relative; }
+          .respark-logo-area { flex: 1; min-width: 0; overflow: hidden; }
+          .respark-salon-name { font-size: 0.8rem; padding-left: 8px; border-left: none; display: none; }
+          .respark-search-wrap { position: relative !important; left: auto !important; transform: none !important; width: 100% !important; order: 3; flex: 1 1 100%; padding: 0; }
+          .respark-search-bar { width: 100% !important; max-width: 100%; }
+          .respark-search-dropdown { position: fixed !important; left: 8px !important; right: 8px !important; top: auto !important; transform: none !important; width: auto !important; max-width: none !important; }
+          .respark-top-right { flex: 0 0 auto; justify-content: flex-end; gap: 8px; }
+          .respark-branch-btn { font-size: 0.75rem; padding: 4px 10px; }
+          .respark-date { display: none; }
+          .respark-nav-row { height: 42px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
           .respark-nav-row::-webkit-scrollbar { display: none; }
-          .respark-tab { padding: 0 12px; font-size: 12px; white-space: nowrap; }
-          .respark-top-logo { width: auto !important; }
-          .respark-top-logo img { height: 24px !important; }
-          .topbar-date-pill { display: none; }
+          .respark-tabs { flex-wrap: nowrap; flex-shrink: 0; }
+          .respark-tab { padding: 0 12px; font-size: 11px; white-space: nowrap; flex-shrink: 0; border-bottom: none; }
+          .respark-tab.active { border-bottom: 3px solid var(--accent, #ef4444); }
+          .respark-icon-btn { width: 36px; height: 36px; }
+          .notif-dropdown { width: 280px; }
         }
         @media (max-width: 480px) {
-          .respark-search-bar { display: none !important; }
-          .respark-search-dropdown { display: none !important; }
-          .respark-top-row { padding: 0 8px; }
+          .respark-top-row { padding: 0 8px; gap: 6px 0; }
+          .respark-search-wrap { display: none !important; }
+          .respark-tab { padding: 0 10px; font-size: 10px; }
+          .respark-branch-btn { font-size: 0.7rem; padding: 3px 8px; }
+          .respark-brand-image { height: 24px !important; }
         }
       `}</style>
 
@@ -558,7 +569,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
 
         {/* Centered Search Bar */}
         {canGlobalSearch ? (
-          <div className="respark-search-wrap" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
+          <div className="respark-search-wrap" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", width: "min(480px, 40vw)" }}>
             <div className="respark-search-bar">
               <Search size={16} color="#64748b" />
               <input
