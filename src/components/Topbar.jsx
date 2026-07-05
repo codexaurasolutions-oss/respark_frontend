@@ -602,9 +602,9 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           {isOwner ? (
           <div className="respark-branch-wrap">
             <button className="respark-branch-btn" onClick={() => setIsBranchOpen(!isBranchOpen)}>
-              <Building2 size={14} color="#64748b" />
-              {selectedBranchName}
-              <ChevronDown size={14} color="#64748b" />
+              <Building2 size={14} color="#64748b" style={{ flexShrink: 0 }} />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>{selectedBranchName}</span>
+              <ChevronDown size={14} color="#64748b" style={{ flexShrink: 0 }} />
             </button>
             {isBranchOpen && (
               <div className="respark-branch-dropdown" onClick={e => e.stopPropagation()}>
@@ -624,8 +624,8 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
           ) : (
             <div className="respark-branch-wrap">
               <span className="respark-branch-btn" style={{ cursor: "default" }}>
-                <Building2 size={14} color="#64748b" />
-                {selectedBranchName}
+                <Building2 size={14} color="#64748b" style={{ flexShrink: 0 }} />
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>{selectedBranchName}</span>
               </span>
             </div>
           )}
