@@ -464,7 +464,7 @@ export default function MyDashboardPage() {
                     ? "Face verification is active. Your selfie will be compared with your enrollment photo."
                     : "Selfie is mandatory. Your photo will be uploaded along with GPS coordinates."}
               </div>
-              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
                 <button type="button" className="secondary-button" onClick={closeFlow}><X size={14} /> Cancel</button>
                 {isCheckOut && (
                   <button type="button" className="secondary-button" onClick={() => void handleSkipSelfie()} disabled={flow.busy}>
@@ -480,7 +480,7 @@ export default function MyDashboardPage() {
             <>
               <canvas ref={canvasRef} style={{ display: "none" }} />
               {isCheckOut ? (
-                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
                   <button type="button" className="secondary-button" onClick={closeFlow}><X size={14} /> Cancel</button>
                   <button type="button" onClick={() => void handleSkipSelfie()} disabled={flow.busy}>
                     <Send size={14} /> Submit Without Selfie

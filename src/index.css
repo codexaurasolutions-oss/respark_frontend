@@ -3578,4 +3578,14 @@ pre {
   }
 }
 
-
+/* ════════════════════════════════════════════
+   STAFF MOBILE LAYOUT RESPONSIVENESS
+════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .app-shell.staff-workspace .respark-header-container {
+    display: none !important;
+  }
+  .app-shell.staff-workspace .app-content-wrapper {
+    padding-top: 0 !important;
+  }
+}

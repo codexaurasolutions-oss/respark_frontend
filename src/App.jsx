@@ -273,7 +273,7 @@ const Protected = () => {
   ];
 
   return (
-    <div className={`app-shell ${!sidebarExpanded ? "sidebar-collapsed" : ""}`}>
+    <div className={`app-shell ${!sidebarExpanded ? "sidebar-collapsed" : ""} ${!isOwner ? "staff-workspace" : ""}`}>
       <Sidebar
         groups={visibleGroups}
         auth={auth}
