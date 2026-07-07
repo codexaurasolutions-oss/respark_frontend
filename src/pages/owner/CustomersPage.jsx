@@ -156,7 +156,7 @@ export default function CustomersPage() {
     dateOfBirth: "",
     anniversary: "",
     gst: "",
-    gender: "female"
+    gender: "FEMALE"
   });
 
   const load = async (searchText = query, selectedFilter = filterType) => {
@@ -820,7 +820,7 @@ export default function CustomersPage() {
         dateOfBirth: "",
         anniversary: "",
         gst: "",
-        gender: "female"
+        gender: "FEMALE"
       });
       await load();
     } catch (error) {
@@ -893,7 +893,7 @@ export default function CustomersPage() {
   );
 
   const visibleRows = rows.filter((row) => {
-    const genderValue = String(row.gender || "").toLowerCase();
+    const genderValue = String(row.gender || "").toUpperCase();
     const totalPurchase = Number(row.totalSpend || 0);
     const averagePurchase = Number(row.averageSpend || 0);
     const totalOrders = Number(row.totalOrders || 0);
@@ -908,7 +908,7 @@ export default function CustomersPage() {
       const haystack = `${row.name || ""} ${row.phone || ""} ${row.email || ""}`.toLowerCase();
       if (!haystack.includes(query.toLowerCase())) return false;
     }
-    if (appliedFilters.gender && genderValue !== appliedFilters.gender) return false;
+    if (appliedFilters.gender && genderValue !== appliedFilters.gender.toUpperCase()) return false;
     if (appliedFilters.specialDay === "birthday" && !isWithinDateRange(row.dateOfBirth, appliedFilters.lastVisitedStart, appliedFilters.lastVisitedEnd)) return false;
     if (appliedFilters.specialDay === "anniversary" && !isWithinDateRange(row.anniversary, appliedFilters.lastVisitedStart, appliedFilters.lastVisitedEnd)) return false;
     if ((appliedFilters.lastVisitedStart || appliedFilters.lastVisitedEnd) && !isWithinDateRange(row.lastVisitAt, appliedFilters.lastVisitedStart, appliedFilters.lastVisitedEnd)) return false;
@@ -1031,9 +1031,9 @@ export default function CustomersPage() {
             <label>Gender</label>
             <select value={draftFilters.gender} onChange={(event) => setDraftFilters((current) => ({ ...current, gender: event.target.value }))}>
               <option value="">All</option>
-              <option value="female">Female</option>
-              <option value="male">Male</option>
-              <option value="unisex">Unisex</option>
+              <option value="FEMALE">Female</option>
+              <option value="MALE">Male</option>
+              <option value="OTHER">Other</option>
             </select>
           </div>
         );
@@ -1439,8 +1439,9 @@ export default function CustomersPage() {
                 <div className="form-group">
                   <label>Gender</label>
                   <div className="radio-group">
-                    <label><input type="radio" name="gender" checked={formData.gender === "female"} onChange={() => setFormData((current) => ({ ...current, gender: "female" }))} /> Female</label>
-                    <label><input type="radio" name="gender" checked={formData.gender === "male"} onChange={() => setFormData((current) => ({ ...current, gender: "male" }))} /> Male</label>
+                    <label><input type="radio" name="gender" checked={formData.gender === "FEMALE"} onChange={() => setFormData((current) => ({ ...current, gender: "FEMALE" }))} /> Female</label>
+                    <label><input type="radio" name="gender" checked={formData.gender === "MALE"} onChange={() => setFormData((current) => ({ ...current, gender: "MALE" }))} /> Male</label>
+                    <label><input type="radio" name="gender" checked={formData.gender === "OTHER"} onChange={() => setFormData((current) => ({ ...current, gender: "OTHER" }))} /> Other</label>
                   </div>
                 </div>
                 <div className="form-group">
@@ -2098,9 +2099,10 @@ export default function CustomersPage() {
                             <div className="form-group">
                               <label>Gender</label>
                               <select value={updateForm.gender} onChange={(e) => setUpdateForm(prev => ({ ...prev, gender: e.target.value }))}>
-                                <option value="">Select</option>
-                                <option value="female">Female</option>
-                                <option value="male">Male</option>
+                                <option value="">Unknown</option>
+                                <option value="FEMALE">Female</option>
+                                <option value="MALE">Male</option>
+                                <option value="OTHER">Other</option>
                               </select>
                             </div>
                             <div className="form-group">
