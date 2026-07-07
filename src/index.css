@@ -3579,13 +3579,25 @@ pre {
 }
 
 /* ════════════════════════════════════════════
-   STAFF MOBILE LAYOUT RESPONSIVENESS
+   MOBILE LAYOUT RESPONSIVENESS
 ════════════════════════════════════════════ */
 @media (max-width: 1024px) {
-  .app-shell.staff-workspace .respark-header-container {
+  .app-shell .respark-header-container {
     display: none !important;
   }
-  .app-shell.staff-workspace .app-content-wrapper {
+  .app-shell .app-content-wrapper {
     padding-top: 0 !important;
+  }
+}
+
+.sidebar-mobile-only-actions {
+  display: none;
+}
+@media (max-width: 1024px) {
+  .sidebar-mobile-only-actions {
+    display: block;
+    padding: 0 16px 16px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 16px;
   }
 }

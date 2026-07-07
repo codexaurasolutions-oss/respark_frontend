@@ -14,7 +14,12 @@ import {
   X,
   LogOut,
   Globe,
+  Building2,
+  Bell,
+  Search
 } from "lucide-react";
+import { useBranch } from "../context/BranchContext";
+import { api } from "../api/client";
 
 const GROUP_ICONS = {
   "My Workspace":  <User size={17} />,
@@ -40,6 +45,22 @@ const isGroupActive = (group, pathname) =>
 
 export default function Sidebar({ groups, auth, onLogout, sidebarExpanded = true, onToggleSidebar }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { branches, selectedBranchId, setSelectedBranchId, isOwner } = useBranch();
+  const [notifications, setNotifications] = useState([]);
+  const permissions = auth?.membership?.permissions || {};
+  const canNotifications = Array.isArray(permissions["notifications"]) && permissions["notifications"].includes("view");
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  useEffect(() => {
+    let active = true;
+    if (canNotifications) {
+      api.get("/owner/notifications", { params: { limit: 5 } }).then((res) => {
+        if (active && res.data) setNotifications(res.data);
+      }).catch(() => {});
+    }
+    return () => { active = false; };
+  }, [canNotifications]);
   const defaultOpen = useMemo(() => {
     const next = {};
     for (const group of groups) {
@@ -117,6 +138,48 @@ export default function Sidebar({ groups, auth, onLogout, sidebarExpanded = true
 
         {/* Nav Groups */}
         <nav className="sidebar-nav">
+          <div className="sidebar-mobile-only-actions">
+            {isOwner && branches.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>Selected Branch</div>
+                <select 
+                  value={selectedBranchId}
+                  onChange={(e) => setSelectedBranchId(e.target.value)}
+                  style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 13, backgroundColor: "#f8fafc", color: "#334155", fontWeight: 500, outline: "none", cursor: "pointer" }}
+                >
+                  <option value="">All Branches</option>
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            <div style={{ display: "flex", gap: 8 }}>
+              <button 
+                type="button" 
+                onClick={() => { closeMobile(); navigate("/admin/my-profile"); }}
+                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, color: "#475569", fontSize: 13, fontWeight: 500, cursor: "pointer" }}
+              >
+                <User size={15} /> Profile
+              </button>
+              
+              {canNotifications && (
+                <button 
+                  type="button" 
+                  onClick={() => { alert("Check notifications on desktop. Mobile notifications view is coming soon."); }}
+                  style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, color: "#475569", fontSize: 13, fontWeight: 500, position: "relative", cursor: "pointer" }}
+                >
+                  <Bell size={15} /> 
+                  Alerts
+                  {unreadCount > 0 && (
+                    <span style={{ position: "absolute", top: -4, right: -4, background: "#ef4444", color: "white", fontSize: 10, fontWeight: "bold", padding: "2px 5px", borderRadius: 10 }}>{unreadCount}</span>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+
           {groups.map((group) => {
             const active = isGroupActive(group, location.pathname);
             const expanded = openGroups[group.label] ?? active;
