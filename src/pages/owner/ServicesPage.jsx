@@ -16,7 +16,8 @@ const emptyForm = {
   commissionPct: 0,
   onlineBookingEnabled: false,
   isFeatured: false,
-  isPopular: false
+  isPopular: false,
+  imageUrl: ""
 };
 
 const DURATION_OPTIONS = [
@@ -37,6 +38,7 @@ export default function ServicesPage() {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState("");
   const [status, setStatus] = useState({ error: "", success: "", loading: true });
+  const [imageUploading, setImageUploading] = useState(false);
 
   const title = useMemo(() => (editingId ? "Update Service" : "Add Service"), [editingId]);
 
@@ -64,6 +66,10 @@ export default function ServicesPage() {
   const submit = async (event) => {
     event.preventDefault();
     setStatus({ error: "", success: "" });
+    if (!form.imageUrl) {
+      setStatus({ error: "Service image is required.", success: "" });
+      return;
+    }
     const payload = {
       ...form,
       price: Number(form.price),
@@ -107,8 +113,29 @@ export default function ServicesPage() {
       commissionPct: Number(service.commissionPct || 0),
       onlineBookingEnabled: Boolean(service.onlineBookingEnabled),
       isFeatured: Boolean(service.isFeatured),
-      isPopular: Boolean(service.isPopular)
+      isPopular: Boolean(service.isPopular),
+      imageUrl: service.imageUrl || ""
     });
+  };
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setImageUploading(true);
+    setStatus({ error: "", success: "", loading: false });
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const response = await api.post("/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      setForm((f) => ({ ...f, imageUrl: response.data?.url || "" }));
+      setStatus({ error: "", success: "Image uploaded successfully.", loading: false });
+    } catch (err) {
+      setStatus({ error: formatApiError(err, "Failed to upload image."), success: "", loading: false });
+    } finally {
+      setImageUploading(false);
+    }
   };
 
   const branchLabel = selectedBranchId ? branches.find((item) => item.id === selectedBranchId)?.name : "All";
@@ -126,6 +153,22 @@ export default function ServicesPage() {
         <div className="panel-card">
           <h3>{title}</h3>
           <form onSubmit={submit} className="form-grid">
+            <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: 16, marginBottom: 8 }}>
+              <div style={{ width: 80, height: 80, borderRadius: 8, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", border: "1px dashed #cbd5e1" }}>
+                {form.imageUrl ? (
+                  <img src={form.imageUrl} alt="Service" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ fontSize: 24 }}>✂️</span>
+                )}
+              </div>
+              <div>
+                <label className="secondary-button" style={{ display: "inline-block", cursor: "pointer" }}>
+                  {imageUploading ? "Uploading..." : "Upload Service Image *"}
+                  <input type="file" accept="image/*" onChange={handleImageUpload} disabled={imageUploading} hidden />
+                </label>
+                <p style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Required. Max 5MB.</p>
+              </div>
+            </div>
             <input placeholder="Service name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
             <input type="number" min="0" placeholder="Price" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} />
             <select value={form.durationMin} onChange={(event) => setForm({ ...form, durationMin: event.target.value })}>
@@ -191,8 +234,12 @@ export default function ServicesPage() {
         {rows.map((service) => (
           <div key={service.id} className={`list-card ${editingId === service.id ? "active-row" : ""}`}>
             <div className="item-head">
-              <div>
-                <strong>{service.name}</strong>
+              <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                {service.imageUrl && (
+                  <img src={service.imageUrl} alt={service.name} style={{ width: 60, height: 60, borderRadius: 8, objectFit: "cover" }} />
+                )}
+                <div>
+                  <strong>{service.name}</strong>
                 <div className="item-meta">Price {String(service.price)} | Duration {service.durationMin} min | Tax {String(service.taxRate || 0)}%</div>
                 <div className="item-meta">{service.branch?.name || "Available across branches"}</div>
                 <div className="item-meta">Category: {service.category?.name || "Uncategorized"}</div>
