@@ -16,7 +16,13 @@ import {
   Globe,
   Building2,
   Bell,
-  Search
+  Search,
+  Monitor,
+  Calendar as CalendarIcon,
+  Users as UsersIcon,
+  BarChart2,
+  Package,
+  TrendingUp
 } from "lucide-react";
 import { useBranch } from "../context/BranchContext";
 import { api } from "../api/client";
@@ -51,6 +57,9 @@ export default function Sidebar({ groups, auth, onLogout, sidebarExpanded = true
   const permissions = auth?.membership?.permissions || {};
   const canNotifications = Array.isArray(permissions["notifications"]) && permissions["notifications"].includes("view");
   const unreadCount = notifications.filter(n => !n.isRead).length;
+  const flags = auth?.membership?.featureFlags || {};
+  const can = (key, action = "view") => Array.isArray(permissions[key]) && permissions[key].includes(action);
+  const enabled = (key) => flags[key] !== false;
 
   useEffect(() => {
     let active = true;
@@ -177,6 +186,32 @@ export default function Sidebar({ groups, auth, onLogout, sidebarExpanded = true
                   )}
                 </button>
               )}
+            </div>
+          </div>
+          
+          <div className="sidebar-mobile-only-actions" style={{ padding: "0 12px 16px 12px", borderBottom: "1px solid #e2e8f0", marginBottom: 16, display: "none" }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>Main Apps</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {[
+                { label: "DASHBOARD", path: "/admin/dashboard", moduleKey: "dashboard", icon: <LayoutDashboard size={15} /> },
+                { label: "POS", path: "/admin/pos", moduleKey: "pos", featureKey: "pos", icon: <Monitor size={15} /> },
+                { label: "POS DASHBOARD", path: "/admin/order-dashboard", moduleKey: "orders", featureKey: "onlineOrders", icon: <Package size={15} /> },
+                { label: "APPOINTMENT", path: "/admin/appointments", moduleKey: "appointments", featureKey: "appointments", icon: <CalendarIcon size={15} /> },
+                { label: "CRM", path: "/admin/customers", moduleKey: "customers", icon: <UsersIcon size={15} /> },
+                { label: "REPORTS", path: "/admin/reports", moduleKey: "reports", featureKey: "reports", icon: <BarChart2 size={15} /> },
+                { label: "INVENTORY", path: "/admin/inventory", moduleKey: "inventory", featureKey: "inventory", icon: <Package size={15} /> },
+                { label: "TRENDS", path: "/admin/trends", moduleKey: "reports", featureKey: "reports", icon: <TrendingUp size={15} /> }
+              ].filter((tab) => can(tab.moduleKey) && (!tab.featureKey || enabled(tab.featureKey))).map((tab) => (
+                <NavLink
+                  key={tab.path}
+                  to={tab.path}
+                  onClick={closeMobile}
+                  className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
+                >
+                  <span className="sidebar-group-icon" style={{marginRight: 10}}>{tab.icon}</span>
+                  <span style={{fontWeight: 600, fontSize: 13}}>{tab.label}</span>
+                </NavLink>
+              ))}
             </div>
           </div>
 
