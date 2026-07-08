@@ -189,12 +189,12 @@ export default function ProductCategoriesPage() {
   if (loading) return <PageLoader title="Loading products" />;
 
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 120px)", gap: 0, background: "#fff", borderRadius: 12, overflow: "hidden" }}>
+    <div className="responsive-page-layout">
       {status.error && <div style={{ position: "fixed", top: 80, right: 24, background: "#fef2f2", color: "#dc2626", padding: "12px 20px", borderRadius: 8, fontSize: 14, zIndex: 1000, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>{status.error}<button onClick={() => setStatus({...status, error: ""})} style={{ marginLeft: 12, background: "none", border: "none", color: "#dc2626", cursor: "pointer" }}>x</button></div>}
       {status.success && <div style={{ position: "fixed", top: 80, right: 24, background: "#f0fdf4", color: "#16a34a", padding: "12px 20px", borderRadius: 8, fontSize: 14, zIndex: 1000, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>{status.success}<button onClick={() => setStatus({...status, success: ""})} style={{ marginLeft: 12, background: "none", border: "none", color: "#16a34a", cursor: "pointer" }}>x</button></div>}
 
       {/* Left Panel - Categories */}
-      <div style={{ width: 280, borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", background: "#f8fafc" }}>
+      <div className="responsive-sidebar">
         <div style={{ padding: 16, borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "#0f172a" }}>Categories</h3>
           <button onClick={() => setShowCategoryModal(true)} style={{ background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>+ New</button>

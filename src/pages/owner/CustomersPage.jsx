@@ -1679,7 +1679,6 @@ export default function CustomersPage() {
                     { key: "packages", icon: Package, label: "Packages" },
                     { key: "family", icon: Users, label: "Family Members" },
                     { key: "updateprofile", icon: UserCog, label: "Update Profile" },
-                    { key: "segments", icon: Tag, label: "Referrals" },
                     { key: "affiliate", icon: Wallet, label: "Affiliate Wallet" },
                     { key: "followup", icon: Phone, label: "Follow Up" },
                     { key: "notes", icon: StickyNote, label: "Notes" },
@@ -1706,7 +1705,6 @@ export default function CustomersPage() {
                       { key: "packages", label: "Packages" },
                       { key: "family", label: "Family Members" },
                       { key: "updateprofile", label: "Update Profile" },
-                      { key: "segments", label: "Referrals" },
                       { key: "affiliate", label: "Affiliate Wallet" },
                       { key: "followup", label: "Follow Up" },
                       { key: "notes", label: "Notes" },
@@ -2117,25 +2115,6 @@ export default function CustomersPage() {
                               <CheckCircle size={16} /> Save Changes
                             </button>
                           </div>
-                        </div>
-                      )}
-
-                      {/* Referrals Tab */}
-                      {detailTab === "segments" && (
-                        <div className="cust-detail-section">
-                          <div className="cust-detail-section-title">Referrals</div>
-                          {(customerDetail.segments || []).length === 0 ? (
-                            <div className="cust-empty-state">
-                              <Tag size={40} color="#cbd5e1" style={{ marginBottom: "12px" }} />
-                              <div>No segments assigned</div>
-                            </div>
-                          ) : (
-                            (customerDetail.segments || []).map((seg, i) => (
-                              <div key={i} className="cust-membership-card">
-                                <div className="cust-mem-name">{seg.name || seg}</div>
-                              </div>
-                            ))
-                          )}
                         </div>
                       )}
 

@@ -174,6 +174,7 @@ export default function ServiceCategoriesPage() {
       commissionPct: Number(service.commissionPct || 0),
       onlineBookingEnabled: Boolean(service.onlineBookingEnabled),
       description: service.description || "",
+      imageUrl: service.imageUrl || "",
       isFeatured: Boolean(service.isFeatured),
       isPopular: Boolean(service.isPopular)
     });
@@ -286,6 +287,7 @@ export default function ServiceCategoriesPage() {
       commissionPct: Number(serviceForm.commissionPct || 0),
       onlineBookingEnabled: Boolean(serviceForm.onlineBookingEnabled),
       description: serviceForm.description || undefined,
+      imageUrl: serviceForm.imageUrl || undefined,
       isFeatured: Boolean(serviceForm.isFeatured),
       isPopular: Boolean(serviceForm.isPopular)
     };
@@ -397,19 +399,7 @@ export default function ServiceCategoriesPage() {
         </div>
       )}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1.05fr 1.05fr 1.25fr",
-          gap: 0,
-          border: "1px solid #dbe4f0",
-          borderRadius: 24,
-          overflow: "hidden",
-          background: "#ffffff",
-          boxShadow: "0 18px 38px rgba(15, 23, 42, 0.08)",
-          minHeight: 680
-        }}
-      >
+      <div className="catalog-layout-grid">
         <div style={{ borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", minHeight: 0 }}>
           <div style={{ padding: "18px 20px", borderBottom: "1px solid #e2e8f0", textAlign: "center", color: "#2563eb", fontSize: 16, fontWeight: 700 }}>
             Categories
@@ -860,8 +850,40 @@ export default function ServiceCategoriesPage() {
                   value={serviceForm.description}
                   onChange={(event) => setServiceForm((current) => ({ ...current, description: event.target.value }))}
                   placeholder="Optional service notes..."
-                  style={{ width: "100%", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 14, resize: "vertical" }}
+                  style={{ width: "100%", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 14, resize: "vertical", marginBottom: 16 }}
                 />
+              </div>
+
+              <div style={{ marginBottom: 16, padding: "12px 0", borderTop: "1px solid #f1f5f9" }}>
+                <label style={{ fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 8, display: "block" }}>Service Image</label>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-start" }}>
+                  {serviceForm.imageUrl && (
+                    <div style={{ position: "relative", width: 80, height: 80, borderRadius: 8, overflow: "hidden", border: "1px solid #e2e8f0" }}>
+                      <img src={serviceForm.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <button type="button" onClick={() => setServiceForm({...serviceForm, imageUrl: ""})} style={{ position: "absolute", top: 2, right: 2, background: "#dc2626", color: "white", border: "none", borderRadius: "50%", width: 18, height: 18, fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>x</button>
+                    </div>
+                  )}
+                  {!serviceForm.imageUrl && (
+                    <label style={{ width: 80, height: 80, borderRadius: 8, border: "2px dashed #cbd5e1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#94a3b8", fontSize: 10, gap: 4, transition: "border-color 0.2s" }} onMouseEnter={e => e.currentTarget.style.borderColor = "#2563eb"} onMouseLeave={e => e.currentTarget.style.borderColor = "#cbd5e1"}>
+                      <span style={{ fontSize: 20 }}>+</span>
+                      Add Image
+                      <input type="file" accept="image/*" hidden onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 2 * 1024 * 1024) {
+                          alert("Image exceeds 2MB limit.");
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          setServiceForm(prev => ({...prev, imageUrl: ev.target.result}));
+                        };
+                        reader.readAsDataURL(file);
+                        e.target.value = "";
+                      }} />
+                    </label>
+                  )}
+                </div>
               </div>
 
               <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>

@@ -6,7 +6,7 @@ import EmptyState from "../../components/EmptyState";
 import ModuleTabs from "../../components/ModuleTabs";
 import { formatApiError } from "../../utils/apiError";
 import PageLoader from "../../components/PageLoader";
-import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, Download, Edit3, Eye, FileText, History, LogIn, LogOut, MapPin, PlusCircle, Printer, RotateCcw, Save, Timer, User, UserPlus, Users, XCircle } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, Download, Edit3, Eye, FileText, History, LogIn, LogOut, MapPin, PlusCircle, Printer, RotateCcw, Save, Timer, User, UserPlus, Users, XCircle, Activity, List } from "lucide-react";
 
 const emptyAttendanceSettings = {
   officeStartTime: "09:00",
@@ -111,7 +111,7 @@ export default function PayrollPage() {
   const { selectedBranchId, selectedBranchName } = useBranch();
   const [attendance, setAttendance] = useState([]);
   const [attendanceMeta, setAttendanceMeta] = useState({ total: 0, page: 1, limit: 50, totalPages: 1 });
-  const [attendancePage, setAttendancePage] = useState(1);
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [attendanceSummary, setAttendanceSummary] = useState({ totalStaff: 0, presentToday: 0, absentToday: 0, lateStaff: 0, currentlyWorking: 0, completedShift: 0, onLeave: 0 });
   const [attendanceSettings, setAttendanceSettings] = useState(emptyAttendanceSettings);
   const [attendanceReport, setAttendanceReport] = useState(emptyAttendanceReport);
@@ -461,7 +461,37 @@ export default function PayrollPage() {
       {status.error && <div className="panel-card"><p className="error-text">{status.error}</p></div>}
       {status.success && <div className="panel-card"><p className="success-text">{status.success}</p></div>}
 
-      <div style={{ display: "grid", gap: 18, minWidth: 0, maxWidth: "100%" }}>
+      <div style={{ display: "flex", gap: 8, padding: "0 24px", marginBottom: 18, overflowX: "auto" }}>
+        {[
+          { id: "dashboard", label: "Dashboard", icon: Activity },
+          { id: "calendar", label: "Calendar", icon: CalendarDays },
+          { id: "records", label: "Records", icon: List },
+          { id: "reports", label: "Reports", icon: FileText }
+        ].map(t => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            style={{ 
+              padding: "10px 18px", 
+              borderRadius: 8, 
+              border: "none",
+              background: activeTab === t.id ? "#2563eb" : "#f1f5f9",
+              color: activeTab === t.id ? "white" : "#475569",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontSize: 14
+            }}
+          >
+            <t.icon size={16} /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: "grid", gap: 18, minWidth: 0, maxWidth: "100%", padding: "0 24px" }}>
+        {activeTab === "dashboard" && (
         <div className="panel-card" style={{ padding: "20px 24px" }}>
           <h3>Attendance Dashboard</h3>
           <div className="stats-grid" style={{ marginBottom: 16 }}>
@@ -517,7 +547,9 @@ export default function PayrollPage() {
             </div>
           </form>
         </div>
+        )}
 
+        {activeTab === "calendar" && (
         <div className="panel-card" style={{ overflow: "hidden", padding: "20px 24px", maxWidth: "100%" }}>
           <style>{`
             .att-cal-cell { transition: all 0.15s ease; }
@@ -647,6 +679,7 @@ export default function PayrollPage() {
             })()}
           </div>
         </div>
+        )}
 
         {selectedCalendarCell ? (
           <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.68)", display: "grid", placeItems: "center", zIndex: 60, padding: 16, backdropFilter: "blur(4px)" }} onClick={() => setSelectedCalendarCell(null)}>
@@ -693,8 +726,9 @@ export default function PayrollPage() {
           </div>
         ) : null}
 
+        {activeTab === "reports" && (
         <div className="panel-card">
-          <div className="item-head" style={{ alignItems: "flex-end" }}>
+          <div className="item-head" style={{ alignItems: "flex-end", padding: "20px 24px 0" }}>
             <div>
               <h3 style={{ marginTop: 0, marginBottom: 6 }}>Attendance Reports</h3>
               <div className="item-meta">Generate daily, weekly, or monthly attendance reports and export them in Excel or PDF.</div>
@@ -757,7 +791,9 @@ export default function PayrollPage() {
             {!attendanceReport.rows?.length && <EmptyState title="No attendance report rows" message="Pick a date and report period to generate attendance rows for export." />}
           </div>
         </div>
+        )}
 
+        {activeTab === "records" && (
         <div className="panel-card" ref={manualCreateRef} style={{ padding: "20px 24px" }}>
           <div style={{ marginBottom: 20 }}>
             <h3 style={{ margin: 0, fontSize: 18 }}>Manual Attendance Entry</h3>
@@ -819,7 +855,9 @@ export default function PayrollPage() {
             </div>
           </form>
         </div>
+        )}
 
+        {activeTab === "records" && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: 18, alignItems: "start", minWidth: 0 }}>
           <div className="panel-card" style={{ padding: "20px 24px", minWidth: 0 }}>
             <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Attendance Records</h3>
@@ -982,7 +1020,9 @@ export default function PayrollPage() {
             ) : null}
           </div>
         </div>
+        )}
 
+        {activeTab === "reports" && (
         <div className="panel-card" style={{ padding: "20px 24px" }}>
           <div className="item-head" style={{ alignItems: "flex-end" }}>
             <div>
@@ -1030,6 +1070,7 @@ export default function PayrollPage() {
             {!attendanceDaySheet.length && <EmptyState title="No day sheet rows" message="Staff day sheet will show present, leave, and absent projection for the selected date." />}
           </div>
         </div>
+        )}
       </div>
     </div>
   );

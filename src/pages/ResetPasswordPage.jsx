@@ -21,7 +21,7 @@ export default function ResetPasswordPage() {
   );
 
   useEffect(() => {
-    document.title = "Set Password | ReSpark";
+    document.title = "Set Password | Skillify";
   }, []);
 
   useEffect(() => {
@@ -124,7 +124,7 @@ export default function ResetPasswordPage() {
               {!state.email ? <EmptyState title="Invite verified without email readback" message="You can still set a password, but the invite did not return a display email for confirmation." /> : null}
               <p className="muted">
                 {state.name ? `Hi ${state.name}, ` : ""}
-                choose your password to activate this ReSpark account.
+                choose your password to activate this Skillify account.
               </p>
               <div className="summary-box" style={{ marginBottom: 16 }}>
                 <strong>Verified email</strong>

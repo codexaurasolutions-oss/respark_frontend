@@ -589,7 +589,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
                       <strong>{item.title}</strong>
                       <small>{item.subtitle || "Open record"}</small>
                     </span>
-                    <span className="respark-search-result-nav">→</span>
+                    <span className="respark-search-result-nav">â†’</span>
                   </button>
                 ))}
               </div>
@@ -598,7 +598,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
         ) : null}
 
         <div className="respark-top-right">
-          {/* Branch Selector — Owner only */}
+          {/* Branch Selector â€” Owner only */}
           {isOwner ? (
           <div className="respark-branch-wrap">
             <button className="respark-branch-btn" onClick={() => setIsBranchOpen(!isBranchOpen)}>
@@ -660,7 +660,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
                     notifications.map((notif) => (
                       <div key={notif.id} className={`notif-item ${!notif.isRead ? "unread" : ""}`} onClick={(e) => handleNotificationClick(e, notif)}>
                         <div style={{ fontSize: "1.2rem" }}>
-                          {notif.type === 'APPOINTMENT' ? '📅' : notif.type === 'PAYMENT' ? '💵' : notif.type === 'FEEDBACK' ? '⭐' : '🔔'}
+                          {notif.type === 'APPOINTMENT' ? 'ðŸ“…' : notif.type === 'PAYMENT' ? 'ðŸ’µ' : notif.type === 'FEEDBACK' ? 'â­' : 'ðŸ””'}
                         </div>
                         <div>
                           <p><strong>{notif.title}</strong> - {notif.message}</p>
@@ -716,7 +716,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
                   </button>
                 )}
                 <div className="profile-dropdown-version">
-                  Respark ERP v1.0.0
+                  Skillify ERP v1.0.0
                 </div>
               </div>
             )}

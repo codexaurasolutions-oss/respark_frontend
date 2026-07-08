@@ -3601,3 +3601,62 @@ pre {
     margin-bottom: 16px;
   }
 }
+
+
+/* Added Responsive Layout Classes */
+.catalog-layout-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1.05fr 1.25fr;
+  gap: 0;
+  border: 1px solid #dbe4f0;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+  min-height: 680px;
+}
+
+.responsive-page-layout {
+  display: flex;
+  height: calc(100vh - 120px);
+  gap: 0;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.responsive-sidebar {
+  width: 280px;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+}
+
+@media (max-width: 1024px) {
+  .catalog-layout-grid {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    gap: 16px;
+    background: transparent;
+    box-shadow: none;
+    border: none;
+  }
+  .catalog-layout-grid > div {
+    border: 1px solid #dbe4f0 !important;
+    border-radius: 16px;
+    background: #ffffff;
+    min-height: 300px;
+  }
+  .responsive-page-layout {
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 120px);
+  }
+  .responsive-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    max-height: 300px;
+  }
+}

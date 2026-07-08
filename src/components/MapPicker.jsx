@@ -53,7 +53,7 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
     if (!onAddressChangeRef.current) return;
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`, {
-        headers: { "User-Agent": "ResparkApp/1.0" }
+        headers: { "User-Agent": "SkillifyApp/1.0" }
       });
       const data = await res.json();
       if (data.display_name) {
@@ -120,7 +120,7 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
     setSearchError("");
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`, {
-        headers: { "User-Agent": "ResparkApp/1.0" }
+        headers: { "User-Agent": "SkillifyApp/1.0" }
       });
       const results = await res.json();
       if (!results.length) {

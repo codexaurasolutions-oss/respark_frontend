@@ -39,7 +39,7 @@ export default function LegalContentPage({ scope = "global", title, contentKey }
           titleText: title,
           content: resolvedContent,
           supportEmail: settingsData.supportEmail || "",
-          businessName: settingsData.systemName || "Respark"
+          businessName: settingsData.systemName || "Skillify"
         });
       } catch {
         if (!active) return;

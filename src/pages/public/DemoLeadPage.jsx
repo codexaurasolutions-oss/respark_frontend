@@ -31,7 +31,7 @@ export default function PublicDemoLeadPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    document.title = "Request Demo | ReSpark";
+    document.title = "Request Demo | Skillify";
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
       meta = document.createElement("meta");
@@ -69,15 +69,15 @@ export default function PublicDemoLeadPage() {
       <main className="public-main">
         <div className="demo-topbar">
           <Link to="/" className="brand-mark demo-brand-link">
-            <img src="/logo-respark.svg" alt="ReSpark" className="brand-logo" />
+            <img src="/logo-respark.svg" alt="Skillify" className="brand-logo" />
             <span className="brand-lockup">
-              <strong>ReSpark</strong>
+              <strong>Skillify</strong>
               <small>Salon ERP Platform</small>
             </span>
           </Link>
           <div className="demo-topbar-menu">
             <PublicMobileMenu
-              brand={{ label: "ReSpark", sublabel: "Salon ERP Platform", logo: "/logo-respark.svg", to: "/" }}
+              brand={{ label: "Skillify", sublabel: "Salon ERP Platform", logo: "/logo-respark.svg", to: "/" }}
               items={navItems}
               cta={{ label: "Request Demo", to: "/book-demo" }}
             />

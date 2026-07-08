@@ -165,18 +165,11 @@ export default function Sidebar({ groups, auth, onLogout, sidebarExpanded = true
             )}
             
             <div style={{ display: "flex", gap: 8 }}>
-              <button 
-                type="button" 
-                onClick={() => { closeMobile(); navigate("/admin/my-profile"); }}
-                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, color: "#475569", fontSize: 13, fontWeight: 500, cursor: "pointer" }}
-              >
-                <User size={15} /> Profile
-              </button>
-              
+
               {canNotifications && (
                 <button 
                   type="button" 
-                  onClick={() => { alert("Check notifications on desktop. Mobile notifications view is coming soon."); }}
+                  onClick={() => { closeMobile(); navigate("/admin/notifications"); }}
                   style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, color: "#475569", fontSize: 13, fontWeight: 500, position: "relative", cursor: "pointer" }}
                 >
                   <Bell size={15} /> 
@@ -189,7 +182,7 @@ export default function Sidebar({ groups, auth, onLogout, sidebarExpanded = true
             </div>
           </div>
           
-          <div className="sidebar-mobile-only-actions" style={{ padding: "0 12px 16px 12px", borderBottom: "1px solid #e2e8f0", marginBottom: 16, display: "none" }}>
+          <div className="sidebar-mobile-only-actions" style={{ padding: "0 12px 16px 12px", borderBottom: "1px solid #e2e8f0", marginBottom: 16 }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>Main Apps</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {[

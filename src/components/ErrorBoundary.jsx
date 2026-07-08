@@ -12,6 +12,19 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     console.error("ErrorBoundary caught:", error, errorInfo);
+    
+    // Automatically reload the page if it's a chunk load error (Vercel deployment mismatch)
+    const isChunkLoadError = error?.message && (
+      /Failed to fetch dynamically imported module/i.test(error.message) || 
+      /Importing a module script failed/i.test(error.message)
+    );
+    
+    if (isChunkLoadError) {
+      if (!sessionStorage.getItem("chunk_reload_attempted")) {
+        sessionStorage.setItem("chunk_reload_attempted", "true");
+        window.location.reload(true);
+      }
+    }
   }
 
   render() {

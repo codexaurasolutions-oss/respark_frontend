@@ -44,7 +44,7 @@ export default function LoginPage() {
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#f1f5f9', padding: '20px' }}>
       <div style={{ width: '100%', maxWidth: '440px', background: 'white', padding: '40px', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 10px 40px rgba(0,0,0,0.06)' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '1.2rem', color: 'var(--accent)', marginBottom: '8px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Respark ERP</h1>
+          <h1 style={{ fontSize: '1.2rem', color: 'var(--accent)', marginBottom: '8px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Skillify ERP</h1>
           <h2 style={{ fontSize: '2.2rem', margin: 0, color: '#0f172a', letterSpacing: '-0.02em' }}>Welcome back</h2>
           <p className="muted" style={{ marginTop: '8px' }}>Sign in to your salon workspace</p>
         </div>
