@@ -381,9 +381,6 @@ export default function UsersPage() {
         if (form.accountNumber && !/^\d{9,18}$/.test(form.accountNumber)) return setStatus((current) => ({ ...current, error: "Account number must be 9-18 digits" }));
         if (form.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(form.ifscCode)) return setStatus((current) => ({ ...current, error: "Invalid IFSC code format (e.g. HDFC0001234)" }));
       }
-      if (form.joiningDate && new Date(form.joiningDate) > new Date()) {
-        return setStatus((current) => ({ ...current, error: "Joining date cannot be in the future" }));
-      }
       const payload = {
         salonRole: form.salonRole,
         roleTitle: form.roleTitle || undefined,
