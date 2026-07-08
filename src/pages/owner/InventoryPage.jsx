@@ -10,7 +10,7 @@ import IndianPhoneInput from "../../components/IndianPhoneInput";
 import { Package, Search, ShoppingCart, CheckCircle, XCircle, AlertTriangle, ArrowLeft, Tag, Layers, RefreshCw, Users, FileText, Activity, Plus, Trash2, ChevronDown, Save, Upload, Download } from "lucide-react";
 
 const emptyCategory = { name: "", description: "", imageUrl: "", sortOrder: 0, isPublicVisible: true };
-const emptyProduct = { branchId: "", categoryId: "", name: "", productType: "RETAIL", costPrice: 0, sellingPrice: 0, minStock: 0, sku: "", barcode: "", imageUrl: "" };
+const emptyProduct = { branchId: "", categoryId: "", name: "", productType: "RETAIL", costPrice: 0, sellingPrice: 0, currentStock: 0, minStock: 0, sku: "", barcode: "", imageUrl: "" };
 const emptyMovement = { productId: "", branchId: "", movementType: "STOCK_IN", quantity: 1, note: "" };
 const emptyVendor = { branchId: "", name: "", phone: "", email: "", address: "", notes: "" };
 const createEmptyPoItem = () => ({ productId: "", quantityOrdered: 1, unitCost: 0 });
@@ -397,7 +397,7 @@ export default function InventoryPage() {
   const handleProductSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post("/owner/inventory/products", { ...productForm, costPrice: Number(productForm.costPrice), sellingPrice: Number(productForm.sellingPrice), minStock: Number(productForm.minStock) });
+      await api.post("/owner/inventory/products", { ...productForm, costPrice: Number(productForm.costPrice), sellingPrice: Number(productForm.sellingPrice), currentStock: Number(productForm.currentStock), minStock: Number(productForm.minStock) });
       setIsProductModalOpen(false);
       setProductForm(emptyProduct);
       loadAll();
@@ -1440,6 +1440,16 @@ export default function InventoryPage() {
                   <div className="sp-group">
                     <label className="sp-label">Selling Price ({formatMoney(1).replace(/[\d.,]/g, '').trim()})</label>
                     <input type="number" className="sp-input" required value={productForm.sellingPrice} onChange={e => setProductForm({...productForm, sellingPrice: e.target.value})} />
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="sp-group">
+                    <label className="sp-label">Current Stock</label>
+                    <input type="number" className="sp-input" required value={productForm.currentStock} onChange={e => setProductForm({...productForm, currentStock: e.target.value})} />
+                  </div>
+                  <div className="sp-group">
+                    <label className="sp-label">Min Stock</label>
+                    <input type="number" className="sp-input" required value={productForm.minStock} onChange={e => setProductForm({...productForm, minStock: e.target.value})} />
                   </div>
                 </div>
                 <div className="sp-group">

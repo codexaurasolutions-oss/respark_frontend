@@ -18,6 +18,7 @@ const defaultProductForm = {
   costPrice: 0,
   sellingPrice: 0,
   salePrice: 0,
+  currentStock: 0,
   nonDiscountable: false,
   sku: "",
   productType: "RETAIL",
@@ -112,6 +113,7 @@ export default function ProductCategoriesPage() {
       costPrice: Number(p.costPrice) || 0,
       sellingPrice: Number(p.sellingPrice) || 0,
       salePrice: Number(p.salePrice) || 0,
+      currentStock: Number(p.currentStock) || 0,
       nonDiscountable: Boolean(p.nonDiscountable),
       sku: p.sku || "",
       productType: p.productType || "RETAIL",
@@ -140,6 +142,7 @@ export default function ProductCategoriesPage() {
         costPrice: Number(productForm.costPrice),
         sellingPrice: Number(productForm.sellingPrice),
         salePrice: productForm.salePrice ? Number(productForm.salePrice) : null,
+        currentStock: Number(productForm.currentStock),
         featured: Boolean(productForm.featured),
         targetGroup: productForm.targetGroup || "BOTH",
         hideFromCatalogue: Boolean(productForm.hideFromCatalogue),
@@ -396,12 +399,9 @@ export default function ProductCategoriesPage() {
 
                 {/* Branch, Group + Hide from catalogue */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, padding: "12px 0", borderTop: "1px solid #f1f5f9", gap: 16, flexWrap: "wrap" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <label style={{ fontSize: 13, fontWeight: 600, color: "#475569" }}>Branch</label>
-                    <select value={productForm.branchId} onChange={e => setProductForm({...productForm, branchId: e.target.value})} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, background: "white" }}>
-                      <option value="">All Branches (salon-wide)</option>
-                      {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                    </select>
+                  <div className="hub-form-group">
+                    <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 4, display: "block" }}>Current Stock</label>
+                    <input type="number" className="hub-input" value={productForm.currentStock} onChange={e => { const val = e.target.value; setProductForm(prev => ({...prev, currentStock: val === "" ? "" : (parseFloat(val) || 0)})); }} onFocus={() => handlePriceFocus("currentStock")} onBlur={() => handlePriceBlur("currentStock")} style={{ width: "100%", padding: "6px 10px" }} />
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontSize: 14, fontWeight: 500, color: "#0f172a" }}>Group</span>
