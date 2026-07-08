@@ -146,7 +146,7 @@ export default function PayrollPage() {
       };
 
       const [attendanceData, summaryData, settingsData, staffData, daySheetData, attendanceReportData, attendanceCalData] = await Promise.all([
-        safeGet("/owner/attendance", { ...branchParams, page: attendancePage, limit: 50, ...(filters.attendanceQ ? { q: filters.attendanceQ } : {}), ...(filters.attendanceStatus ? { status: filters.attendanceStatus } : {}), ...(filters.attendanceDate ? { date: filters.attendanceDate } : {}) }),
+        safeGet("/owner/attendance", { ...branchParams, page: attendanceMeta.page, limit: 50, ...(filters.attendanceQ ? { q: filters.attendanceQ } : {}), ...(filters.attendanceStatus ? { status: filters.attendanceStatus } : {}), ...(filters.attendanceDate ? { date: filters.attendanceDate } : {}) }),
         safeGet("/owner/attendance/summary", { ...branchParams, ...(filters.attendanceDate ? { date: filters.attendanceDate } : {}) }),
         safeGet("/owner/attendance/settings"),
         safeGet("/owner/staff-users", branchParams),
@@ -167,7 +167,7 @@ export default function PayrollPage() {
       setStatus({ error: formatApiError(error, "Could not load attendance workspace"), success: "" });
       setLoading(false);
     }
-  }, [attendanceCalendarMonth, attendancePage, attendanceReportPeriod, filters, selectedBranchId, daySheetDate]);
+  }, [attendanceCalendarMonth, attendanceMeta.page, attendanceReportPeriod, filters, selectedBranchId, daySheetDate]);
 
   const downloadAttendanceReport = (format) => {
     const searchParams = new URLSearchParams({
