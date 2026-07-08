@@ -5,6 +5,7 @@ import { useBranch } from "../../context/BranchContext";
 import EmptyState from "../../components/EmptyState";
 import ModuleTabs from "../../components/ModuleTabs";
 import { formatApiError } from "../../utils/apiError";
+import { normalizeImageUrl } from "../../utils/imageUrl";
 import PageLoader from "../../components/PageLoader";
 import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock, Download, Edit3, Eye, FileText, History, LogIn, LogOut, MapPin, PlusCircle, Printer, RotateCcw, Save, Timer, User, UserPlus, Users, XCircle, Activity, List } from "lucide-react";
 
@@ -715,7 +716,7 @@ export default function PayrollPage() {
                   <strong>Admin Remark:</strong> {selectedCalendarCell.record.adminRemark}
                 </div>
               )}
-              {selectedCalendarCell.record?.selfie ? <img src={selectedCalendarCell.record.selfie.startsWith("http") ? selectedCalendarCell.record.selfie : `${api.defaults.baseURL?.replace("/api/v1", "") || ""}${selectedCalendarCell.record.selfie}`} alt="Attendance selfie" style={{ width: "100%", borderRadius: 12, border: "1px solid #e2e8f0" }} /> : null}
+              {selectedCalendarCell.record?.selfie ? <img src={normalizeImageUrl(selectedCalendarCell.record.selfie)} alt="Attendance selfie" style={{ width: "100%", borderRadius: 12, border: "1px solid #e2e8f0" }} /> : null}
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
                 <button type="button" className="secondary-button" onClick={() => setSelectedCalendarCell(null)}>Close</button>
                 <button type="button" onClick={() => void openManualCorrectionFromCell()}>
@@ -900,7 +901,7 @@ export default function PayrollPage() {
                     onClick={() => loadAttendanceDetail(row.id)}
                     style={{ textAlign: "left", width: "100%", background: selectedAttendanceId === row.id ? "#eff6ff" : "white", border: selectedAttendanceId === row.id ? "1px solid #bfdbfe" : "1px solid #e2e8f0", borderRadius: 12, padding: "16px 20px", display: "flex", gap: 16, alignItems: "center", color: "#0f172a", cursor: "pointer", transition: "all 0.2s" }}
                   >
-                    {row.checkInSelfieUrl ? <img src={row.checkInSelfieUrl.startsWith("http") ? row.checkInSelfieUrl : `${api.defaults.baseURL?.replace("/api/v1", "") || ""}${row.checkInSelfieUrl}`} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "2px solid #e2e8f0", flexShrink: 0 }} onError={(e) => { e.target.style.display = "none"; }} /> : <div style={{ width: 44, height: 44, borderRadius: "50%", background: sc.bg, color: sc.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 600, flexShrink: 0 }}>{name?.charAt(0)?.toUpperCase()}</div>}
+                    {row.checkInSelfieUrl ? <img src={normalizeImageUrl(row.checkInSelfieUrl)} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", border: "2px solid #e2e8f0", flexShrink: 0 }} onError={(e) => { e.target.style.display = "none"; }} /> : <div style={{ width: 44, height: 44, borderRadius: "50%", background: sc.bg, color: sc.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 600, flexShrink: 0 }}>{name?.charAt(0)?.toUpperCase()}</div>}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <strong style={{ fontSize: 15, color: "#0f172a" }}>{name}</strong>
@@ -954,8 +955,8 @@ export default function PayrollPage() {
                 <div className="item-meta"><strong>Verification:</strong> {selectedAttendance.verificationMethod || "-"}</div>
                 <div className="item-meta"><strong><FileText size={12} /> Admin Remark:</strong> {selectedAttendance.adminRemark || "None"}</div>
                 <div className="item-meta"><strong><FileText size={12} /> Note:</strong> {selectedAttendance.note || "None"}</div>
-                {selectedAttendance.checkInSelfieUrl ? <div><strong style={{ fontSize: 12, color: "#64748b" }}>Check-In Selfie</strong><img src={selectedAttendance.checkInSelfieUrl.startsWith("http") ? selectedAttendance.checkInSelfieUrl : `${api.defaults.baseURL?.replace("/api/v1", "") || ""}${selectedAttendance.checkInSelfieUrl}`} alt="Check-in selfie" style={{ width: "100%", borderRadius: 12, border: "1px solid #e2e8f0", marginTop: 4 }} /></div> : null}
-                {selectedAttendance.checkOutSelfieUrl ? <div><strong style={{ fontSize: 12, color: "#64748b" }}>Check-Out Selfie</strong><img src={selectedAttendance.checkOutSelfieUrl.startsWith("http") ? selectedAttendance.checkOutSelfieUrl : `${api.defaults.baseURL?.replace("/api/v1", "") || ""}${selectedAttendance.checkOutSelfieUrl}`} alt="Check-out selfie" style={{ width: "100%", borderRadius: 12, border: "1px solid #e2e8f0", marginTop: 4 }} /></div> : null}
+                {selectedAttendance.checkInSelfieUrl ? <div><strong style={{ fontSize: 12, color: "#64748b" }}>Check-In Selfie</strong><img src={normalizeImageUrl(selectedAttendance.checkInSelfieUrl)} alt="Check-in selfie" style={{ width: "100%", borderRadius: 12, border: "1px solid #e2e8f0", marginTop: 4 }} /></div> : null}
+                {selectedAttendance.checkOutSelfieUrl ? <div><strong style={{ fontSize: 12, color: "#64748b" }}>Check-Out Selfie</strong><img src={normalizeImageUrl(selectedAttendance.checkOutSelfieUrl)} alt="Check-out selfie" style={{ width: "100%", borderRadius: 12, border: "1px solid #e2e8f0", marginTop: 4 }} /></div> : null}
 
                 {!attendanceSettings.allowManualAttendanceEdits ? (
                   <div style={{ padding: "10px 16px", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 10, fontSize: 13, color: "#92400e" }}>
