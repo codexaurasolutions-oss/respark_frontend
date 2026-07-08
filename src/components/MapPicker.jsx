@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
 
-const DEFAULT_CENTER = [24.8607, 67.0011];
+const DEFAULT_CENTER = [28.7041, 77.1025];
 const DEFAULT_ZOOM = 12;
 
 export default function MapPicker({ latitude, longitude, onChange, address, onAddressChange }) {
@@ -189,7 +189,7 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSearch(); } }}
-          placeholder="Search address (e.g. Johar Town Lahore)"
+          placeholder="Search address (e.g. Connaught Place Delhi)"
           style={{ flex: 1, padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 14 }}
         />
         <button type="button" onClick={handleSearch} disabled={searching} style={{ padding: "10px 16px", borderRadius: 8, border: "1px solid #0f766e", background: "#f0fdfa", color: "#0f766e", fontWeight: 600, fontSize: 13, cursor: searching ? "wait" : "pointer", whiteSpace: "nowrap", opacity: searching ? 0.6 : 1 }}>
