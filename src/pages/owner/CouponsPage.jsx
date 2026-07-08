@@ -252,22 +252,46 @@ export default function CouponsPage() {
                 return (
                   <div 
                     key={row.id} 
-                    onClick={() => handleEditCoupon(row)}
                     style={{ 
                       padding: "16px", 
                       borderRadius: 8, 
                       cursor: "pointer", 
                       background: isSelected ? "#e0f2fe" : "transparent",
                       border: isSelected ? "1px solid #0284c7" : "1px solid #f1f5f9",
-                      transition: "all 0.2s" 
+                      transition: "all 0.2s",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 8
                     }}
+                    onClick={() => handleEditCoupon(row)}
                   >
-                    <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "0.95rem" }}>
-                      {row.discountType === "PERCENT" ? `FLAT ${Number(row.discountValue)}% OFF` : `FLAT ${Number(row.discountValue)} Rs OFF`}
+                    <div>
+                      <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "0.95rem" }}>
+                        {row.discountType === "PERCENT" ? `FLAT ${Number(row.discountValue)}% OFF` : `FLAT ${Number(row.discountValue)} Rs OFF`}
+                      </div>
+                      <div style={{ color: isSelected ? "#0284c7" : "#475569", fontSize: "0.85rem", marginTop: 4, fontWeight: 500 }}>
+                        {row.code}
+                      </div>
                     </div>
-                    <div style={{ color: isSelected ? "#0284c7" : "#475569", fontSize: "0.85rem", marginTop: 4, fontWeight: 500 }}>
-                      {row.code}
-                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteCoupon(row.id); }}
+                      title="Delete coupon"
+                      style={{
+                        padding: "4px 8px",
+                        fontSize: 14,
+                        background: "transparent",
+                        border: "1px solid #fecaca",
+                        borderRadius: 6,
+                        cursor: "pointer",
+                        color: "#dc2626",
+                        fontWeight: 600,
+                        flexShrink: 0,
+                        lineHeight: 1
+                      }}
+                    >
+                      ✕
+                    </button>
                   </div>
                 );
               })}
