@@ -2048,7 +2048,6 @@ export default function SettingsPage() {
 
   const renderRosterSection = () => {
     const roster = form.advancedSettings.rosterManagement;
-    const shifts = form.advancedSettings.shiftManagement.shifts;
     const rosterModuleEnabled = form.advancedSettings.allowRosterMgtSettings !== false;
     const updateRow = (id, patch) => updateAdvancedObject("rosterManagement", {
       rows: roster.rows.map((row) => row.id === id ? { ...row, ...patch } : row)
