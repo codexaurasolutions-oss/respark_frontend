@@ -472,10 +472,9 @@ pre {
   position: fixed;
   top: 0;
   left: 0;
+  bottom: 0;
   width: min(88vw, 240px);
-  height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow-y: hidden;
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -487,7 +486,7 @@ pre {
   pointer-events: none;
   transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1),
               opacity 240ms ease;
-  z-index: 1100;
+  z-index: 50;
 }
 
 .app-sidebar.open {
@@ -554,14 +553,15 @@ pre {
 
 /* ── Navigation ── */
 .sidebar-nav {
-  min-height: 0;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 10px 10px 4px;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sidebar-nav::-webkit-scrollbar {
@@ -816,6 +816,8 @@ pre {
   transition: transform 260ms ease, opacity 220ms ease;
   z-index: 46;
   overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 .surface-drawer.active {
@@ -3662,3 +3664,4 @@ pre {
     max-height: 300px;
   }
 }
+
