@@ -1674,7 +1674,8 @@ export default function SettingsPage() {
           startTime: "09:00",
           endTime: "21:00",
           days: WEEK_DAYS.map(d => ({ dayOfWeek: d.dayOfWeekValue, startTime: "09:00", endTime: "21:00", active: true })),
-          breaks: []
+          breaks: [],
+          branchId: selectedBranchId || undefined
         };
         const res = await api.post("/owner/shifts", payload);
         setShifts((prev) => [...prev, res.data]);
@@ -1723,7 +1724,8 @@ export default function SettingsPage() {
             active: b.active !== false,
             fromTime: b.fromTime || "00:00",
             toTime: b.toTime || "00:00"
-          }))
+          })),
+          branchId: selectedBranchId || undefined
         };
         const res = await api.patch(`/owner/shifts/${selectedShift.id}`, payload);
         setShifts((prev) => prev.map(s => s.id === res.data.id ? res.data : s));
