@@ -1637,7 +1637,7 @@ export default function ReportsHubPage() {
   const activeVisibleColumns = visibleColumns && visibleColumns.length > 0 ? visibleColumns : allColumns;
 
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 108px)", overflow: "hidden", background: "#f8fafc" }}>
+      <div className="reports-layout" style={{ display: "flex", height: "calc(100vh - 108px)", overflow: "hidden", background: "#f8fafc" }}>
       <style>
         {`
           @media print {
@@ -1657,6 +1657,17 @@ export default function ReportsHubPage() {
           .rpt-nav-item.active { background: #f0f9ff; color: #0284c7; border-left-color: #0284c7; font-weight: 700; }
           .rpt-main { flex: 1; overflow: hidden; display: flex; flex-direction: column; background: #f8fafc; }
           .rpt-topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 8px 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
+            @media (max-width: 768px) {
+              .reports-layout { flex-direction: column !important; height: auto !important; min-height: calc(100vh - 108px) !important; overflow: visible !important; }
+              .rpt-sidebar { width: 100% !important; min-width: 100% !important; max-height: 180px !important; border-right: none !important; border-bottom: 1px solid #e2e8f0 !important; }
+              .rpt-main { overflow: visible !important; }
+              #report-filters { flex-direction: column !important; align-items: stretch !important; margin-left: 0 !important; width: 100%; }
+              .rpt-filter-chip { width: 100%; justify-content: space-between; }
+              .rpt-filter-chip select, .rpt-filter-chip input { flex: 1; min-width: 0 !important; }
+              .rpt-table-container { overflow-x: auto; }
+              .rpt-topbar { flex-direction: column; align-items: flex-start; }
+              .rpt-topbar h2 { margin-bottom: 10px; }
+            }
           .rpt-title { font-size: 0.82rem; font-weight: 700; color: #0f172a; margin: 0; white-space: nowrap; min-width: 90px; }
           .rpt-filter-label { font-size: 0.68rem; color: #94a3b8; font-weight: 600; white-space: nowrap; }
           .rpt-date-input { border: 1px solid #e2e8f0; border-radius: 5px; padding: 4px 7px; font-size: 0.72rem; color: #334155; min-height: unset; width: 120px; }
@@ -1856,3 +1867,4 @@ export default function ReportsHubPage() {
     </div>
   );
 }
+

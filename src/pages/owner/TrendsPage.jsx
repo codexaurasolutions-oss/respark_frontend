@@ -174,11 +174,17 @@ export default function TrendsPage() {
     <div className="page-shell" style={{ paddingBottom: 48 }}>
       <style>{`
         .trend-pill-btn {
-          display: inline-flex; align-items: center; gap: 7px;
-          padding: 9px 20px; border-radius: 40px; border: 1.5px solid #e2e8f0;
-          font-size: 13px; font-weight: 500; cursor: pointer;
-          transition: all 0.18s; background: white; color: #64748b;
-        }
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 9px 20px; border-radius: 40px; border: 1.5px solid #e2e8f0;
+            font-size: 13px; font-weight: 500; cursor: pointer;
+            transition: all 0.18s; background: white; color: #64748b;
+          }
+          @media (max-width: 768px) {
+            .trends-header { flex-direction: column !important; gap: 16px !important; }
+            .trends-header h1 { fontSize: 24px !important; }
+            .trends-tabs { overflow-x: auto; white-space: nowrap; padding-bottom: 8px; width: 100%; justify-content: flex-start !important; }
+            .trends-grid { grid-template-columns: 1fr !important; }
+          }
         .trend-pill-btn.active {
           background: linear-gradient(135deg, #6366f1, #4f46e5);
           border-color: #6366f1; color: white;
@@ -400,3 +406,4 @@ export default function TrendsPage() {
     </div>
   );
 }
+
