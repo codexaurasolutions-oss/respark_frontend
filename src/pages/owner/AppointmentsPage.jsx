@@ -162,20 +162,22 @@ export default function AppointmentsPage() {
     if (!isNaN(parsedBizStart)) startHour = parsedBizStart;
     if (!isNaN(parsedBizEnd)) endHour = parsedBizEnd;
 
-    // Expand bounds if any working staff member has a shift extending beyond the business hours
+    // Use roster working hours to define grid bounds
     const rosterRows = salonSettings?.advancedSettings?.rosterManagement?.rows || [];
     const workingRows = rosterRows.filter(r => r.isWorking !== false && r.fromTime && r.toTime);
     if (workingRows.length > 0) {
-      let minHour = startHour;
-      let maxHour = endHour;
+      let rosterMin = 24;
+      let rosterMax = 0;
       workingRows.forEach(row => {
         const fromH = parseHour(row.fromTime);
         const toH = parseHour(row.toTime);
-        if (!isNaN(fromH) && fromH < minHour) minHour = fromH;
-        if (!isNaN(toH) && toH > maxHour) maxHour = toH;
+        if (!isNaN(fromH) && fromH < rosterMin) rosterMin = fromH;
+        if (!isNaN(toH) && toH > rosterMax) rosterMax = toH;
       });
-      startHour = minHour;
-      endHour = maxHour;
+      if (rosterMin < rosterMax) {
+        startHour = rosterMin;
+        endHour = rosterMax;
+      }
     }
 
     const slots = [];
