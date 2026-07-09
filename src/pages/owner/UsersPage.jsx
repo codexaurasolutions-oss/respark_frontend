@@ -876,6 +876,7 @@ export default function UsersPage() {
             </div>
             
             <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+              {status.error && <div className="form-error-banner" style={{ padding: '10px 14px', background: '#fef2f2', color: '#b91c1c', fontSize: 13, borderBottom: '1px solid #fecaca', flexShrink: 0 }}>{status.error}</div>}
               <div className="hub-modal-body" style={{ overflowY: 'auto', flex: 1 }}>
                 <div className="hub-form-group" style={{ marginBottom: 16 }}>
                   <label>Full Name *</label>
