@@ -1680,6 +1680,16 @@ export default function SettingsPage() {
         const res = await api.post("/owner/shifts", payload);
         setShifts((prev) => [...prev, res.data]);
         setSelectedShiftId(res.data.id);
+        setForm((prev) => ({
+          ...prev,
+          advancedSettings: {
+            ...prev.advancedSettings,
+            shiftManagement: {
+              ...(prev.advancedSettings?.shiftManagement || {}),
+              shifts: [...((prev.advancedSettings?.shiftManagement?.shifts) || []), res.data]
+            }
+          }
+        }));
         setStatus({ loading: false, error: "", success: "Shift created." });
       } catch (err) {
         setStatus({ loading: false, error: formatApiError(err, "Could not create shift"), success: "" });
@@ -1694,6 +1704,16 @@ export default function SettingsPage() {
         await api.delete(`/owner/shifts/${id}`);
         setShifts((prev) => prev.filter(s => s.id !== id));
         if (selectedShiftId === id) setSelectedShiftId(null);
+        setForm((prev) => ({
+          ...prev,
+          advancedSettings: {
+            ...prev.advancedSettings,
+            shiftManagement: {
+              ...(prev.advancedSettings?.shiftManagement || {}),
+              shifts: (prev.advancedSettings?.shiftManagement?.shifts || []).filter(s => s.id !== id)
+            }
+          }
+        }));
         setStatus({ loading: false, error: "", success: "Shift deleted." });
       } catch (err) {
         setStatus({ loading: false, error: formatApiError(err, "Could not delete shift"), success: "" });
@@ -1729,6 +1749,16 @@ export default function SettingsPage() {
         };
         const res = await api.patch(`/owner/shifts/${selectedShift.id}`, payload);
         setShifts((prev) => prev.map(s => s.id === res.data.id ? res.data : s));
+        setForm((prev) => ({
+          ...prev,
+          advancedSettings: {
+            ...prev.advancedSettings,
+            shiftManagement: {
+              ...(prev.advancedSettings?.shiftManagement || {}),
+              shifts: (prev.advancedSettings?.shiftManagement?.shifts || []).map(s => s.id === res.data.id ? res.data : s)
+            }
+          }
+        }));
         setStatus({ loading: false, error: "", success: "Shift saved." });
       } catch (err) {
         setStatus({ loading: false, error: formatApiError(err, "Could not save shift"), success: "" });
