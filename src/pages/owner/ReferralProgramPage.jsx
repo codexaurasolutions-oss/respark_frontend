@@ -48,6 +48,8 @@ export default function ReferralProgramPage() {
   const [walletSearch, setWalletSearch] = useState("");
   const [selectedWallet, setSelectedWallet] = useState(null);
   const [walletDetail, setWalletDetail] = useState(null);
+  const [partnerSearchInput, setPartnerSearchInput] = useState("");
+  const [showPartnerDropdown, setShowPartnerDropdown] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [walletSubTab, setWalletSubTab] = useState("wallets");
   const [payoutStatusFilter, setPayoutStatusFilter] = useState("");
@@ -125,10 +127,12 @@ export default function ReferralProgramPage() {
       categoryIds: (c.eligibleCategories || []).map((e) => e.categoryId),
       serviceIds: (c.eligibleServices || []).map((e) => e.serviceId), notes: c.notes || "",
     });
+    const partner = customers.find(cu => cu.id === c.partnerCustomerId);
+    setPartnerSearchInput(partner ? partner.name : "");
     setShowCouponForm(true);
   };
 
-  const handleCreateCoupon = () => { setEditingCoupon(null); setCouponForm(defaultCouponForm); setShowCouponForm(true); };
+  const handleCreateCoupon = () => { setEditingCoupon(null); setCouponForm(defaultCouponForm); setPartnerSearchInput(""); setShowCouponForm(true); };
 
   const toggleCategory = (catId) => setCouponForm(prev => ({ ...prev, categoryIds: prev.categoryIds.includes(catId) ? prev.categoryIds.filter((id) => id !== catId) : [...prev.categoryIds, catId] }));
   const toggleService = (svcId) => setCouponForm(prev => ({ ...prev, serviceIds: prev.serviceIds.includes(svcId) ? prev.serviceIds.filter((id) => id !== svcId) : [...prev.serviceIds, svcId] }));
@@ -150,7 +154,7 @@ export default function ReferralProgramPage() {
       };
       if (editingCoupon) { await api.patch(`/owner/referrals/coupons/${editingCoupon.id}`, payload); setStatus({ error: "", success: "Coupon updated." }); }
       else { await api.post("/owner/referrals/coupons", payload); setStatus({ error: "", success: "Coupon created." }); }
-      setShowCouponForm(false); setEditingCoupon(null); setCouponForm(defaultCouponForm); await loadCoupons();
+      setShowCouponForm(false); setEditingCoupon(null); setCouponForm(defaultCouponForm); setPartnerSearchInput(""); await loadCoupons();
     } catch (err) { setStatus({ error: formatApiError(err, "Could not save coupon"), success: "" }); }
   };
 
@@ -325,7 +329,7 @@ export default function ReferralProgramPage() {
             <form onSubmit={handleCouponSubmit} className="panel-card" style={{ padding: "20px 24px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, borderBottom: "1px solid #e2e8f0", paddingBottom: 16 }}>
                 <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{editingCoupon ? "Edit Referral Coupon" : "Create New Referral Coupon"}</h3>
-                <button type="button" onClick={() => { setShowCouponForm(false); setEditingCoupon(null); }} className="btn btn-ghost" style={{ fontSize: 12, color: "#64748b" }}>← Back to list</button>
+                <button type="button" onClick={() => { setShowCouponForm(false); setEditingCoupon(null); setPartnerSearchInput(""); }} className="btn btn-ghost" style={{ fontSize: 12, color: "#64748b" }}>← Back to list</button>
               </div>
               <div className="form-grid" style={{ gap: 16 }}>
                 {!editingCoupon && (
@@ -360,7 +364,7 @@ export default function ReferralProgramPage() {
 
                 <div><label>Credit Type</label><select value={couponForm.partnerCreditType} onChange={(e) => setCouponForm(prev => ({ ...prev, partnerCreditType: e.target.value }))} style={{ marginTop: 4 }}><option value="FIXED">Fixed Amount (₹)</option><option value="PERCENT">Percentage (%)</option></select></div>
                 <div><label>Credit Value</label><input type="number" min="0" step="0.01" value={couponForm.partnerCreditValue} onChange={(e) => setCouponForm(prev => ({ ...prev, partnerCreditValue: e.target.value }))} style={{ marginTop: 4 }} /></div>
-                <div><label>Assign to Partner</label><select value={couponForm.partnerCustomerId} onChange={(e) => setCouponForm(prev => ({ ...prev, partnerCustomerId: e.target.value }))} style={{ marginTop: 4 }}><option value="">None (Generic Coupon)</option>{customers.map((c) => (<option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ""}</option>))}</select></div>
+                <div><label>Assign to Partner</label><div style={{ position: "relative", marginTop: 4 }}><input type="text" placeholder="Search by name or phone..." value={partnerSearchInput} onChange={(e) => { setPartnerSearchInput(e.target.value); setShowPartnerDropdown(true); const match = customers.find(c => c.name === e.target.value); if (match) { setCouponForm(prev => ({ ...prev, partnerCustomerId: match.id })); } else { setCouponForm(prev => ({ ...prev, partnerCustomerId: "" })); } }} onFocus={() => setShowPartnerDropdown(true)} onBlur={() => setTimeout(() => setShowPartnerDropdown(false), 200)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" }} /><svg style={{ position: "absolute", right: 8, top: 10, width: 16, height: 16, color: "#94a3b8", pointerEvents: "none" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>{showPartnerDropdown && partnerSearchInput && (<div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "white", border: "1px solid #e2e8f0", borderRadius: 8, marginTop: 4, maxHeight: 240, overflowY: "auto", zIndex: 50, boxShadow: "none" }}><div style={{ padding: "10px 12px", borderBottom: "1px solid #f1f5f9", cursor: "pointer", fontWeight: couponForm.partnerCustomerId === "" ? 700 : 400, color: couponForm.partnerCustomerId === "" ? "#0f172a" : "#64748b" }} onClick={() => { setPartnerSearchInput(""); setCouponForm(prev => ({ ...prev, partnerCustomerId: "" })); setShowPartnerDropdown(false); }}>None (Generic Coupon)</div>{customers.filter(c => c.name?.toLowerCase().includes(partnerSearchInput.toLowerCase()) || c.phone?.includes(partnerSearchInput)).map(c => (<div key={c.id} style={{ padding: "10px 12px", borderBottom: "1px solid #f1f5f9", cursor: "pointer", fontWeight: couponForm.partnerCustomerId === c.id ? 700 : 400 }} onClick={() => { setPartnerSearchInput(c.name); setCouponForm(prev => ({ ...prev, partnerCustomerId: c.id })); setShowPartnerDropdown(false); }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8fafc"} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}><div style={{ fontWeight: 600, fontSize: 13, color: "#0f172a" }}>{c.name}</div><div style={{ fontSize: 11, color: "#64748b" }}>{c.phone}</div></div>))}{customers.filter(c => c.name?.toLowerCase().includes(partnerSearchInput.toLowerCase()) || c.phone?.includes(partnerSearchInput)).length === 0 && (<div style={{ padding: "10px 12px", color: "#64748b", fontSize: 13, textAlign: "center" }}>No matches found</div>)}</div>)}</div></div>
 
                 <div style={{ gridColumn: "1 / -1", height: 1, background: "#f1f5f9", margin: "4px 0" }}></div>
                 <div style={{ gridColumn: "1 / -1" }}><h4 style={{ margin: 0, fontSize: 13, color: "#334155" }}>Limits & Validity</h4></div>
@@ -397,7 +401,7 @@ export default function ReferralProgramPage() {
                 <div style={{ gridColumn: "1 / -1" }}><label>Internal Notes</label><input value={couponForm.notes} onChange={(e) => setCouponForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="Optional notes for staff..." style={{ marginTop: 4 }} /></div>
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 24, paddingTop: 16, borderTop: "1px solid #e2e8f0" }}>
-                <button type="button" onClick={() => { setShowCouponForm(false); setEditingCoupon(null); }} className="btn btn-ghost" style={{ fontSize: 13 }}>Cancel</button>
+                <button type="button" onClick={() => { setShowCouponForm(false); setEditingCoupon(null); setPartnerSearchInput(""); }} className="btn btn-ghost" style={{ fontSize: 13 }}>Cancel</button>
                 <button type="submit" className="btn btn-primary" style={{ fontSize: 13, minWidth: 120 }}>{editingCoupon ? "Save Changes" : "Create Coupon"}</button>
               </div>
             </form>
