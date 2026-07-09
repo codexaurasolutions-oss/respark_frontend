@@ -461,7 +461,7 @@ export default function AppointmentsPage() {
     try {
       const [contextResponse, settingsResponse] = await Promise.all([
         api.get("/owner/pos/context", { params: selectedBranchId ? { branchId: selectedBranchId } : {} }),
-        api.get("/owner/settings")
+        api.get("/owner/settings", { params: selectedBranchId ? { branchId: selectedBranchId } : {} })
       ]);
       setCustomers(contextResponse.data.customers || []);
       setServices(contextResponse.data.services || []);
