@@ -335,14 +335,17 @@ export default function ReferralProgramPage() {
                 {!editingCoupon && (
                   <div style={{ gridColumn: "1 / -1" }}>
                     <label>Coupon Code</label>
-                    {couponForm.code ? (
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}>
-                        <div style={{ padding: "8px 14px", borderRadius: 8, border: "2px dashed #3b82f6", background: "#eff6ff", color: "#1d4ed8", fontSize: 15, fontWeight: 700, fontFamily: "monospace", letterSpacing: 1.5 }}>{couponForm.code}</div>
-                        <button type="button" onClick={() => setCouponForm(prev => ({ ...prev, code: "" }))} className="btn btn-ghost" style={{ fontSize: 12, color: "#ef4444" }}>Clear</button>
-                      </div>
-                    ) : (
-                      <button type="button" onClick={handleGenerateCode} disabled={generatingCode} className="btn secondary-button" style={{ width: "fit-content", marginTop: 4 }}>{generatingCode ? "Generating..." : "Auto Generate Code"}</button>
-                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                      <input
+                        type="text"
+                        value={couponForm.code}
+                        onChange={(e) => setCouponForm(prev => ({ ...prev, code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") }))}
+                        placeholder="e.g. SUMMER2024"
+                        maxLength={20}
+                        style={{ flex: 1, fontFamily: "monospace", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}
+                      />
+                      <button type="button" onClick={handleGenerateCode} disabled={generatingCode} className="btn secondary-button" style={{ whiteSpace: "nowrap", fontSize: 12 }}>{generatingCode ? "Generating..." : "Auto Generate"}</button>
+                    </div>
                   </div>
                 )}
                 {editingCoupon && <div><label>Coupon Code</label><div style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", fontFamily: "monospace", fontSize: 14, fontWeight: 600, color: "#475569", marginTop: 4, display: "inline-block" }}>{editingCoupon.code}</div></div>}
