@@ -7,6 +7,7 @@ import IndianPhoneInput from "../../components/IndianPhoneInput";
 import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
 import { formatApiError } from "../../utils/apiError";
+import { isValidIndianPhone } from "../../utils/phone";
 import { ensureSingleFaceInImage, loadFaceVerificationModels } from "../../utils/faceVerification";
 import {
   clonePermissions,
@@ -371,12 +372,12 @@ export default function UsersPage() {
         if (!form.password) return setStatus((current) => ({ ...current, error: "Password is required" }));
         if (form.password.length < 8) return setStatus((current) => ({ ...current, error: "Password must be at least 8 characters" }));
         if (form.password.length > 128) return setStatus((current) => ({ ...current, error: "Password must be at most 128 characters" }));
-        if (form.phone && !/^\+91\d{10}$/.test(form.phone)) return setStatus((current) => ({ ...current, error: "Phone must be a valid 10-digit Indian number" }));
+        if (form.phone && !isValidIndianPhone(form.phone)) return setStatus((current) => ({ ...current, error: "Enter a valid phone number (10-15 digits with optional country code)" }));
         if (form.uanNumber && !/^\d{12}$/.test(form.uanNumber)) return setStatus((current) => ({ ...current, error: "UAN must be exactly 12 digits" }));
         if (form.accountNumber && !/^\d{9,18}$/.test(form.accountNumber)) return setStatus((current) => ({ ...current, error: "Account number must be 9-18 digits" }));
         if (form.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(form.ifscCode)) return setStatus((current) => ({ ...current, error: "Invalid IFSC code format (e.g. HDFC0001234)" }));
       } else {
-        if (form.phone && !/^\+91\d{10}$/.test(form.phone)) return setStatus((current) => ({ ...current, error: "Phone must be a valid 10-digit Indian number" }));
+        if (form.phone && !isValidIndianPhone(form.phone)) return setStatus((current) => ({ ...current, error: "Enter a valid phone number (10-15 digits with optional country code)" }));
         if (form.uanNumber && !/^\d{12}$/.test(form.uanNumber)) return setStatus((current) => ({ ...current, error: "UAN must be exactly 12 digits" }));
         if (form.accountNumber && !/^\d{9,18}$/.test(form.accountNumber)) return setStatus((current) => ({ ...current, error: "Account number must be 9-18 digits" }));
         if (form.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/i.test(form.ifscCode)) return setStatus((current) => ({ ...current, error: "Invalid IFSC code format (e.g. HDFC0001234)" }));
