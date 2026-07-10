@@ -575,6 +575,15 @@ pre {
   border-radius: 999px;
 }
 
+@media (max-width: 1024px) {
+  .sidebar-nav::-webkit-scrollbar {
+    width: 4px;
+  }
+  .sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.35);
+  }
+}
+
 .sidebar-group {
   border-radius: 10px;
   overflow: hidden;
@@ -2934,6 +2943,22 @@ pre {
 
   .app-sidebar {
     width: min(90vw, 280px);
+  }
+
+  .app-sidebar .sidebar-nav {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.3) transparent;
+  }
+
+  .app-sidebar .sidebar-group-toggle {
+    padding: 12px 14px;
+    min-height: 44px;
+  }
+
+  .app-sidebar .sidebar-link {
+    padding: 10px 14px;
+    min-height: 40px;
+    font-size: 14px;
   }
 
   .sidebar-mobile-toggle-shell {
