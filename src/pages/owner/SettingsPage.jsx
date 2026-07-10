@@ -2356,9 +2356,9 @@ export default function SettingsPage() {
           New services without an explicit tax rate now inherit the first active tax mapping automatically.
         </div>
 
-        <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-          {/* LEFT PANEL â€” Tax List */}
-          <div style={{ width: 260, flexShrink: 0 }}>
+        <div className="shift-layout-grid">
+          {/* LEFT PANEL — Tax List */}
+          <div style={{ width: "100%", flexShrink: 0 }}>
             <div className="settings-panel-card" style={{ padding: 0 }}>
               <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid #f1f5f9" }}>
                 <button type="button" onClick={startCreate} style={{ width: "100%", padding: "10px", background: "#14b8a6", color: "white", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Create New</button>
@@ -2746,8 +2746,8 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-          <div style={{ width: 280, flexShrink: 0 }}>
+        <div className="shift-layout-grid">
+          <div style={{ width: "100%", flexShrink: 0 }}>
             <div className="settings-panel-card" style={{ padding: 0 }}>
               <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid #f1f5f9" }}>
                 <button type="button" onClick={startCreate} style={{ width: "100%", padding: "10px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Create New</button>
@@ -3836,8 +3836,8 @@ export default function SettingsPage() {
           These categories behave like a finance taxonomy: income buckets, expense buckets, and ordered report rows. The active list is stored in salon settings and reused by report and expense modules.
         </div>
 
-        <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-          <div style={{ width: 300, flexShrink: 0 }}>
+        <div className="shift-layout-grid">
+          <div style={{ width: "100%", flexShrink: 0 }}>
             <div className="settings-panel-card" style={{ padding: 0 }}>
               <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid #f1f5f9" }}>
                 <button type="button" onClick={startCreate} style={{ width: "100%", padding: "10px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Create New</button>
@@ -4154,9 +4154,9 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+        <div className="shift-layout-grid">
           {/* Left Column - List of Coupons */}
-          <div style={{ width: 320, flexShrink: 0, display: "flex", flexDirection: "column", background: "white", borderRadius: 12, padding: "16px", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+          <div style={{ width: "100%", flexShrink: 0, display: "flex", flexDirection: "column", background: "white", borderRadius: 12, padding: "16px", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
             <div style={{ marginBottom: 12 }}>
               <input
                 value={couponSearch}
@@ -4526,8 +4526,8 @@ export default function SettingsPage() {
           These slabs are kept for finance reporting. Billing tax behavior for services and products stays controlled from Tax Mapping.
         </div>
 
-        <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-          <div style={{ width: 280, flexShrink: 0 }}>
+        <div className="shift-layout-grid">
+          <div style={{ width: "100%", flexShrink: 0 }}>
             <div className="settings-panel-card" style={{ padding: 0 }}>
               <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid #f1f5f9" }}>
                 <button type="button" onClick={startCreate} style={{ width: "100%", padding: "10px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Create New</button>
