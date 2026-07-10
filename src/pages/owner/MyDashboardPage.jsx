@@ -138,17 +138,22 @@ export default function MyDashboardPage() {
 
   const getBranchGeofenceValidation = (coords) => {
     const branch = data.profile?.branch;
-    const lat = Number(branch?.latitude);
-    const lng = Number(branch?.longitude);
-    const radius = Number(branch?.geofenceRadiusMeters || 75); // default geofence radius in meters
+    const lat = parseFloat(String(branch?.latitude));
+    const lng = parseFloat(String(branch?.longitude));
+    const radius = Number(branch?.geofenceRadiusMeters || 200);
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) {
       return { valid: true, distance: 0, warning: "Branch GPS coordinates are not set. Geofence check skipped. Please ask your manager to set the branch location." };
     }
     const distance = haversineDistanceMeters(lat, lng, coords.latitude, coords.longitude);
+    const accuracy = coords.accuracyMeters ? Math.round(coords.accuracyMeters) : "?";
     if (distance > radius) {
-      return { valid: false, error: `You are ${Math.round(distance)}m from the salon (${Math.round(distance - radius)}m outside the allowed ${radius}m radius). Please move closer to the salon.` };
+      return {
+        valid: false,
+        debug: { branchLat: lat, branchLng: lng, yourLat: coords.latitude, yourLng: coords.longitude, distance: Math.round(distance), radius, accuracy },
+        error: `You are ${Math.round(distance)}m from the salon (GPS accuracy: ~${accuracy}m). Allowed radius: ${radius}m. Please move closer to the salon.`
+      };
     }
-    return { valid: true, distance };
+    return { valid: true, distance, debug: { branchLat: lat, branchLng: lng, yourLat: coords.latitude, yourLng: coords.longitude, distance: Math.round(distance), radius, accuracy } };
   };
 
   const formatGeoError = (error) => {
@@ -286,7 +291,7 @@ export default function MyDashboardPage() {
         accuracyMeters: position.coords.accuracy
       };
 
-      if (coords.accuracyMeters > 100) {
+      if (coords.accuracyMeters > 200) {
         setFlow((c) => ({ ...c, busy: false, error: `GPS accuracy is low (${Math.round(coords.accuracyMeters)}m). Please move to an open area and try again.` }));
         return;
       }
@@ -345,7 +350,7 @@ export default function MyDashboardPage() {
         accuracyMeters: position.coords.accuracy
       };
 
-      if (coords.accuracyMeters > 100) {
+      if (coords.accuracyMeters > 200) {
         setFlow((c) => ({ ...c, busy: false, error: `GPS accuracy is low (${Math.round(coords.accuracyMeters)}m). Please move to an open area and try again.` }));
         return;
       }
@@ -580,6 +585,15 @@ export default function MyDashboardPage() {
               <div className="item-meta">
                 {data.profile?.branch?.name || "No branch assigned"} | {todayAttendance ? `Status: ${todayAttendance.status}` : "No attendance marked today"}
               </div>
+              {data.profile?.branch?.latitude && data.profile?.branch?.longitude ? (
+                <div className="item-meta" style={{ fontSize: 11, color: "#94a3b8" }}>
+                  Branch GPS: {Number(data.profile.branch.latitude).toFixed(6)}, {Number(data.profile.branch.longitude).toFixed(6)} | Radius: {data.profile.branch.geofenceRadiusMeters || 200}m
+                </div>
+              ) : (
+                <div className="item-meta" style={{ fontSize: 11, color: "#ef4444" }}>
+                  Branch GPS coordinates not set. Ask manager to set location on Branches page.
+                </div>
+              )}
               {todayAttendance ? (
                 <div className="item-meta">
                   {new Date(todayAttendance.checkInAt).toLocaleString()}

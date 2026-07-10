@@ -7,7 +7,7 @@ import { formatApiError } from "../../utils/apiError";
 import { useBranch } from "../../context/BranchContext";
 import { Search, Plus, Edit3, Trash2, MapPin, X } from "lucide-react";
 
-const emptyForm = { name: "", phone: "", email: "", address: "", businessHours: "", weeklyOff: "", latitude: "", longitude: "", geofenceRadiusMeters: "75" };
+const emptyForm = { name: "", phone: "", email: "", address: "", businessHours: "", weeklyOff: "", latitude: "", longitude: "", geofenceRadiusMeters: "200" };
 
 export default function BranchesPage() {
   const { refetch: refetchBranches } = useBranch();
