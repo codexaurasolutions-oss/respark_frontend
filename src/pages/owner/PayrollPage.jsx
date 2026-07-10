@@ -585,7 +585,7 @@ export default function PayrollPage() {
               </span>
             ))}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginTop: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 120px), 1fr))", gap: 10, marginTop: 16 }}>
             {[{ label: "Total", value: attendanceCalendar.summary?.totalRows || 0, bg: "#f1f5f9", color: "#334155" },
               { label: "Present", value: attendanceCalendar.summary?.present || 0, bg: "#dcfce7", color: "#166534" },
               { label: "Late", value: attendanceCalendar.summary?.late || 0, bg: "#fef3c7", color: "#92400e" },
@@ -859,7 +859,7 @@ export default function PayrollPage() {
         )}
 
         {activeTab === "records" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: 18, alignItems: "start", minWidth: 0 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))", gap: 18, alignItems: "start", minWidth: 0 }}>
           <div className="panel-card" style={{ padding: "20px 24px", minWidth: 0 }}>
             <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Attendance Records</h3>
             <div className="form-grid" style={{ marginBottom: 16 }}>
