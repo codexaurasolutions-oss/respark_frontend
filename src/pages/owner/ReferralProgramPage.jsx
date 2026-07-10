@@ -266,15 +266,15 @@ export default function ReferralProgramPage() {
         <div className="panel-card">
           {!showCouponForm ? (
             <>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
                 <h3 style={{ margin: 0 }}>Referral Coupons <span style={{ fontSize: 13, fontWeight: 400, color: "#64748b" }}>({filteredCoupons.length})</span></h3>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input type="text" placeholder="Search..." value={couponSearch} onChange={(e) => setCouponSearch(e.target.value)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, width: 180 }} />
-                  <label style={{ fontSize: 12, color: "#475569", display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", flex: 1, justifyContent: "flex-end" }}>
+                  <input type="text" placeholder="Search..." value={couponSearch} onChange={(e) => setCouponSearch(e.target.value)} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13, flex: 1, minWidth: 120, maxWidth: 180 }} />
+                  <label style={{ fontSize: 12, color: "#475569", display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
                     <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
                     Archived
                   </label>
-                  <button onClick={handleCreateCoupon} className="btn btn-primary" style={{ fontSize: 13 }}>+ New Coupon</button>
+                  <button onClick={handleCreateCoupon} className="btn btn-primary" style={{ fontSize: 13, whiteSpace: "nowrap" }}>+ New Coupon</button>
                 </div>
               </div>
               {filteredCoupons.length === 0 ? (
@@ -414,9 +414,9 @@ export default function ReferralProgramPage() {
 
       {!loading && activeTab === "partners" && (
         <div className="panel-card">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
             <h3 style={{ margin: 0 }}>Affiliate Partners</h3>
-            <button onClick={() => { setOnboardForm({ name: "", phone: "", discountValue: 10, partnerCreditValue: 5, title: "" }); setShowOnboardModal(true); }} className="btn btn-primary" style={{ fontSize: 13 }}>+ Onboard Partner</button>
+            <button onClick={() => { setOnboardForm({ name: "", phone: "", discountValue: 10, partnerCreditValue: 5, title: "" }); setShowOnboardModal(true); }} className="btn btn-primary" style={{ fontSize: 13, whiteSpace: "nowrap" }}>+ Onboard Partner</button>
           </div>
           <p style={{ fontSize: 13, color: "#64748b", margin: "0 0 16px" }}>Partners are automatically created when you onboard them. Each partner gets a unique coupon code and wallet.</p>
           {customers.filter(c => c.source === "AFFILIATE_PARTNER" || c.tags?.includes("AFFILIATE_PARTNER")).length === 0 ? (
