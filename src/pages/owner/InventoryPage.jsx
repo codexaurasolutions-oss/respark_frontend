@@ -8,6 +8,7 @@ import PageLoader from "../../components/PageLoader";
 import VendorManagement from "./VendorManagement";
 import IndianPhoneInput from "../../components/IndianPhoneInput";
 import { Package, Search, ShoppingCart, CheckCircle, XCircle, AlertTriangle, ArrowLeft, Tag, Layers, RefreshCw, Users, FileText, Activity, Plus, Trash2, ChevronDown, Save, Upload, Download } from "lucide-react";
+import "./InventoryPage.css";
 
 const emptyCategory = { name: "", description: "", imageUrl: "", sortOrder: 0, isPublicVisible: true };
 const emptyProduct = { branchId: "", categoryId: "", name: "", productType: "RETAIL", costPrice: 0, sellingPrice: 0, currentStock: 0, minStock: 0, sku: "", barcode: "", imageUrl: "" };
@@ -548,22 +549,14 @@ export default function InventoryPage() {
   ];
 
   return (
-    <div style={{ display: "flex", flexGrow: 1, minHeight: 0, overflow: "hidden", background: "#f8fafc", fontFamily: "'Inter', sans-serif" }}>
+    <div className="inventory-layout">
       {/* SIDEBAR */}
-      <div style={{
-        width: 220, minWidth: 220,
-        background: "#2b2d3e",
-        color: "white",
-        display: "flex",
-        flexDirection: "column",
-        borderRight: "1px solid rgba(255,255,255,0.05)",
-        boxShadow: "none"
-      }}>
+      <div className="inventory-sidebar">
         <div style={{
           padding: "14px 12px 10px",
           borderBottom: "1px solid rgba(255,255,255,0.06)"
         }} />
-        <div style={{ flexGrow: 1, overflowY: "auto", padding: "10px 10px", display: "flex", flexDirection: "column", gap: "2px" }}>
+        <div className="sidebar-nav-container" style={{ flexGrow: 1, overflowY: "auto", padding: "10px 10px", display: "flex", flexDirection: "column", gap: "2px" }}>
           {tabs.map(tab => {
             const isActive = activeTab === tab.name;
             return (
@@ -613,7 +606,7 @@ export default function InventoryPage() {
       </div>
 
       {/* MAIN CONTENT */}
-      <div style={{ flexGrow: 1, overflowY: "auto", padding: "32px", background: "#f1f5f9", position: "relative" }}>
+      <div className="inventory-content">
         {loading && <div style={{ position: "absolute", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 100 }}><PageLoader title="Loading..." /></div>}
         
         {activeTab === "Dashboard" && (
@@ -621,7 +614,7 @@ export default function InventoryPage() {
             <h2 style={{ margin: 0, fontSize: "1.6rem", color: "#0f172a", fontWeight: "700" }}>Inventory Dashboard</h2>
             
             {/* Top KPI Row */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+            <div className="inventory-dashboard-kpis">
               <div style={{ background: "linear-gradient(135deg, #8b5cf6, #6d28d9)", borderRadius: 12, padding: "20px", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "none" }}>
                 <div>
                   <div style={{ fontSize: "0.9rem", opacity: 0.9, fontWeight: 500 }}>Pending PO</div>
@@ -653,7 +646,7 @@ export default function InventoryPage() {
             </div>
 
             {/* Summary Cards Row */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="inventory-summary-cards">
               <div style={{ background: "white", borderRadius: 12, border: "1px solid #e2e8f0", padding: "24px", textAlign: "center" }}>
                 <h3 style={{ margin: "0 0 16px 0", fontSize: "1.1rem", color: "#334155" }}>Inventory Summary</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -669,7 +662,7 @@ export default function InventoryPage() {
               </div>
               <div style={{ background: "white", borderRadius: 12, border: "1px solid #e2e8f0", padding: "24px", textAlign: "center" }}>
                 <h3 style={{ margin: "0 0 16px 0", fontSize: "1.1rem", color: "#334155" }}>Product Summary</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+                <div className="inventory-product-summary">
                   <div>
                     <div style={{ fontSize: "0.85rem", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Total Items</div>
                     <div style={{ fontSize: "1.8rem", color: "#0f172a", fontWeight: 700, marginTop: 8 }}>{products.length}</div>
