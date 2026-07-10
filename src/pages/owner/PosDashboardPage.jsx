@@ -789,7 +789,7 @@ export default function PosDashboardPage() {
     <div className="respark-pos-dashboard">
       <div className="pos-dash-header">
         <div className="pos-dash-header-left">
-          <div className="pos-dash-date-picker" style={{ display: "flex", gap: "8px", alignItems: "center", background: "white", padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}>
+          <div className="pos-dash-date-picker">
             <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} max={endDate || undefined} style={{ border: "none", outline: "none", background: "transparent" }} />
             <span style={{ color: "#64748b" }}>-</span>
             <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} min={startDate || undefined} style={{ border: "none", outline: "none", background: "transparent" }} />
