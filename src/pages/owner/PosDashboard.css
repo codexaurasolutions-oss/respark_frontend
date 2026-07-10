@@ -534,3 +534,27 @@
     min-width: 120px;
   }
 }
+
+/* Responsive Guest Grid */
+.pos-detail-guest-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 860px) {
+  .pos-detail-guest-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .pos-detail-top-tabs {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .pos-detail-guest-grid {
+    grid-template-columns: 1fr;
+  }
+}

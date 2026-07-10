@@ -962,7 +962,7 @@ export default function PosDashboardPage() {
                   <span>{new Date(invoiceDetail?.createdAt || detail.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).replace(/ /g, "-")}</span>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", fontSize: "12px", marginBottom: "12px" }}>
+                <div className="pos-detail-guest-grid">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><strong>Guest :</strong> <span style={{ flex: 1, borderBottom: '1px solid #e2e8f0', padding: '2px 4px' }}>{detail.customer?.name || "Walk-in"}</span></div>
                   <div><strong>DOB :</strong> NA</div>
                   <div><strong>Last Visited :</strong> NA</div>
