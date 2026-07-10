@@ -330,6 +330,14 @@ export default function StaffRolesPage() {
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
         .srp-expand-icon { transition:transform .2s; color:#94a3b8; font-size:18px; }
         .srp-expand-icon.open { transform:rotate(180deg); }
+        @media (max-width: 900px) {
+          .srp-container { flex-direction: column !important; }
+          .srp-sidebar { width: 100% !important; max-height: 45vh; border-right: none; border-bottom: 1px solid #e2e8f0; }
+          .srp-content { padding: 16px; width: 100% !important; box-sizing: border-box; }
+          .srp-form-grid { grid-template-columns: 1fr !important; }
+          .srp-user-header { flex-direction: column; align-items: flex-start !important; gap: 12px; }
+          .srp-user-header > div:last-child { width: 100%; justify-content: flex-start; }
+        }
       `}} />
 
       <div className="srp-container">
@@ -391,7 +399,7 @@ export default function StaffRolesPage() {
                 ) : null}
 
                 <form onSubmit={saveRole}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+                  <div className="srp-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
                     <div>
                       <label className="srp-label">Role Name *</label>
                       <input
