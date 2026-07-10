@@ -1834,7 +1834,7 @@ export default function SettingsPage() {
       <>
         <SectionHeader title="Shift Management" description="Create reusable shift templates with per-day timing so roster planning stays consistent across staff, roles, and branches." badges={[`${shiftList.length} shifts`]} action={<button type="button" onClick={saveShift} disabled={!selectedShift || shiftSaving} className="primary-button" style={{ padding: "8px 18px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 600, cursor: shiftSaving ? "not-allowed" : "pointer", opacity: !selectedShift || shiftSaving ? 0.6 : 1 }}>{shiftSaving ? "Saving..." : "Save Shift"}</button>} />
 
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 320px) 1fr", gap: 16 }}>
+        <div className="shift-layout-grid">
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: 12, height: "fit-content" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
               {shiftList.map((shift) => (
