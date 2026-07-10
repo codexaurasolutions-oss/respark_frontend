@@ -207,6 +207,31 @@ export default function CouponsPage() {
 
   return (
     <div className="page-shell">
+      <style>{`
+        .coupons-layout {
+          display: flex;
+          gap: 24px;
+          margin-top: 20px;
+          min-height: 600px;
+        }
+        .coupons-left-col {
+          width: 30%;
+          min-width: 280px;
+        }
+        .coupons-right-col {
+          flex: 1;
+        }
+        .coupons-form-grid-1 { display: grid; grid-template-columns: 1.5fr 1.5fr 2fr auto; gap: 16px; align-items: center; }
+        .coupons-form-grid-2 { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 16px; }
+        .coupons-form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        
+        @media (max-width: 900px) {
+          .coupons-layout { flex-direction: column !important; }
+          .coupons-left-col { width: 100% !important; min-width: 0 !important; }
+          .coupons-right-col { padding: 16px !important; }
+          .coupons-form-grid-1, .coupons-form-grid-2, .coupons-form-grid-3 { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
       <ModuleTabs
         title="Coupons & Gift Cards"
         description="Promotions, vouchers, gift card balances and redemption reporting."
@@ -234,9 +259,9 @@ export default function CouponsPage() {
       {loading && <PageLoader title="Loading promotions workspace" message="Bringing together coupon rules, gift card balances, and redemption insights." />}
 
       {!loading && mode === "coupons" && (
-        <div style={{ display: "flex", gap: 24, marginTop: 20, minHeight: 600 }}>
+        <div className="coupons-layout">
           {/* Left Column - List of Coupons */}
-          <div style={{ width: "30%", minWidth: 280, display: "flex", flexDirection: "column", background: "white", borderRadius: 16, padding: 20, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px 0 rgba(0,0,0,0.05)" }}>
+          <div className="coupons-left-col" style={{ display: "flex", flexDirection: "column", background: "white", borderRadius: 16, padding: 20, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px 0 rgba(0,0,0,0.05)" }}>
             <div style={{ marginBottom: 16 }}>
               <input 
                 placeholder="Search" 
@@ -320,14 +345,14 @@ export default function CouponsPage() {
           </div>
 
           {/* Right Column - Coupon Form */}
-          <div style={{ flex: 1, background: "white", borderRadius: 16, padding: 30, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px 0 rgba(0,0,0,0.05)", display: "flex", flexDirection: "column" }}>
+          <div className="coupons-right-col" style={{ flex: 1, background: "white", borderRadius: 16, padding: 30, border: "1px solid #e2e8f0", boxShadow: "0 1px 3px 0 rgba(0,0,0,0.05)", display: "flex", flexDirection: "column", boxSizing: "border-box" }}>
             <h2 style={{ marginTop: 0, marginBottom: 24, fontSize: "1.4rem", fontWeight: 700, color: "#0f172a" }}>
               {editingCoupon ? "Update Coupon" : "Create Coupon"}
             </h2>
             
             <form onSubmit={saveCoupon} style={{ display: "flex", flexDirection: "column", gap: 20, flex: 1 }}>
               {/* Row 1: Name, Code, Description, Active */}
-              <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1.5fr 2fr auto", gap: 16, alignItems: "center" }}>
+              <div className="coupons-form-grid-1">
                 <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>Name</span>
                   <input 
@@ -372,7 +397,7 @@ export default function CouponsPage() {
               </div>
 
               {/* Row 2: Benefit Type, Benefit Value, Activated Date */}
-              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: 16 }}>
+              <div className="coupons-form-grid-2">
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>Benefit Type</span>
                   <div style={{ display: "flex", gap: 20, marginTop: 10 }}>
@@ -428,7 +453,7 @@ export default function CouponsPage() {
               </div>
 
               {/* Row 3: Minimum Amount, Max Used Count, Validity */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+              <div className="coupons-form-grid-3">
                 <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>Minimum Amount for Redemption</span>
                   <input 
@@ -583,7 +608,7 @@ export default function CouponsPage() {
             <input placeholder="Search gift cards by code or title..." value={gcSearch} onChange={(e) => setGcSearch(e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, boxSizing: "border-box" }} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12, marginTop: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))", gap: 12, marginTop: 12 }}>
             {filteredGiftCards.map((gc) => {
               const balance = Number(gc.balanceAmount || 0);
               const original = Number(gc.originalAmount || 0);
