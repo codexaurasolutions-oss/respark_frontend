@@ -109,7 +109,7 @@ export default function BranchesPage() {
       weeklyOff: branch.weeklyOff || "",
       latitude: branch.latitude ?? "",
       longitude: branch.longitude ?? "",
-      geofenceRadiusMeters: branch.geofenceRadiusMeters ?? "75"
+      geofenceRadiusMeters: branch.geofenceRadiusMeters ?? "200"
     });
     setShowModal(true);
   };
