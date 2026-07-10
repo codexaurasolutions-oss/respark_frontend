@@ -2943,11 +2943,28 @@ pre {
 
   .app-sidebar {
     width: min(90vw, 280px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-sidebar .sidebar-brand-row {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--sidebar-bg, #2b2d3e);
   }
 
   .app-sidebar .sidebar-nav {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,0.3) transparent;
+    overflow-y: visible;
+    flex: none;
+    min-height: auto;
+  }
+
+  .app-sidebar .sidebar-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: var(--sidebar-bg, #2b2d3e);
   }
 
   .app-sidebar .sidebar-group-toggle {
