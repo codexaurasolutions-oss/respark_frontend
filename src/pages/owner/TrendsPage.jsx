@@ -179,12 +179,20 @@ export default function TrendsPage() {
             font-size: 13px; font-weight: 500; cursor: pointer;
             transition: all 0.18s; background: white; color: #64748b;
           }
-          @media (max-width: 768px) {
+          @media (max-width: 900px) {
             .trends-header { flex-direction: column !important; gap: 16px !important; }
-            .trends-header h1 { fontSize: 24px !important; }
+            .trends-header h1 { font-size: 24px !important; }
+            .trends-header-pills { flex-wrap: wrap; justify-content: flex-start; }
             .trends-tabs { overflow-x: auto; white-space: nowrap; padding-bottom: 8px; width: 100%; justify-content: flex-start !important; }
             .trends-grid { grid-template-columns: 1fr !important; }
+            .trends-grid-3 { grid-template-columns: 1fr !important; }
+            .stat-cards-grid { grid-template-columns: 1fr !important; }
+            .chart-card-header-flex { flex-direction: column; align-items: flex-start !important; gap: 12px; }
+            .chart-card-pills { flex-wrap: wrap; }
           }
+          .trends-tabs::-webkit-scrollbar { height: 4px; }
+          .trends-tabs::-webkit-scrollbar-track { background: transparent; }
+          .trends-tabs::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .trend-pill-btn.active {
           background: linear-gradient(135deg, #6366f1, #4f46e5);
           border-color: #6366f1; color: white;
@@ -206,7 +214,7 @@ export default function TrendsPage() {
       `}</style>
 
       {/* ── HEADER ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+      <div className="trends-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, color: "#0f172a", margin: "0 0 6px", letterSpacing: -0.5, display: "flex", alignItems: "center", gap: 10 }}>
             <BarChart2 size={24} color="#6366f1" />
@@ -217,7 +225,7 @@ export default function TrendsPage() {
           </p>
         </div>
         {/* time range pills */}
-        <div style={{ display: "flex", gap: 6, background: "white", padding: "6px 10px", borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "none" }}>
+        <div className="trends-header-pills" style={{ display: "flex", gap: 6, background: "white", padding: "6px 10px", borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "none" }}>
           {TIME_RANGES.map((r) => (
             <button key={r} className={`range-chip ${timeRange === r ? "active" : ""}`} onClick={() => setTimeRange(r)}>
               {r}
@@ -227,7 +235,7 @@ export default function TrendsPage() {
       </div>
 
       {/* ── FILTER TABS ── */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
+      <div className="trends-tabs" style={{ display: "flex", gap: 8, marginBottom: 28 }}>
         {FILTERS.map(({ key, label, icon: Icon }) => (
           <button key={key} className={`trend-pill-btn ${activeFilter === key ? "active" : ""}`} onClick={() => setActiveFilter(key)}>
             <Icon size={15} />
@@ -237,7 +245,7 @@ export default function TrendsPage() {
       </div>
 
       {/* ── STAT CARDS ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 28 }}>
+      <div className="stat-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 28 }}>
         <StatCard label="Total Revenue"  value={totalRevenue} color="#6366f1" icon={IndianRupee} sub={`${summary.totalInvoices || 0} invoices`} moneyFormatter={formatMoney} />
         <StatCard label="Services"       value={serviceRev}   color="#3b82f6" icon={Scissors}    sub={`${totalRevenue ? Math.round(serviceRev / totalRevenue * 100) : 0}% of total`} moneyFormatter={formatMoney} />
         <StatCard label="Products"       value={productRev}   color="#10b981" icon={Droplet}     sub={`${totalRevenue ? Math.round(productRev / totalRevenue * 100) : 0}% of total`} moneyFormatter={formatMoney} />
@@ -245,7 +253,7 @@ export default function TrendsPage() {
       </div>
 
       {/* ── CHARTS ROW ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "380px 1fr", gap: 20, marginBottom: 20 }}>
+      <div className="trends-grid" style={{ display: "grid", gridTemplateColumns: "380px 1fr", gap: 20, marginBottom: 20 }}>
         {/* Revenue Split Bar */}
         <div className="chart-card">
           <p className="chart-card-title">
@@ -283,7 +291,7 @@ export default function TrendsPage() {
 
         {/* Revenue Area Trend */}
         <div className="chart-card">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+          <div className="chart-card-header-flex" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
             <div>
               <p className="chart-card-title" style={{ margin: 0 }}>
                 {activeFilter === "overall" ? "Revenue Trend" :
@@ -293,7 +301,7 @@ export default function TrendsPage() {
               </p>
               <p className="chart-card-sub" style={{ margin: "2px 0 0" }}>Over-time performance</p>
             </div>
-            <div style={{ display: "flex", gap: 5 }}>
+            <div className="chart-card-pills" style={{ display: "flex", gap: 5 }}>
               {LINE_PERIODS.map((p) => (
                 <button key={p.key} className={`range-chip ${linePeriod === p.key ? "active" : ""}`} onClick={() => setLinePeriod(p.key)}>
                   {p.label}
@@ -333,7 +341,7 @@ export default function TrendsPage() {
       </div>
 
       {/* ── BOTTOM ROW ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
+      <div className="trends-grid-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
         {/* Revenue Breakdown progress bars */}
         <div className="chart-card">
           <p className="chart-card-title">
