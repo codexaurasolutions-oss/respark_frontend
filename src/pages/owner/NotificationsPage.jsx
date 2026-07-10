@@ -5,6 +5,8 @@ import ModuleTabs from "../../components/ModuleTabs";
 import PageLoader from "../../components/PageLoader";
 import { formatApiError } from "../../utils/apiError";
 import { downloadFromApi } from "../../utils/download";
+import { Bell, Search as SearchIcon, Filter, CheckCircle2, AlertCircle, Info, ExternalLink, Check } from "lucide-react";
+import "./NotificationsPage.css";
 
 export default function NotificationsPage() {
   const [rows, setRows] = useState([]);
@@ -72,68 +74,122 @@ export default function NotificationsPage() {
     }
   };
 
+  const getIconForType = (type) => {
+    const t = (type || "").toLowerCase();
+    if (t.includes("error") || t.includes("alert")) return <AlertCircle className="noti-icon error" size={20} />;
+    if (t.includes("success") || t.includes("paid")) return <CheckCircle2 className="noti-icon success" size={20} />;
+    return <Info className="noti-icon info" size={20} />;
+  };
+
   return (
     <div className="page-shell">
       <ModuleTabs
         title="Notifications"
         description="Critical alerts, reminders, follow-ups and update feed."
         items={[{ label: "Notifications", to: "/admin/notifications" }]}
-        actions={<><button type="button" className="secondary-button" onClick={markAllRead}>Mark All Read</button><button type="button" className="secondary-button" onClick={exportCsv}>Export CSV</button></>}
-      />
-      <div className="hero-card" style={{ padding: 24, marginBottom: 20 }}>
-        <div className="item-head">
-          <div>
-            <h1 style={{ marginTop: 0 }}>Notifications</h1>
-            <p style={{ marginBottom: 0 }}>Review critical alerts, reminders, and unread activity across the owner workspace.</p>
+        actions={
+          <div className="noti-header-actions">
+            <button type="button" className="secondary-button" onClick={markAllRead}>
+              <Check size={16} /> Mark All Read
+            </button>
+            <button type="button" className="secondary-button" onClick={exportCsv}>
+              Export CSV
+            </button>
           </div>
-          <div className="badge-row">
-            <span className="badge">Visible {rows.length}</span>
-            <span className="badge">Unread {rows.filter((row) => !row.isRead).length}</span>
+        }
+      />
+
+      <div className="noti-hero-card">
+        <div className="noti-hero-content">
+          <div className="noti-hero-icon-wrapper">
+            <Bell size={28} className="noti-hero-icon" />
+          </div>
+          <div className="noti-hero-text">
+            <h1>Notifications Hub</h1>
+            <p>Review critical alerts, reminders, and unread activity across your workspace.</p>
+          </div>
+        </div>
+        <div className="noti-hero-stats">
+          <div className="noti-stat-box">
+            <span className="stat-value">{rows.length}</span>
+            <span className="stat-label">Total Visible</span>
+          </div>
+          <div className="noti-stat-box highlight">
+            <span className="stat-value">{rows.filter((row) => !row.isRead).length}</span>
+            <span className="stat-label">Unread Alerts</span>
           </div>
         </div>
       </div>
-      {status.error && <div className="panel-card"><p className="error-text">{status.error}</p></div>}
-      {status.success && <div className="panel-card"><p className="success-text">{status.success}</p></div>}
-      <div className="panel-card">
-        <div className="form-grid" style={{ marginBottom: 16 }}>
-          <label>
-              <span className="muted">Search title, message, type, or link</span>
-              <input
-            value={filters.q}
-            placeholder="Search title, message, type, or link"
-            onChange={(event) => setFilters((current) => ({ ...current, q: event.target.value }))} />
-            </label>
-          <label>
-              <span className="muted">Filter by type</span>
-              <input
-            value={filters.type}
-            placeholder="Filter by type"
-            onChange={(event) => setFilters((current) => ({ ...current, type: event.target.value }))} />
-            </label>
-          <label>
-              <span className="muted">Read states</span>
-              <select value={filters.isRead} onChange={(event) => setFilters((current) => ({ ...current, isRead: event.target.value }))}>
-            <option value="">All read states</option>
-            <option value="false">Unread</option>
-            <option value="true">Read</option>
-          </select>
-            </label>
-          <button type="button" className="secondary-button" onClick={() => setFilters({ q: "", type: "", isRead: "" })}>Reset</button>
+
+      {status.error && <div className="panel-card noti-alert error"><p>{status.error}</p></div>}
+      {status.success && <div className="panel-card noti-alert success"><p>{status.success}</p></div>}
+
+      <div className="panel-card noti-main-panel">
+        <div className="noti-filters">
+          <div className="noti-filter-group search-group">
+            <SearchIcon size={16} className="filter-icon" />
+            <input
+              value={filters.q}
+              placeholder="Search title, message, link..."
+              onChange={(event) => setFilters((current) => ({ ...current, q: event.target.value }))} 
+            />
+          </div>
+          <div className="noti-filter-group">
+            <Filter size={16} className="filter-icon" />
+            <input
+              value={filters.type}
+              placeholder="Filter by type..."
+              onChange={(event) => setFilters((current) => ({ ...current, type: event.target.value }))} 
+            />
+          </div>
+          <div className="noti-filter-group select-group">
+            <select value={filters.isRead} onChange={(event) => setFilters((current) => ({ ...current, isRead: event.target.value }))}>
+              <option value="">All Statuses</option>
+              <option value="false">Unread Only</option>
+              <option value="true">Read Only</option>
+            </select>
+          </div>
+          <button type="button" className="secondary-button btn-reset" onClick={() => setFilters({ q: "", type: "", isRead: "" })}>Clear</button>
         </div>
-        <div className="list-stack">
+
+        <div className="noti-list-container">
           {loading ? (
             <PageLoader compact title="Loading notifications" message="Preparing alert feed, read state, and export-ready records." />
-          ) : rows.map((row) => (
-            <div key={row.id} className="list-item">
-              <div>
-                <strong>{row.title}</strong>
-                <div className="item-meta">{row.message}</div>
-                <div className="item-meta">{row.type || "General"} | {row.isRead ? "Read" : "Unread"}{row.linkUrl ? ` | ${row.linkUrl}` : ""}</div>
-              </div>
-              {!row.isRead ? <button type="button" className="secondary-button" onClick={() => markRead(row.id)}>Mark Read</button> : null}
+          ) : rows.length > 0 ? (
+            <div className="noti-list">
+              {rows.map((row) => (
+                <div key={row.id} className={`noti-card ${row.isRead ? 'read' : 'unread'}`}>
+                  <div className="noti-card-indicator"></div>
+                  <div className="noti-card-icon-area">
+                    {getIconForType(row.type)}
+                  </div>
+                  <div className="noti-card-content">
+                    <div className="noti-card-header">
+                      <h3 className="noti-title">{row.title}</h3>
+                      <span className="noti-type-badge">{row.type || "General"}</span>
+                    </div>
+                    <p className="noti-message">{row.message}</p>
+                    {row.linkUrl && (
+                      <a href={row.linkUrl} target="_blank" rel="noopener noreferrer" className="noti-link">
+                        View Details <ExternalLink size={14} />
+                      </a>
+                    )}
+                  </div>
+                  <div className="noti-card-actions">
+                    {!row.isRead ? (
+                      <button type="button" className="mark-read-btn" onClick={() => markRead(row.id)} title="Mark as read">
+                        <Check size={18} />
+                      </button>
+                    ) : (
+                      <span className="read-status-text">Read</span>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-          {!loading && !rows.length && <EmptyState title="No notifications yet" message="Alert activity, reminders, and internal updates will appear here when generated." />}
+          ) : (
+            <EmptyState title="No notifications found" message="You're all caught up! There are no alerts matching your current filters." />
+          )}
         </div>
       </div>
     </div>
