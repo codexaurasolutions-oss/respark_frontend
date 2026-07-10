@@ -17,8 +17,11 @@ export const normalizeIndianPhone = (value) => {
 };
 
 export const isValidIndianPhone = (value) => {
-  const normalized = normalizeIndianPhone(value);
-  return /^\+91\d{10}$/.test(normalized);
+  const raw = String(value ?? "").trim();
+  if (!raw) return false;
+  const digits = raw.replace(/\D/g, "");
+  // Accept any phone with 10-15 digits (Indian, Pakistani, international)
+  return digits.length >= 10 && digits.length <= 15;
 };
 
 export const extractIndianPhoneDigits = (value) => {
@@ -71,7 +74,7 @@ export const validatePhoneFields = (value, path = []) => {
     const nextPath = [...path, key];
     if (isPhoneLikeKey(key) && entryValue !== undefined && entryValue !== null && entryValue !== "" && !isValidIndianPhone(entryValue)) {
       const label = key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase());
-      throw new Error(`${label} must be a valid Indian +91 mobile number`);
+      throw new Error(`${label} must be a valid phone number`);
     }
     validatePhoneFields(entryValue, nextPath);
   });
