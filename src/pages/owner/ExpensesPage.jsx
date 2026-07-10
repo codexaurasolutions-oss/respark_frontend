@@ -477,7 +477,8 @@ export default function ExpensesPage() {
         }
 
         /* Main Workspace */
-        .expenses-main-workspace {
+        .expenses-form-grid { grid-template-columns: 1fr !important; }
+          .expenses-main-workspace {
           flex: 1;
           padding: 32px;
           display: flex;
@@ -799,7 +800,7 @@ export default function ExpensesPage() {
         /* Accounts grid */
         .accounts-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
           gap: 20px;
         }
 
@@ -842,6 +843,37 @@ export default function ExpensesPage() {
           font-weight: 800;
           color: #0f172a;
           font-family: monospace;
+        }
+
+        /* Responsive Layout for Mobile */
+        @media (max-width: 900px) {
+          .expenses-page-container {
+            flex-direction: column !important;
+          }
+          .expenses-local-sidebar {
+            width: 100% !important;
+            border-right: none;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 16px;
+            flex-direction: row;
+            overflow-x: auto;
+          }
+          .expenses-sidebar-btn {
+            padding: 10px 14px;
+            white-space: nowrap;
+          }
+          .expenses-form-grid { grid-template-columns: 1fr !important; }
+          .expenses-main-workspace {
+            padding: 16px !important;
+            width: 100% !important;
+            box-sizing: border-box;
+          }
+          .types-layout-container {
+            grid-template-columns: 1fr !important;
+          }
+          .ledger-table-container {
+            overflow-x: auto !important;
+          }
         }
       `}</style>
 
