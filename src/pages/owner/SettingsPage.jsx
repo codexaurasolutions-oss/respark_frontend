@@ -1885,7 +1885,7 @@ export default function SettingsPage() {
             ) : (
               <>
                 <h2 style={{ margin: 0, marginBottom: 16, fontSize: 20, fontWeight: 700, color: "#2563eb" }}>Shift Details</h2>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16, alignItems: "center" }}>
+                <div className="settings-form-grid" style={{ marginBottom: 16, alignItems: "center" }}>
                   <label style={{ display: "block" }}>
                     <div style={{ fontSize: 13, color: "#475569", marginBottom: 4, fontWeight: 600 }}>Shift Name</div>
                     <input
@@ -1917,7 +1917,7 @@ export default function SettingsPage() {
                 </label>
 
                 {shiftDraft.sameForAllDays ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                  <div className="settings-form-grid" style={{ marginBottom: 16 }}>
                     <label>
                       <div style={{ fontSize: 13, color: "#475569", marginBottom: 4, fontWeight: 600 }}>Start Time</div>
                       <input
@@ -1938,13 +1938,14 @@ export default function SettingsPage() {
                     </label>
                   </div>
                 ) : (
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr 60px", gap: 12, padding: "8px 12px", background: "#f8fafc", borderRadius: "6px 6px 0 0", borderBottom: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600, color: "#475569" }}>
-                      <div>Day</div>
-                      <div>Start Time</div>
-                      <div>End Time</div>
-                      <div>Active</div>
-                    </div>
+                  <div className="settings-table-wrap" style={{ marginBottom: 16, overflowX: "auto" }}>
+                    <div style={{ minWidth: 400 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr 60px", gap: 12, padding: "8px 12px", background: "#f8fafc", borderRadius: "6px 6px 0 0", borderBottom: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600, color: "#475569" }}>
+                        <div>Day</div>
+                        <div>Start Time</div>
+                        <div>End Time</div>
+                        <div>Active</div>
+                      </div>
                     {WEEK_DAYS.map((day) => {
                       const dayData = (shiftDraft.days || []).find(d => d.dayOfWeek === day.dayOfWeekValue) || { dayOfWeek: day.dayOfWeekValue, startTime: "09:00", endTime: "21:00", active: true };
                       return (
@@ -1971,6 +1972,7 @@ export default function SettingsPage() {
                         </div>
                       );
                     })}
+                    </div>
                   </div>
                 )}
 
@@ -3500,7 +3502,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        <div className="settings-form-grid">
           {/* Benefit for Referral (Referrer) */}
           <div className="settings-panel-card">
             <div style={{ fontSize: 15, fontWeight: 600, color: "#2563eb", marginBottom: 20 }}>Benefit for Referral</div>

@@ -96,7 +96,7 @@
 }
 
 .settings-sidebar {
-  width: 280px;
+  width: 280px; box-sizing: border-box;
   flex-shrink: 0;
   position: sticky;
   top: 20px;
@@ -114,7 +114,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 10px 12px;
-  width: 100%;
+  width: 100%; box-sizing: border-box;
   margin-bottom: 16px;
   font-size: 13px;
   color: #334155;
@@ -339,7 +339,7 @@
 
   .settings-sidebar {
     position: static;
-    width: 100%;
+    width: 100%; box-sizing: border-box;
     max-height: 360px;
   }
 
@@ -375,7 +375,7 @@
   background: white;
   color: #334155;
   transition: border-color 0.2s;
-  width: 100%;
+  width: 100%; box-sizing: border-box;
 }
 
 .settings-input-group input:focus,
@@ -393,7 +393,7 @@
 }
 
 .settings-table {
-  width: 100%;
+  width: 100%; box-sizing: border-box;
   border-collapse: collapse;
 }
 
@@ -845,3 +845,14 @@
   cursor: not-allowed;
 }
 
+
+.shift-layout-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) 1fr;
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .shift-layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
