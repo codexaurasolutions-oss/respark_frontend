@@ -615,25 +615,25 @@ export default function ServiceCategoriesPage() {
                 ? `${selectedCategory?.name}/${selectedSubcategory.name}/Items`
                 : "Choose Subcategory"}
             </div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "nowrap", overflowX: "auto", paddingBottom: "2px" }}>
               <button
                 type="button"
                 onClick={handleImportClick}
-                style={{ padding: "10px 16px", borderRadius: 12, background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", fontWeight: 700, cursor: "pointer" }}
+                style={{ padding: "8px 12px", borderRadius: 10, fontSize: 13, whiteSpace: "nowrap", background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", fontWeight: 700, cursor: "pointer" }}
               >
                 Import CSV
               </button>
               <button
                 type="button"
                 onClick={handleExport}
-                style={{ padding: "10px 16px", borderRadius: 12, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", fontWeight: 700, cursor: "pointer" }}
+                style={{ padding: "8px 12px", borderRadius: 10, fontSize: 13, whiteSpace: "nowrap", background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", fontWeight: 700, cursor: "pointer" }}
               >
                 Export CSV
               </button>
               <button
                 type="button"
                 onClick={openNewService}
-                style={{ padding: "10px 16px", borderRadius: 12, background: "#2563eb", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer" }}
+                style={{ padding: "8px 12px", borderRadius: 10, fontSize: 13, whiteSpace: "nowrap", background: "#2563eb", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer" }}
               >
                 + Add service
               </button>
