@@ -2189,8 +2189,9 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
-          <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9", background: "#f8fafc", display: "grid", gridTemplateColumns: "100px 1fr 180px 180px 120px 1fr", alignItems: "center", gap: 12, fontSize: 14, fontWeight: 600, color: "#475569" }}>
+        <div className="settings-table-wrap" style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, overflowX: "auto" }}>
+          <div style={{ minWidth: 850 }}>
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9", background: "#f8fafc", display: "grid", gridTemplateColumns: "100px 1fr 180px 180px 120px 1fr", alignItems: "center", gap: 12, fontSize: 14, fontWeight: 600, color: "#475569" }}>
             <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
               <input
                 type="checkbox"
@@ -2256,6 +2257,7 @@ export default function SettingsPage() {
               <div style={{ fontSize: "12px", marginTop: 4 }}>Staff roster is dynamically populated from your Users/Staff list.</div>
             </div>
           )}
+          </div>
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
