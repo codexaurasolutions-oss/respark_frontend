@@ -1502,6 +1502,12 @@ export default function AppointmentsPage() {
         .cust-empty-state { color:#64748b; font-size:0.85rem; text-align:center; padding:40px 20px; }
         .cust-assign-btn { background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; padding:10px 20px; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer; margin-top:12px; display:inline-flex; align-items:center; gap:6px; transition:all .15s; }
         .cust-assign-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(37,99,235,0.3); }
+
+        @media (max-width: 768px) {
+          .calendar-toolbar { flex-direction: column; align-items: stretch; gap: 12px; padding: 12px 16px; }
+          .date-navigator { flex-wrap: wrap; justify-content: center; gap: 8px; }
+          .counters-row { flex-wrap: wrap; justify-content: center; gap: 8px; }
+        }
       `}</style>
 
       <div className="calendar-toolbar">
