@@ -333,3 +333,33 @@
 .btn-submit:hover {
   background: #2563eb;
 }
+
+/* Responsive layout for Hub Pages (Users, Services) */
+@media (max-width: 900px) {
+  .hub-container,
+  .service-hub-container {
+    flex-direction: column !important;
+  }
+  .hub-sidebar {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 45vh;
+    border-right: none !important;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .hub-items-col,
+  .hub-categories-col {
+    width: 100% !important;
+  }
+  .hub-items-header-bar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+  .hub-items-header-bar > div:last-child {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
