@@ -550,7 +550,7 @@ export default function MyDashboardPage() {
         ]}
       />
       {flow.open ? (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.78)", display: "grid", placeItems: "center", zIndex: 50, padding: 16 }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.78)", display: "grid", placeItems: "center", zIndex: 9999, padding: 16 }}>
           <div className="panel-card" style={{ width: "min(100%, 620px)", maxHeight: "92vh", overflowY: "auto", display: "grid", gap: 14, padding: 18, background: "linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,250,252,0.96))" }}>
             {renderFlowBody()}
             {flow.error ? <div className="error-text">{flow.error}</div> : null}

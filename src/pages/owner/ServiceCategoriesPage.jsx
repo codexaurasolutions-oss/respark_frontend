@@ -723,7 +723,7 @@ export default function ServiceCategoriesPage() {
             alignItems: "center",
             justifyContent: "center",
             padding: 24,
-            zIndex: 50
+            zIndex: 9999
           }}
         >
           <form
