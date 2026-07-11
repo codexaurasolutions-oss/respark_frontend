@@ -15,6 +15,7 @@ export default function BranchesPage() {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState("");
   const [status, setStatus] = useState({ error: "", success: "", loading: true });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [query, setQuery] = useState("");
@@ -61,6 +62,8 @@ export default function BranchesPage() {
 
   const submit = async (event) => {
     event.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     setStatus({ error: "", success: "" });
     const payload = {
       ...form,
@@ -82,6 +85,8 @@ export default function BranchesPage() {
     } catch (error) {
       console.error("[BranchForm] submit failed:", error);
       setStatus({ error: formatApiError(error, "Could not save branch"), success: "" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -320,7 +325,9 @@ export default function BranchesPage() {
             
             <div style={{ padding: "16px 20px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end", gap: 12, backgroundColor: "#f8fafc", borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }}>
               <button type="button" className="secondary-button" onClick={resetForm}>Cancel</button>
-              <button type="submit" form="branch-form" className="primary-button">{editingId ? "Update Branch" : "Add Branch"}</button>
+              <button type="submit" form="branch-form" className="primary-button" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : (editingId ? "Update Branch" : "Add Branch")}
+              </button>
             </div>
           </div>
         </div>
