@@ -615,7 +615,7 @@ export default function ServiceCategoriesPage() {
                 ? `${selectedCategory?.name}/${selectedSubcategory.name}/Items`
                 : "Choose Subcategory"}
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "nowrap", overflowX: "auto", paddingBottom: "2px" }}>
+            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
               <button
                 type="button"
                 onClick={handleImportClick}
