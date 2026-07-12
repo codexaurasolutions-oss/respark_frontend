@@ -373,9 +373,10 @@ export default function PayrollPage() {
       status: selectedCalendarCell.record?.status === "ABSENT" ? "ABSENT" : ""
     }));
     setSelectedCalendarCell(null);
+    setActiveTab("records");
     setTimeout(() => {
       manualCreateRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
+    }, 200);
   };
 
   const sanitizeHtml = (str) => {
