@@ -287,7 +287,7 @@ const normalizeRowForReport = (reportKey, row, index) => {
   }
 
   if (reportKey === "packages") {
-    if (row["Customer"] !== undefined) return row;
+    if (row["GUEST NAME"] !== undefined || row["INVOICE NO."] !== undefined) return row;
     return {
       Date: prettifyDate(row.createdAt),
       Customer: row.customer?.name || "-",
