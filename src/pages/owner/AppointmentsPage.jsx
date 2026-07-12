@@ -1113,7 +1113,7 @@ export default function AppointmentsPage() {
           position: fixed;
           inset: 0;
           background: rgba(15, 23, 42, 0.3);
-          z-index: 1000;
+          z-index: 1199;
         }
         .slide-panel {
           position: fixed;
@@ -1123,7 +1123,7 @@ export default function AppointmentsPage() {
           width: min(360px, 100vw);
           max-width: 100vw;
           background: #f8fafc;
-          z-index: 1050;
+           z-index: 1200;
           display: flex;
           flex-direction: column;
           box-shadow: none;
@@ -1366,7 +1366,7 @@ export default function AppointmentsPage() {
         .context-menu-backdrop {
           position: fixed;
           inset: 0;
-          z-index: 999;
+          z-index: 1199;
           background: transparent;
         }
         .context-menu {
@@ -1375,7 +1375,7 @@ export default function AppointmentsPage() {
           border: 1px solid #e2e8f0;
           border-radius: 12px;
           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-          z-index: 1000;
+          z-index: 1200;
           width: 220px;
           max-height: 240px;
           overflow-y: auto;
@@ -1877,7 +1877,7 @@ export default function AppointmentsPage() {
       )}
 
       {showConfirmModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1201, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ background: "white", borderRadius: 12, padding: 24, width: "100%", maxWidth: 450, boxShadow: "none", position: "relative" }}>
             <button type="button" onClick={() => setShowConfirmModal(false)} style={{ position: "absolute", top: 12, right: 12, background: "#f1f5f9", border: "none", borderRadius: "50%", cursor: "pointer", padding: 6, display: "flex", alignItems: "center", justifyContent: "center", color: "#475569" }}><X size={16} /></button>
             <h3 style={{ color: "var(--accent, #3b82f6)", marginTop: 0, marginBottom: 16, fontSize: "1.1rem", fontWeight: 600 }}>{editMode ? "Confirm Update" : "Create & Confirm Appointment"}</h3>

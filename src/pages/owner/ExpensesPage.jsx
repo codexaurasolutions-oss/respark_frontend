@@ -749,7 +749,7 @@ export default function ExpensesPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 1000;
+          z-index: 1200;
           padding: 20px;
         }
 

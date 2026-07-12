@@ -1973,7 +1973,7 @@ export default function PosPage() {
       </div>
       
       {showAddGuestModal && (
-        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1199, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ background: "white", padding: 24, borderRadius: 12, width: 480, maxHeight: "90vh", overflowY: "auto", boxShadow: "none" }}>
             <h3 style={{ marginTop: 0, marginBottom: 16, color: "#0f172a", fontSize: "18px" }}>Quick Add Guest</h3>
             <form onSubmit={handleAddGuest} style={{ display: "flex", flexDirection: "column", gap: 12 }}>

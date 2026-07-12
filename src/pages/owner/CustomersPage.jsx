@@ -1222,7 +1222,7 @@ export default function CustomersPage() {
           .export-menu { position:absolute; top:calc(100% + 4px); right:0; background:#fff; border:1px solid #e2e8f0; border-radius:8px; box-shadow: none; min-width:130px; z-index:50; overflow:hidden; }
           .export-item { width:100%; text-align:left; padding:8px 12px; border:none; background:none; cursor:pointer; font-size:0.8rem; color:#475569; min-height:unset; }
           .export-item:hover { background:#f8fafc; color:#0f172a; }
-          .sidebar-modal { position:fixed; top:0; right:0; bottom:0; width:min(92vw,520px); background:#fff; box-shadow: none; z-index:1050; display:flex; flex-direction:column; animation:slideIn 0.28s forwards; }
+          .sidebar-modal { position:fixed; top:0; right:0; bottom:0; width:min(92vw,520px); background:#fff; box-shadow: none; z-index:1200; display:flex; flex-direction:column; animation:slideIn 0.28s forwards; }
           @keyframes slideIn { from { transform:translateX(100%); } to { transform:translateX(0); } }
           .sidebar-modal-header { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid #f1f5f9; }
           .sidebar-modal-body { flex:1; display:flex; overflow:hidden; }

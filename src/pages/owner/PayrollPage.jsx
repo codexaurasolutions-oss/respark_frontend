@@ -683,7 +683,7 @@ export default function PayrollPage() {
         )}
 
         {selectedCalendarCell ? (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.68)", display: "grid", placeItems: "center", zIndex: 60, padding: 16, backdropFilter: "blur(4px)" }} onClick={() => setSelectedCalendarCell(null)}>
+          <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.68)", display: "grid", placeItems: "center", zIndex: 1199, padding: 16, backdropFilter: "blur(4px)" }} onClick={() => setSelectedCalendarCell(null)}>
             <div className="panel-card" style={{ width: "min(100%, 500px)", maxHeight: "90vh", overflowY: "auto", display: "grid", gap: 14, animation: "fadeIn 0.2s ease-out" }} onClick={(e) => e.stopPropagation()}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>

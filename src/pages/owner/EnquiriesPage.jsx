@@ -294,7 +294,7 @@ export default function EnquiriesPage() {
         .enquiries-table th { background: #f8fafc; padding: 14px 20px; font-weight: 700; font-size: 12px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #e2e8f0; text-align: left; letter-spacing: 0.5px; }
         .enquiries-table td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #334155; vertical-align: middle; }
         
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1200; backdrop-filter: blur(4px); }
         .modal-content { background: white; border-radius: 16px; width: 95%; max-width: 750px; padding: 28px; box-shadow: none; animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both; }
         
         .filter-bar { background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; padding: 16px 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-bottom: 24px; }

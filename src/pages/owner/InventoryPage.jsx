@@ -1392,8 +1392,8 @@ export default function InventoryPage() {
 
       {/* MODALS - SLIDE PANELS */}
       <style>{`
-        .slide-panel-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.4); z-index: 1000; backdrop-filter: blur(2px); }
-        .slide-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 450px; background: #fff; z-index: 1050; display: flex; flex-direction: column; box-shadow: none; transform: translateX(100%); animation: slideIn 0.3s forwards; }
+        .slide-panel-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.4); z-index: 1200; backdrop-filter: blur(2px); }
+        .slide-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 450px; background: #fff; z-index: 1201; display: flex; flex-direction: column; box-shadow: none; transform: translateX(100%); animation: slideIn 0.3s forwards; }
         @keyframes slideIn { to { transform: translateX(0); } }
         .sp-header { display: flex; align-items: center; gap: 16px; padding: 20px 24px; background: white; border-bottom: 1px solid #e2e8f0; }
         .sp-header h3 { margin: 0; font-size: 1.2rem; color: #0f172a; font-weight: 700; }
