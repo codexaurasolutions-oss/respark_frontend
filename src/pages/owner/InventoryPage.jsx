@@ -320,16 +320,20 @@ export default function InventoryPage() {
     acc + (order.items || []).reduce((itemAcc, item) => itemAcc + Math.max(Number(item.quantityOrdered || 0) - Number(item.quantityReceived || 0), 0), 0)
   ), 0);
   const poCounts = useMemo(() => {
+    const dateFiltered = orders.filter(o => {
+      const oDate = new Date(o.createdAt || o.orderedAt).toISOString().slice(0, 10);
+      return oDate >= poFromDate && oDate <= poToDate;
+    });
     return {
-      Placed: orders.filter(o => o.status === "DRAFT" || o.status === "ORDERED").length,
-      Approved: orders.filter(o => o.status === "ORDERED").length,
-      Rejected: orders.filter(o => o.status === "CANCELLED").length,
-      Partial_Settled: orders.filter(o => o.status === "PARTIALLY_RECEIVED").length,
-      Settled: orders.filter(o => o.status === "RECEIVED").length,
-      Cancelled: orders.filter(o => o.status === "CANCELLED").length,
-      Total: orders.length
+      Placed: dateFiltered.filter(o => o.status === "DRAFT" || o.status === "ORDERED").length,
+      Approved: dateFiltered.filter(o => o.status === "ORDERED").length,
+      Rejected: dateFiltered.filter(o => o.status === "CANCELLED").length,
+      Partial_Settled: dateFiltered.filter(o => o.status === "PARTIALLY_RECEIVED").length,
+      Settled: dateFiltered.filter(o => o.status === "RECEIVED").length,
+      Cancelled: dateFiltered.filter(o => o.status === "CANCELLED").length,
+      Total: dateFiltered.length
     };
-  }, [orders]);
+  }, [orders, poFromDate, poToDate]);
 
   const filteredOrders = useMemo(() => {
     return orders.filter(o => {
