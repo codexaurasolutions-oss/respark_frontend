@@ -14,6 +14,9 @@ export default function OwnerDashboard() {
     api.get("/owner/dashboard", { params }).then((response) => {
       if (!active) return;
       setData(response.data);
+    }).catch(() => {
+      if (!active) return;
+      setData({});
     });
     return () => {
       active = false;

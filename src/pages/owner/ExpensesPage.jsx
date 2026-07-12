@@ -231,12 +231,6 @@ export default function ExpensesPage() {
         await api.patch(`/owner/expenses/categories/${selectedCategory.id}`, {
           name: categoryForm.name,
           description: compositeDescription
-        }).catch(async () => {
-          // If PATCH not supported or failed, recreate or fallback to POST
-          await api.post("/owner/expense-categories", {
-            name: categoryForm.name,
-            description: compositeDescription
-          });
         });
         setStatus({ error: "", success: "Expense Type updated successfully!" });
       } else {

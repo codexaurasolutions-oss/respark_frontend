@@ -18,13 +18,17 @@ export default function AppointmentDetailPage() {
   const [status, setStatus] = useState({ loading: true, error: "", success: "" });
 
   const load = async () => {
-    const [appointmentResponse, linksResponse] = await Promise.all([
-      api.get(`/owner/appointments/${id}`),
-      api.get(`/owner/appointments/${id}/self-links`)
-    ]);
-    setAppointment(appointmentResponse.data);
-    setSelfLinks(linksResponse.data);
-    setStatusValue(appointmentResponse.data.status);
+    try {
+      const [appointmentResponse, linksResponse] = await Promise.all([
+        api.get(`/owner/appointments/${id}`),
+        api.get(`/owner/appointments/${id}/self-links`)
+      ]);
+      setAppointment(appointmentResponse.data);
+      setSelfLinks(linksResponse.data);
+      setStatusValue(appointmentResponse.data.status);
+    } catch (error) {
+      setStatus((current) => ({ ...current, error: formatApiError(error, "Could not reload appointment") }));
+    }
   };
 
   useEffect(() => {
