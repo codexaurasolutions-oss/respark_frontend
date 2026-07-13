@@ -135,8 +135,9 @@ export default function ExpensesPage() {
 
   // Filtered lists
   const baseFilteredExpenses = rows.filter(row => {
-    const dateMatch = (!filters.startDate || row.expenseDate >= filters.startDate) &&
-                      (!filters.endDate || row.expenseDate <= filters.endDate);
+    const rowDate = new Date(row.expenseDate).toISOString().slice(0, 10);
+    const dateMatch = (!filters.startDate || rowDate >= filters.startDate) &&
+                      (!filters.endDate || rowDate <= filters.endDate);
     const branchMatch = !selectedBranchId || row.branchId === selectedBranchId;
     const paymentModeMatch = !filters.paymentMode || row.paymentMode === filters.paymentMode;
     const categoryMatch = !filters.categoryId || row.categoryId === filters.categoryId;
@@ -1005,7 +1006,6 @@ export default function ExpensesPage() {
                         <th>Title</th>
                         <th>Amount</th>
                         <th>Payment Mode</th>
-                        <th>Status</th>
                         <th style={{ textAlign: "right" }}>Actions</th>
                       </tr>
                     </thead>
@@ -1022,15 +1022,6 @@ export default function ExpensesPage() {
                             <td>{row.title}</td>
                             <td style={{ fontWeight: 700, fontFamily: "monospace" }}>{formatMoney(row.amount || 0)}</td>
                             <td style={{ fontWeight: 600, fontSize: 12 }}>{row.paymentMode || "CASH"}</td>
-                            <td>
-                              <span style={{
-                                padding: "3px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600,
-                                background: row.status === "APPROVED" ? "#dcfce7" : row.status === "REJECTED" ? "#fef2f2" : row.status === "PAID" ? "#dbeafe" : "#fef9c3",
-                                color: row.status === "APPROVED" ? "#166534" : row.status === "REJECTED" ? "#991b1b" : row.status === "PAID" ? "#1e40af" : "#854d0e"
-                              }}>
-                                {row.status || "PENDING"}
-                              </span>
-                            </td>
                             <td style={{ textAlign: "right" }}>
                               <div style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
                                 {canApproveExpenses && row.status === "PENDING" && (
