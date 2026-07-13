@@ -459,6 +459,8 @@ export default function UsersPage() {
   const handleDirectorySelect = (rowId) => {
     startTransition(() => {
       setSelectedId(rowId);
+      const row = filteredRows.find((r) => r.id === rowId);
+      if (row) startEdit(row);
     });
   };
 
