@@ -660,7 +660,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
                     notifications.map((notif) => (
                       <div key={notif.id} className={`notif-item ${!notif.isRead ? "unread" : ""}`} onClick={(e) => handleNotificationClick(e, notif)}>
                         <div style={{ fontSize: "1.2rem" }}>
-                          {notif.type === 'APPOINTMENT' ? 'ðŸ“…' : notif.type === 'PAYMENT' ? 'ðŸ’µ' : notif.type === 'FEEDBACK' ? 'â­' : 'ðŸ””'}
+                          {notif.type === 'APPOINTMENT' ? '\u{1F4C5}' : notif.type === 'PAYMENT' ? '\u{1F4B5}' : notif.type === 'FEEDBACK' ? '\u2B50' : '\u{1F514}'}
                         </div>
                         <div>
                           <p><strong>{notif.title}</strong> - {notif.message}</p>
