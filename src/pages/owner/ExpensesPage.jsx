@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
@@ -51,6 +51,7 @@ export default function ExpensesPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState({ error: "", success: "" });
   const [approvingId, setApprovingId] = useState(null);
+  const categoryAutoSelectedRef = useRef(false);
 
   // Filters & selection
   const [filters, setFilters] = useState({
@@ -102,8 +103,9 @@ export default function ExpensesPage() {
       setPayments(Array.isArray(paymentRes.data) ? paymentRes.data : (paymentRes.data?.data || []));
       setAccountInjections(Array.isArray(injectionRes.data?.injections) ? injectionRes.data.injections : (injectionRes.data?.data || []));
 
-      // If categories exist and none selected, select first
-      if (categoryRes.data?.length > 0 && !selectedCategory) {
+      // If categories exist and none selected, select first (only on initial load)
+      if (categoryRes.data?.length > 0 && !selectedCategory && !categoryAutoSelectedRef.current) {
+        categoryAutoSelectedRef.current = true;
         const firstCat = categoryRes.data[0];
         setSelectedCategory(firstCat);
         
@@ -127,7 +129,7 @@ export default function ExpensesPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory, selectedBranchId]);
+  }, [selectedBranchId]);
 
   useEffect(() => {
     void loadData();
@@ -229,7 +231,7 @@ export default function ExpensesPage() {
 
       if (selectedCategory && selectedCategory.id) {
         // Edit existing
-        await api.patch(`/owner/expenses/categories/${selectedCategory.id}`, {
+        await api.patch(`/owner/expense-categories/${selectedCategory.id}`, {
           name: categoryForm.name,
           description: compositeDescription
         });
