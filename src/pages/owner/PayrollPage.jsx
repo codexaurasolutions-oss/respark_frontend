@@ -861,7 +861,7 @@ export default function PayrollPage() {
 
         {activeTab === "records" && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))", gap: 18, alignItems: "start", minWidth: 0 }}>
-          <div className="panel-card" style={{ padding: "20px 24px", minWidth: 0, maxHeight: "78vh", display: "flex", flexDirection: "column" }}>
+          <div className="panel-card" style={{ padding: "20px 24px", minWidth: 0 }}>
             <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Attendance Records</h3>
             <div className="form-grid" style={{ marginBottom: 16 }}>
               <label>
@@ -889,7 +889,7 @@ export default function PayrollPage() {
                 <button type="button" className="secondary-button" onClick={() => setFilters((current) => ({ ...current, attendanceQ: "", attendanceStatus: "", attendanceDate: "" }))}><RotateCcw size={12} /> Reset</button>
               </div>
             </div>
-            <div className="list-stack" style={{ gap: 12, overflowY: "auto", flex: 1, minHeight: 0 }}>
+            <div className="list-stack" style={{ gap: 12, maxHeight: "55vh", overflowY: "auto" }}>
               {attendance.map((row) => {
                 const statusColors = { PRESENT: { bg: "#dcfce7", color: "#166534" }, COMPLETED_SHIFT: { bg: "#f3e8ff", color: "#6b21a8" }, LATE: { bg: "#fef9c3", color: "#854d0e" }, HALF_DAY: { bg: "#ffedd5", color: "#9a3412" }, ABSENT: { bg: "#fee2e2", color: "#991b1b" }, LEAVE: { bg: "#ede9fe", color: "#5b21b6" }, WORKING: { bg: "#e0f2fe", color: "#0369a1" } };
                 const sc = statusColors[row.status] || { bg: "#f1f5f9", color: "#475569" };
