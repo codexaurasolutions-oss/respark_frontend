@@ -171,18 +171,18 @@ export default function UsersPage() {
 
   const load = async (branchId = selectedBranchId) => {
     try {
-      const [usersResponse, servicesResponse, rolesResponse, settingsResponse] = await Promise.all([
+      const [usersResponse, servicesResponse, rolesResponse, designationsResponse] = await Promise.all([
         api.get("/owner/users", { params: branchId ? { branchId } : {} }),
         api.get("/owner/services", { params: branchId ? { branchId } : {} }),
         api.get("/owner/custom-roles"),
-        api.get("/owner/settings")
+        api.get("/owner/designations")
       ]);
       setRows(usersResponse.data);
       setServices(servicesResponse.data);
       setCustomRoles(rolesResponse.data);
       setDesignationOptions(
-        Array.isArray(settingsResponse.data?.advancedSettings?.designations)
-          ? settingsResponse.data.advancedSettings.designations.filter((row) => row?.active !== false && row?.name).map((row) => row.name)
+        Array.isArray(designationsResponse.data)
+          ? designationsResponse.data.filter((row) => row?.active !== false && row?.name).map((row) => row.name)
           : []
       );
     } catch {
