@@ -471,7 +471,7 @@ export default function MyDashboardPage() {
               </div>
               <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
                 <button type="button" className="secondary-button" onClick={closeFlow}><X size={14} /> Cancel</button>
-                {isCheckOut && (
+                {isCheckOut && !data.profile?.attendanceEnrollmentPhotoUrl && (
                   <button type="button" className="secondary-button" onClick={() => void handleSkipSelfie()} disabled={flow.busy}>
                     <CameraOff size={14} /> Skip Selfie
                   </button>
@@ -485,11 +485,19 @@ export default function MyDashboardPage() {
             <>
               <canvas ref={canvasRef} style={{ display: "none" }} />
               {isCheckOut ? (
-                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                  <button type="button" className="secondary-button" onClick={closeFlow}><X size={14} /> Cancel</button>
-                  <button type="button" onClick={() => void handleSkipSelfie()} disabled={flow.busy}>
-                    <Send size={14} /> Submit Without Selfie
-                  </button>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {data.profile?.attendanceEnrollmentPhotoUrl ? (
+                    <div style={{ padding: "12px 14px", borderRadius: 16, background: "linear-gradient(135deg, rgba(254,226,226,0.95), rgba(254,202,202,0.92))", border: "1px solid rgba(239,68,68,0.25)", color: "#991b1b", fontSize: 13 }}>
+                      Camera is required for biometric check-out. Please allow camera access in your browser settings and try again.
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                      <button type="button" className="secondary-button" onClick={closeFlow}><X size={14} /> Cancel</button>
+                      <button type="button" onClick={() => void handleSkipSelfie()} disabled={flow.busy}>
+                        <Send size={14} /> Submit Without Selfie
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div style={{ padding: "12px 14px", borderRadius: 16, background: "linear-gradient(135deg, rgba(254,226,226,0.95), rgba(254,202,202,0.92))", border: "1px solid rgba(239,68,68,0.25)", color: "#991b1b", fontSize: 13 }}>
