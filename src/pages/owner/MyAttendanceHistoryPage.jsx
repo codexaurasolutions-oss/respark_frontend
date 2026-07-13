@@ -167,7 +167,7 @@ export default function MyAttendanceHistoryPage() {
           </div>
           <div className="panel-card" style={{ overflow: "hidden" }}>
             <h3 style={{ marginTop: 0 }}>Attendance Records</h3>
-            <div className="list-stack">
+            <div className="list-stack" style={{ maxHeight: "55vh", overflowY: "auto" }}>
               {filteredRecords.map((row) => {
                 const sc = statusColor(row.status);
                 return (

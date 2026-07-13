@@ -294,7 +294,7 @@ export default function ExpensesPage() {
       const payload = {
         title: form.title,
         amount: Number(form.amount),
-        expenseDate: new Date(form.expenseDate).toISOString(),
+        expenseDate: new Date(form.expenseDate).toISOString().slice(0, 10),
         paymentMode: form.paymentMode,
         notes: form.notes || null,
         categoryId: form.categoryId || null,
