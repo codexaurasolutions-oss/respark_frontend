@@ -326,7 +326,7 @@ export default function CouponsPage() {
             </div>
 
             <button 
-              onClick={() => { setEditingCoupon(null); setCouponForm(defaultCouponForm); }}
+              onClick={() => { setEditingCoupon(null); setCouponForm(defaultCouponForm); setStatus({ error: "", success: "" }); }}
               style={{ 
                 marginTop: 16, 
                 width: "100%", 
@@ -542,7 +542,7 @@ export default function CouponsPage() {
                 
                 <button 
                   type="button" 
-                  onClick={() => { setEditingCoupon(null); setCouponForm(defaultCouponForm); }}
+                  onClick={() => { setEditingCoupon(null); setCouponForm(defaultCouponForm); setStatus({ error: "", success: "" }); }}
                   style={{ 
                     padding: "10px 18px", 
                     background: "#f1f5f9", 

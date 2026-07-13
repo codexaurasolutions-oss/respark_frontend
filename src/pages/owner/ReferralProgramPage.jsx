@@ -132,7 +132,7 @@ export default function ReferralProgramPage() {
     setShowCouponForm(true);
   };
 
-  const handleCreateCoupon = () => { setEditingCoupon(null); setCouponForm(defaultCouponForm); setPartnerSearchInput(""); setShowCouponForm(true); };
+  const handleCreateCoupon = () => { setEditingCoupon(null); setCouponForm(defaultCouponForm); setPartnerSearchInput(""); setStatus({ error: "", success: "" }); setShowCouponForm(true); };
 
   const toggleCategory = (catId) => setCouponForm(prev => ({ ...prev, categoryIds: prev.categoryIds.includes(catId) ? prev.categoryIds.filter((id) => id !== catId) : [...prev.categoryIds, catId] }));
   const toggleService = (svcId) => setCouponForm(prev => ({ ...prev, serviceIds: prev.serviceIds.includes(svcId) ? prev.serviceIds.filter((id) => id !== svcId) : [...prev.serviceIds, svcId] }));
@@ -280,7 +280,7 @@ export default function ReferralProgramPage() {
               {filteredCoupons.length === 0 ? (
                 <EmptyState title="No referral coupons" description="Create your first referral coupon to start rewarding partners." />
               ) : (
-                <div className="list-stack" style={{ gap: 12 }}>
+                <div className="list-stack" style={{ gap: 12, maxHeight: "55vh", overflowY: "auto" }}>
                   {filteredCoupons.map((c) => (
                     <div key={c.id} className="list-item" style={{ opacity: c.isArchived ? 0.6 : 1, display: "flex", flexDirection: "column", gap: 12, padding: 16 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
@@ -422,7 +422,7 @@ export default function ReferralProgramPage() {
           {customers.filter(c => c.source === "AFFILIATE_PARTNER" || c.tags?.includes("AFFILIATE_PARTNER")).length === 0 ? (
             <EmptyState title="No partners yet" description="Onboard your first affiliate partner to start the referral program." />
           ) : (
-            <div className="list-stack" style={{ gap: 12 }}>
+            <div className="list-stack" style={{ gap: 12, maxHeight: "55vh", overflowY: "auto" }}>
               {customers.filter(c => c.source === "AFFILIATE_PARTNER" || c.tags?.includes("AFFILIATE_PARTNER")).map((p) => {
                 const wallet = wallets.find(w => w.partnerId === p.id);
                 return (
@@ -477,7 +477,7 @@ export default function ReferralProgramPage() {
               {wallets.length === 0 ? (
                 <EmptyState title="No wallets" description="Wallets are created automatically when partners earn credits." />
               ) : (
-                <div className="list-stack" style={{ gap: 12 }}>
+                <div className="list-stack" style={{ gap: 12, maxHeight: "55vh", overflowY: "auto" }}>
                   {wallets.map((w) => (
                     <div key={w.id} className="list-item" style={{ cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", transition: "all 0.2s" }} onClick={() => loadWalletDetail(w.partnerId)}>
                       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -509,7 +509,7 @@ export default function ReferralProgramPage() {
               {payouts.length === 0 ? (
                 <EmptyState title="No payout requests" description="Partners can request cash withdrawal from their wallet." />
               ) : (
-                <div className="list-stack" style={{ gap: 12 }}>
+                <div className="list-stack" style={{ gap: 12, maxHeight: "55vh", overflowY: "auto" }}>
                   {payouts.map((p) => (
                     <div key={p.id} className="list-item" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -568,7 +568,7 @@ export default function ReferralProgramPage() {
               {walletDetail.transactions?.length === 0 ? (
                 <p style={{ fontSize: 13, color: "#94a3b8" }}>No transactions yet.</p>
               ) : (
-                <div className="list-stack">
+                <div className="list-stack" style={{ maxHeight: "55vh", overflowY: "auto" }}>
                   {walletDetail.transactions?.map((t) => (
                     <div key={t.id} className="list-item" style={{ padding: "10px 12px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

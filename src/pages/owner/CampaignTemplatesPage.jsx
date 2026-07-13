@@ -158,7 +158,7 @@ export default function CampaignTemplatesPage() {
             <h3>Template Library</h3>
             <Link className="secondary-button" to="/admin/campaign-templates/create">Create Template</Link>
           </div>
-          <div className="list-stack">
+          <div className="list-stack" style={{ maxHeight: "55vh", overflowY: "auto" }}>
             {rows.map((row) => (
               <div key={row.id} className="list-item">
                 <div>

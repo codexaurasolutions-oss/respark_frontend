@@ -992,7 +992,7 @@ export default function ExpensesPage() {
                     <button className="blue-btn-secondary" onClick={loadData}>
                       <Search size={14} /> Show Expenses
                     </button>
-                    <button className="blue-btn" onClick={() => { setEditingExpenseId(null); setForm({ ...emptyForm, branchId: selectedBranchId || "" }); setShowAddModal(true); }}>
+                    <button className="blue-btn" onClick={() => { setEditingExpenseId(null); setForm({ ...emptyForm, branchId: selectedBranchId || "" }); setStatus({ error: "", success: "" }); setShowAddModal(true); }}>
                       <Plus size={16} /> Add Expenses
                     </button>
                   </div>

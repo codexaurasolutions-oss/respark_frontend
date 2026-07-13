@@ -836,7 +836,7 @@ export default function MembershipsPage() {
       {(activeSection === "memberships") && <div className="panel-card">
           <h3>{customerMembershipMode ? "Assigned Memberships" : "Membership Plans"}</h3>
           {loading ? <PageLoader compact title="Loading memberships" message="Preparing plans, assignments, and customer usage balances." /> : null}
-          <div className="list-stack">
+          <div className="list-stack" style={{ maxHeight: "55vh", overflowY: "auto" }}>
             {(customerMembershipMode ? (selectedCustomerHistory?.memberships || []) : memberships).map((item) => (
               <div key={item.id} className="list-item">
                 <div className="item-head">
@@ -891,7 +891,7 @@ export default function MembershipsPage() {
 
         {(activeSection === "packages") && <div className="panel-card">
           <h3>{customerPackageMode ? "Assigned Packages" : "Packages"}</h3>
-          <div className="list-stack">
+          <div className="list-stack" style={{ maxHeight: "55vh", overflowY: "auto" }}>
             {(customerPackageMode ? (selectedCustomerHistory?.packages || []) : packages).map((item) => (
               <div key={item.id} className="list-item">
                 <div className="item-head">
@@ -1078,7 +1078,7 @@ export default function MembershipsPage() {
         <div className="settings-section-grid" style={{ marginTop: 18 }}>
           <div className="panel-card">
             <h3>Customer Membership History</h3>
-            <div className="list-stack">
+            <div className="list-stack" style={{ maxHeight: "55vh", overflowY: "auto" }}>
               {(selectedCustomerHistory.memberships || []).map((item) => (
                 <div key={item.id} className="list-item">
                   <div className="item-head">

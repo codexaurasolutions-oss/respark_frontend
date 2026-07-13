@@ -2291,6 +2291,7 @@ export default function SettingsPage() {
     const startCreate = () => {
       setDraftTax({ id: null, label: "", code: "", rate: 0, active: true, applicableFor: ["SERVICE", "PRODUCT"], _isNew: true });
       setSelectedTaxId(null);
+      setStatus((prev) => ({ ...prev, error: "", success: "" }));
     };
 
     const startEdit = (row) => {
@@ -2301,6 +2302,7 @@ export default function SettingsPage() {
     const cancelDraft = () => {
       setDraftTax(null);
       setSelectedTaxId(null);
+      setStatus((prev) => ({ ...prev, error: "", success: "" }));
     };
 
     const saveDraft = async () => {
@@ -2674,6 +2676,7 @@ export default function SettingsPage() {
     const startCreate = () => {
       setDraftFeedbackType({ id: null, name: "", slug: "", active: true, _isNew: true });
       setSelectedFeedbackTypeId(null);
+      setStatus((prev) => ({ ...prev, error: "", success: "" }));
     };
 
     const startEdit = (row) => {
@@ -2684,6 +2687,7 @@ export default function SettingsPage() {
     const cancelDraft = () => {
       setDraftFeedbackType(null);
       setSelectedFeedbackTypeId(null);
+      setStatus((prev) => ({ ...prev, error: "", success: "" }));
     };
 
     const saveDraft = async () => {
@@ -3564,13 +3568,17 @@ export default function SettingsPage() {
 
     const addNew = () => {
       setDesignationDraft({ name: "", description: "", active: true, _isNew: true });
+      setStatus((prev) => ({ ...prev, error: "", success: "" }));
     };
 
     const startEdit = (row) => {
       setDesignationDraft({ ...row, _isNew: false });
     };
 
-    const cancel = () => setDesignationDraft(null);
+    const cancel = () => {
+      setDesignationDraft(null);
+      setStatus((prev) => ({ ...prev, error: "", success: "" }));
+    };
 
     const save = async () => {
       if (!designationDraft || !designationDraft.name?.trim()) return;
@@ -3777,6 +3785,7 @@ export default function SettingsPage() {
     const startCreate = () => {
       setDraftPnlCategory({ id: null, name: "", type: "EXPENSE", sequenceNumber: rows.length ? Math.max(...rows.map((row) => Number(row.sequenceNumber || 0))) + 1 : 1, active: true, _isNew: true });
       setSelectedPnlCategoryId(null);
+      setStatus((prev) => ({ ...prev, error: "", success: "" }));
     };
 
     const startEdit = (row) => {
@@ -3787,6 +3796,7 @@ export default function SettingsPage() {
     const cancelDraft = () => {
       setDraftPnlCategory(null);
       setSelectedPnlCategoryId(null);
+      setStatus((prev) => ({ ...prev, error: "", success: "" }));
     };
 
     const saveDraft = async () => {
@@ -4472,6 +4482,7 @@ export default function SettingsPage() {
     const startCreate = () => {
       setDraftPnlIncomeTax({ id: null, slabFrom: 0, slabTo: 0, rate: 0, active: true, _isNew: true });
       setSelectedPnlIncomeTaxId(null);
+      setStatus((prev) => ({ ...prev, error: "", success: "" }));
     };
 
     const startEdit = (row) => {
@@ -4482,6 +4493,7 @@ export default function SettingsPage() {
     const cancelDraft = () => {
       setDraftPnlIncomeTax(null);
       setSelectedPnlIncomeTaxId(null);
+      setStatus((prev) => ({ ...prev, error: "", success: "" }));
     };
 
     const saveDraft = async () => {

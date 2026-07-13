@@ -132,7 +132,7 @@ export default function FeedbackPage() {
         <div className="panel-card">
           <h3>Feedback Inbox</h3>
           {loading ? <PageLoader compact title="Loading feedback inbox" message="Preparing ratings, branch filters, and customer comments for review." /> : null}
-          <div className="list-stack">
+          <div className="list-stack" style={{ maxHeight: "55vh", overflowY: "auto" }}>
             {rows.map((row) => {
               const buttons = getVisibleButtons(row.status);
               const isBusy = processingId === row.id;

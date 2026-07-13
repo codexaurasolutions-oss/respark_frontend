@@ -126,6 +126,7 @@ export default function CampaignsPage() {
         setCampaignInsights({ performance: null, roi: null, conversions: [], audience: null });
         setForm(emptyForm);
       }
+      setStatus({ error: "", success: "" });
       setLoading(false);
     } catch (error) {
       setStatus({ error: formatApiError(error, "Could not load campaigns"), success: "" });
@@ -360,7 +361,7 @@ export default function CampaignsPage() {
             </label>
             <button type="button" className="secondary-button" onClick={() => setFilters({ q: "", status: "", type: "", audienceFilter: "" })}>Reset</button>
           </div>
-          <div className="list-stack">
+          <div className="list-stack" style={{ maxHeight: "55vh", overflowY: "auto" }}>
               {rows.map((row) => (
                 <div key={row.id} className="list-item">
                   <div>
