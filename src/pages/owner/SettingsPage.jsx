@@ -4870,8 +4870,6 @@ export default function SettingsPage() {
         return renderPnlCategoriesSection();
       case "pnl-income-taxes":
         return renderPnlIncomeTaxesSection();
-      case "footer-content":
-        return renderFooterSection();
       case "ui-settings":
         return renderUiSettingsSection();
       default:
