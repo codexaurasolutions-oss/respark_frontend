@@ -4,11 +4,11 @@ import { CheckCircle2, LoaderCircle, LocateFixed, MapPin, Search } from "lucide-
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./MapPicker.css";
 
-const DEFAULT_CENTER = [78.9629, 20.5937];
-const DEFAULT_ZOOM = 4;
+const DEFAULT_CENTER = [77.209, 28.6139];
+const DEFAULT_ZOOM = 11;
 const OPENFREE_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 const NOMINATIM_BASE_URL = import.meta.env.VITE_NOMINATIM_BASE_URL || "https://nominatim.openstreetmap.org";
-const NOMINATIM_CACHE_KEY = "respark-nominatim-cache-v1";
+const NOMINATIM_CACHE_KEY = "respark-nominatim-cache-v2";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_CACHE_ENTRIES = 100;
 
@@ -128,7 +128,7 @@ async function searchAddress(query) {
   const normalizedQuery = query.trim().replace(/\s+/g, " ");
   const url = getNominatimUrl("search", {
     q: normalizedQuery,
-    limit: "1",
+    limit: "5",
     addressdetails: "1"
   });
 
@@ -158,6 +158,7 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
 
   const [mapStatus, setMapStatus] = useState("loading");
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [locating, setLocating] = useState(false);
   const [reverseGeocoding, setReverseGeocoding] = useState(false);
@@ -295,6 +296,7 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
 
     setSearching(true);
     setFeedback(null);
+    setSearchResults([]);
 
     try {
       const results = await searchAddress(query);
@@ -303,19 +305,29 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
         return;
       }
 
-      const result = results[0];
-      const lat = Number(result.lat);
-      const lng = Number(result.lon);
-      const displayName = result.display_name || query;
-
-      setSearchQuery(displayName);
-      await selectCoordinates({ lat, lng, knownAddress: displayName });
-      setFeedback({ type: "success", message: "Location selected. Review it and confirm below." });
+      setSearchResults(results);
+      setFeedback({ type: "success", message: `${results.length} matching location${results.length === 1 ? "" : "s"} found. Choose the correct one below.` });
     } catch {
       setFeedback({ type: "error", message: "Search failed. Please wait a moment and try again." });
     } finally {
       setSearching(false);
     }
+  };
+
+  const chooseSearchResult = async (result) => {
+    const lat = Number(result.lat);
+    const lng = Number(result.lon);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      setFeedback({ type: "error", message: "This location could not be selected. Please try another result." });
+      return;
+    }
+
+    const displayName = result.display_name || searchQuery.trim();
+    setSearchQuery(displayName);
+    setSearchResults([]);
+    await selectCoordinates({ lat, lng, knownAddress: displayName });
+    setFeedback({ type: "success", message: "Location selected. Review it and confirm below." });
   };
 
   const useCurrentLocation = () => {
@@ -374,6 +386,7 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
             value={searchQuery}
             onChange={(event) => {
               setSearchQuery(event.target.value);
+              setSearchResults([]);
               setFeedback(null);
             }}
             placeholder="Search an address or place"
@@ -393,6 +406,31 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
       {feedback && (
         <div className={`map-picker__feedback map-picker__feedback--${feedback.type}`} role="status">
           {feedback.message}
+        </div>
+      )}
+
+      {searchResults.length > 0 && (
+        <div className="map-picker__suggestions" aria-label="Location search results">
+          <strong>Choose a location</strong>
+          <div className="map-picker__suggestion-list">
+            {searchResults.map((result) => {
+              const resultName = result.name || result.display_name?.split(",")[0] || "Location";
+              return (
+                <button
+                  key={`${result.place_id}-${result.lat}-${result.lon}`}
+                  className="map-picker__suggestion"
+                  type="button"
+                  onClick={() => chooseSearchResult(result)}
+                >
+                  <span className="map-picker__suggestion-icon"><MapPin size={16} aria-hidden="true" /></span>
+                  <span className="map-picker__suggestion-copy">
+                    <b>{resultName}</b>
+                    <small>{result.display_name}</small>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 

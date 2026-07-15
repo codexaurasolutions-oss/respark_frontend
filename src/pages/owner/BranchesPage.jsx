@@ -251,6 +251,25 @@ export default function BranchesPage() {
                   <span className="muted" style={{ fontSize: 13, fontWeight: 500, color: "#475569" }}>Email</span>
                   <input value={form.email} type="email" placeholder="e.g. downtown@styluxe.com" onChange={(event) => setForm({ ...form, email: event.target.value })} style={{ padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 6 }} />
                 </label>
+
+                <div className="settings-input-group" style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                  <span className="muted" style={{ fontSize: 13, fontWeight: 500, color: "#475569" }}>Branch Location (Geofencing for Attendance)</span>
+                  <div style={{ border: "1px solid #cbd5e1", borderRadius: 8, overflow: "hidden" }}>
+                    <MapPicker
+                      key={formKey}
+                      latitude={form.latitude}
+                      longitude={form.longitude}
+                      onChange={({ latitude, longitude }) => setForm((current) => ({ ...current, latitude, longitude }))}
+                      address={form.address}
+                      onAddressChange={(addr) => setForm((current) => ({ ...current, address: addr }))}
+                    />
+                  </div>
+                </div>
+
+                <label className="settings-input-group" style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span className="muted" style={{ fontSize: 13, fontWeight: 500, color: "#475569" }}>Geofence radius (meters)</span>
+                  <input type="number" min="10" max="1000" value={form.geofenceRadiusMeters} onChange={(event) => setForm({ ...form, geofenceRadiusMeters: event.target.value })} style={{ padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 6 }} />
+                </label>
                 
                 <label className="settings-input-group" style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 6 }}>
                   <span className="muted" style={{ fontSize: 13, fontWeight: 500, color: "#475569" }}>Address</span>
@@ -299,24 +318,6 @@ export default function BranchesPage() {
                   </select>
                 </label>
                 
-                <div className="settings-input-group" style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
-                  <span className="muted" style={{ fontSize: 13, fontWeight: 500, color: "#475569" }}>Branch Location (Geofencing for Attendance)</span>
-                  <div style={{ border: "1px solid #cbd5e1", borderRadius: 8, overflow: "hidden" }}>
-                    <MapPicker
-                      key={formKey}
-                      latitude={form.latitude}
-                      longitude={form.longitude}
-                      onChange={({ latitude, longitude }) => setForm((current) => ({ ...current, latitude, longitude }))}
-                      address={form.address}
-                      onAddressChange={(addr) => setForm((current) => ({ ...current, address: addr }))}
-                    />
-                  </div>
-                </div>
-                
-                <label className="settings-input-group" style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 6 }}>
-                  <span className="muted" style={{ fontSize: 13, fontWeight: 500, color: "#475569" }}>Geofence radius (meters)</span>
-                  <input type="number" min="10" max="1000" value={form.geofenceRadiusMeters} onChange={(event) => setForm({ ...form, geofenceRadiusMeters: event.target.value })} style={{ padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 6 }} />
-                </label>
               </form>
               
               {status.error && <div style={{ marginTop: 16, padding: "10px 14px", backgroundColor: "#fef2f2", color: "#b91c1c", borderRadius: 6, fontSize: 13 }}>{status.error}</div>}
