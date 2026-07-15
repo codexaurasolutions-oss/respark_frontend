@@ -306,9 +306,9 @@ export default function BranchesPage() {
                       key={formKey}
                       latitude={form.latitude}
                       longitude={form.longitude}
-                      onChange={({ latitude, longitude }) => setForm({ ...form, latitude, longitude })}
+                      onChange={({ latitude, longitude }) => setForm((current) => ({ ...current, latitude, longitude }))}
                       address={form.address}
-                      onAddressChange={(addr) => setForm({ ...form, address: addr })}
+                      onAddressChange={(addr) => setForm((current) => ({ ...current, address: addr }))}
                     />
                   </div>
                 </div>
