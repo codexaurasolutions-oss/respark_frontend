@@ -7,7 +7,7 @@
 
 .map-picker__toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(120px, 1fr) max-content max-content;
   gap: 8px;
   align-items: center;
 }
@@ -354,15 +354,18 @@
   }
 
   .map-picker__toolbar {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(90px, 1fr) max-content max-content;
+    gap: 6px;
   }
 
   .map-picker__search-field {
-    grid-column: 1 / -1;
+    grid-column: auto;
   }
 
   .map-picker__button {
-    width: 100%;
+    width: auto;
+    padding-inline: 9px;
+    font-size: 12px;
   }
 
   .map-picker__preview {

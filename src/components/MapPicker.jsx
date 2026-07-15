@@ -17,6 +17,15 @@ let nominatimRequestQueue = Promise.resolve();
 let lastNominatimRequestAt = 0;
 
 function getCoordinates(latitude, longitude) {
+  if (
+    latitude == null ||
+    longitude == null ||
+    String(latitude).trim() === "" ||
+    String(longitude).trim() === ""
+  ) {
+    return null;
+  }
+
   const lat = Number(latitude);
   const lng = Number(longitude);
 
@@ -380,9 +389,9 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
     <section className="map-picker" aria-label="Branch location picker">
       <form className="map-picker__toolbar" onSubmit={handleSearch}>
         <label className="map-picker__search-field">
-          <span className="sr-only">Search for an address</span>
           <Search size={17} aria-hidden="true" />
           <input
+            aria-label="Search for an address"
             value={searchQuery}
             onChange={(event) => {
               setSearchQuery(event.target.value);
