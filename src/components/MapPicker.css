@@ -21,7 +21,9 @@
 
 .map-picker__search-field > svg {
   position: absolute;
+  top: 50%;
   left: 12px;
+  transform: translateY(-50%);
   color: #64748b;
   pointer-events: none;
 }
