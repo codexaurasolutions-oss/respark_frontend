@@ -8,7 +8,8 @@ const DEFAULT_CENTER = [77.209, 28.6139];
 const DEFAULT_ZOOM = 11;
 const OPENFREE_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 const NOMINATIM_BASE_URL = import.meta.env.VITE_NOMINATIM_BASE_URL || "https://nominatim.openstreetmap.org";
-const NOMINATIM_CACHE_KEY = "respark-nominatim-cache-v2";
+const PHOTON_BASE_URL = import.meta.env.VITE_PHOTON_BASE_URL || "https://photon.komoot.io";
+const GEOCODER_CACHE_KEY = "respark-geocoder-cache-v3";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_CACHE_ENTRIES = 100;
 
@@ -41,7 +42,7 @@ function loadCache() {
 
   nominatimCache = new Map();
   try {
-    const stored = JSON.parse(window.sessionStorage.getItem(NOMINATIM_CACHE_KEY) || "[]");
+    const stored = JSON.parse(window.sessionStorage.getItem(GEOCODER_CACHE_KEY) || "[]");
     if (Array.isArray(stored)) {
       stored.forEach(([key, entry]) => nominatimCache.set(key, entry));
     }
@@ -54,7 +55,7 @@ function loadCache() {
 
 function persistCache(cache) {
   try {
-    window.sessionStorage.setItem(NOMINATIM_CACHE_KEY, JSON.stringify([...cache.entries()]));
+    window.sessionStorage.setItem(GEOCODER_CACHE_KEY, JSON.stringify([...cache.entries()]));
   } catch {
     // Browsers can disable storage; requests remain cached for the current page lifetime.
   }
@@ -144,6 +145,79 @@ async function searchAddress(query) {
   return requestNominatim(`search:${normalizedQuery.toLocaleLowerCase()}`, url);
 }
 
+function formatPhotonAddress(properties) {
+  const streetAddress = [properties.housenumber, properties.street].filter(Boolean).join(" ");
+  const parts = [
+    properties.name,
+    streetAddress,
+    properties.locality,
+    properties.district,
+    properties.city,
+    properties.county,
+    properties.state,
+    properties.postcode,
+    properties.country
+  ];
+  const seen = new Set();
+
+  return parts
+    .filter((part) => {
+      if (!part) return false;
+      const normalized = String(part).trim().toLocaleLowerCase();
+      if (!normalized || seen.has(normalized)) return false;
+      seen.add(normalized);
+      return true;
+    })
+    .join(", ");
+}
+
+async function getPhotonSuggestions(query, mapCenter, mapZoom, signal) {
+  const normalizedQuery = query.trim().replace(/\s+/g, " ");
+  const centerKey = mapCenter ? `${mapCenter.lat.toFixed(2)},${mapCenter.lng.toFixed(2)}` : "global";
+  const cacheKey = `photon:${normalizedQuery.toLocaleLowerCase()}:${centerKey}`;
+  const cached = readCachedResult(cacheKey);
+  if (cached) return cached;
+
+  const url = new URL(`${PHOTON_BASE_URL.replace(/\/$/, "")}/api`);
+  url.searchParams.set("q", normalizedQuery);
+  url.searchParams.set("limit", "5");
+  url.searchParams.set("lang", window.navigator.language?.split("-")[0] || "en");
+
+  if (mapCenter) {
+    url.searchParams.set("lat", String(mapCenter.lat));
+    url.searchParams.set("lon", String(mapCenter.lng));
+    url.searchParams.set("zoom", String(Math.round(mapZoom || DEFAULT_ZOOM)));
+  }
+
+  const response = await fetch(url, {
+    headers: { Accept: "application/json" },
+    signal
+  });
+  if (!response.ok) throw new Error(`Photon request failed with ${response.status}`);
+
+  const data = await response.json();
+  const suggestions = (data.features || []).flatMap((feature, index) => {
+    const [lng, lat] = feature.geometry?.coordinates || [];
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return [];
+
+    const properties = feature.properties || {};
+    const displayName = formatPhotonAddress(properties);
+    if (!displayName) return [];
+
+    return [{
+      place_id: `photon-${properties.osm_type || "place"}-${properties.osm_id || index}`,
+      name: properties.name || properties.street || properties.city || "Location",
+      display_name: displayName,
+      lat: String(lat),
+      lon: String(lng),
+      source: "photon"
+    }];
+  });
+
+  cacheResult(cacheKey, suggestions);
+  return suggestions;
+}
+
 async function reverseGeocode(lat, lng) {
   const roundedLat = Number(lat).toFixed(6);
   const roundedLng = Number(lng).toFixed(6);
@@ -163,11 +237,15 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
   const markerRef = useRef(null);
   const selectCoordinatesRef = useRef(null);
   const reverseRequestIdRef = useRef(0);
+  const autocompleteControllerRef = useRef(null);
+  const autocompleteRequestIdRef = useRef(0);
+  const ignoreNextAutocompleteRef = useRef(false);
   const [initialCoordinates] = useState(() => getCoordinates(latitude, longitude));
 
   const [mapStatus, setMapStatus] = useState("loading");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
+  const [autocompleteLoading, setAutocompleteLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [locating, setLocating] = useState(false);
   const [reverseGeocoding, setReverseGeocoding] = useState(false);
@@ -175,6 +253,12 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
   const [selectedCoordinates, setSelectedCoordinates] = useState(initialCoordinates);
   const [selectedAddress, setSelectedAddress] = useState(initialCoordinates ? address?.trim() || "" : "");
   const [confirmed, setConfirmed] = useState(Boolean(initialCoordinates));
+
+  const cancelAutocomplete = useCallback(() => {
+    autocompleteRequestIdRef.current += 1;
+    autocompleteControllerRef.current?.abort();
+    autocompleteControllerRef.current = null;
+  }, []);
 
   const placeMarker = useCallback((lat, lng) => {
     if (!mapRef.current) return;
@@ -213,6 +297,8 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
     setSelectedCoordinates(nextCoordinates);
     setConfirmed(false);
     setFeedback(null);
+    setSearchResults([]);
+    cancelAutocomplete();
     placeMarker(nextCoordinates.lat, nextCoordinates.lng);
 
     if (moveMap && mapRef.current) {
@@ -246,7 +332,7 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
     } finally {
       if (requestId === reverseRequestIdRef.current) setReverseGeocoding(false);
     }
-  }, [placeMarker]);
+  }, [cancelAutocomplete, placeMarker]);
 
   useEffect(() => {
     selectCoordinatesRef.current = selectCoordinates;
@@ -298,11 +384,59 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
     };
   }, [initialCoordinates, placeMarker]);
 
+  useEffect(() => {
+    if (ignoreNextAutocompleteRef.current) {
+      ignoreNextAutocompleteRef.current = false;
+      return undefined;
+    }
+
+    const query = searchQuery.trim();
+    if (query.length < 3) return undefined;
+
+    const requestId = ++autocompleteRequestIdRef.current;
+    let controller;
+    const timeoutId = window.setTimeout(async () => {
+      if (requestId !== autocompleteRequestIdRef.current) return;
+
+      controller = new AbortController();
+      autocompleteControllerRef.current = controller;
+      setAutocompleteLoading(true);
+
+      try {
+        const center = mapRef.current?.getCenter();
+        const suggestions = await getPhotonSuggestions(
+          query,
+          center ? { lat: center.lat, lng: center.lng } : null,
+          mapRef.current?.getZoom(),
+          controller.signal
+        );
+
+        if (requestId !== autocompleteRequestIdRef.current) return;
+        setSearchResults(suggestions);
+      } catch (error) {
+        if (error.name !== "AbortError" && requestId === autocompleteRequestIdRef.current) {
+          setFeedback({ type: "warning", message: "Live suggestions are unavailable. Press Search to find this location." });
+        }
+      } finally {
+        if (requestId === autocompleteRequestIdRef.current) {
+          autocompleteControllerRef.current = null;
+          setAutocompleteLoading(false);
+        }
+      }
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller?.abort();
+    };
+  }, [searchQuery]);
+
   const handleSearch = async (event) => {
     event?.preventDefault();
     const query = searchQuery.trim();
     if (!query || searching) return;
 
+    cancelAutocomplete();
     setSearching(true);
     setFeedback(null);
     setSearchResults([]);
@@ -333,6 +467,8 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
     }
 
     const displayName = result.display_name || searchQuery.trim();
+    cancelAutocomplete();
+    if (displayName !== searchQuery) ignoreNextAutocompleteRef.current = true;
     setSearchQuery(displayName);
     setSearchResults([]);
     await selectCoordinates({ lat, lng, knownAddress: displayName });
@@ -345,6 +481,8 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
       return;
     }
 
+    cancelAutocomplete();
+    setSearchResults([]);
     setLocating(true);
     setFeedback(null);
     window.navigator.geolocation.getCurrentPosition(
@@ -389,9 +527,14 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
     <section className="map-picker" aria-label="Branch location picker">
       <form className="map-picker__toolbar" onSubmit={handleSearch}>
         <label className="map-picker__search-field">
-          <Search size={17} aria-hidden="true" />
+          {autocompleteLoading
+            ? <LoaderCircle className="map-picker__spinner" size={17} aria-hidden="true" />
+            : <Search size={17} aria-hidden="true" />}
           <input
             aria-label="Search for an address"
+            aria-autocomplete="list"
+            aria-controls="branch-location-suggestions"
+            aria-expanded={searchResults.length > 0}
             value={searchQuery}
             onChange={(event) => {
               setSearchQuery(event.target.value);
@@ -419,7 +562,7 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
       )}
 
       {searchResults.length > 0 && (
-        <div className="map-picker__suggestions" aria-label="Location search results">
+        <div id="branch-location-suggestions" className="map-picker__suggestions" aria-label="Location search results">
           <strong>Choose a location</strong>
           <div className="map-picker__suggestion-list">
             {searchResults.map((result) => {
@@ -487,6 +630,8 @@ export default function MapPicker({ latitude, longitude, onChange, address, onAd
       </div>
 
       <div className="map-picker__attribution">
+        <a href="https://github.com/komoot/photon" target="_blank" rel="noreferrer">Search by Photon</a>
+        <span>·</span>
         <a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a>
         <span>·</span>
         <a href="https://openmaptiles.org" target="_blank" rel="noreferrer">© OpenMapTiles</a>
