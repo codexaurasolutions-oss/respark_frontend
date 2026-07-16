@@ -6,6 +6,8 @@ import { formatApiError } from "../../utils/apiError";
 import PageLoader from "../../components/PageLoader";
 import { downloadFromApi } from "../../utils/download";
 import { useBranch } from '../../context/BranchContext';
+import PosReceipt from "../../components/PosReceipt";
+import { Eye, Download, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function InvoicesPage() {
   const { id: routeInvoiceId } = useParams();
@@ -17,6 +19,8 @@ export default function InvoicesPage() {
   const [paymentForm, setPaymentForm] = useState({ mode: "CASH", amount: 0, note: "" });
   const [reminderPreview, setReminderPreview] = useState("");
   const [status, setStatus] = useState({ error: "", success: "", loading: true });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   const load = async (branchId = selectedBranchId) => {
     try {
@@ -29,6 +33,7 @@ export default function InvoicesPage() {
       const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
       setRows(data);
       setStatus((current) => ({ ...current, loading: false, error: "" }));
+      setCurrentPage(1);
     } catch (error) {
       setStatus((current) => ({ ...current, loading: false, error: formatApiError(error, "Failed to load invoices") }));
     }
@@ -46,6 +51,7 @@ export default function InvoicesPage() {
       const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
       setRows(data);
       setStatus((current) => ({ ...current, loading: false, error: "" }));
+      setCurrentPage(1);
     }).catch((error) => {
       if (!active) return;
       setStatus((current) => ({ ...current, loading: false, error: formatApiError(error, "Failed to load invoices") }));
@@ -57,6 +63,8 @@ export default function InvoicesPage() {
 
   const openDetail = useCallback(async (invoiceId) => {
     try {
+      setStatus(curr => ({ ...curr, error: "", success: "" }));
+      setReminderPreview("");
       const response = await api.get(`/owner/invoices/${invoiceId}`);
       setSelectedInvoice(response.data);
       navigate(`/admin/invoices/${invoiceId}`, { replace: true });
@@ -67,13 +75,19 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     let active = true;
-    if (!routeInvoiceId) return () => {
-      active = false;
-    };
+    if (!routeInvoiceId) {
+      setSelectedInvoice(null);
+      return () => { active = false; };
+    }
     (async () => {
-      const response = await api.get(`/owner/invoices/${routeInvoiceId}`);
-      if (!active) return;
-      setSelectedInvoice(response.data);
+      try {
+        const response = await api.get(`/owner/invoices/${routeInvoiceId}`);
+        if (!active) return;
+        setSelectedInvoice(response.data);
+      } catch (err) {
+        if (!active) return;
+        console.error(err);
+      }
     })();
     return () => {
       active = false;
@@ -128,6 +142,14 @@ export default function InvoicesPage() {
     }
   };
 
+  // Pagination logic
+  const totalPages = Math.ceil(rows.length / itemsPerPage);
+  const currentRows = rows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="page-shell">
       <div className="item-head" style={{ marginBottom: 18 }}>
@@ -138,20 +160,20 @@ export default function InvoicesPage() {
       </div>
       <div className="form-grid" style={{ marginBottom: 18 }}>
         <label>
-              <span className="muted">Search invoice number or customer</span>
-              <input value={filters.q} placeholder="Search invoice number or customer" onChange={(event) => setFilters((current) => ({ ...current, q: event.target.value }))} />
-            </label>
+          <span className="muted">Search invoice number or customer</span>
+          <input value={filters.q} placeholder="Search invoice number or customer" onChange={(event) => setFilters((current) => ({ ...current, q: event.target.value }))} />
+        </label>
         <label>
-              <span className="muted">Statuses</span>
-              <select value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}>
-          <option value="">All statuses</option>
-          <option value="UNPAID">Unpaid</option>
-          <option value="PARTIAL">Partial</option>
-          <option value="PAID">Paid</option>
-          <option value="CANCELLED">Cancelled</option>
-          <option value="REFUNDED">Refunded</option>
-        </select>
-            </label>
+          <span className="muted">Statuses</span>
+          <select value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}>
+            <option value="">All statuses</option>
+            <option value="UNPAID">Unpaid</option>
+            <option value="PARTIAL">Partial</option>
+            <option value="PAID">Paid</option>
+            <option value="CANCELLED">Cancelled</option>
+            <option value="REFUNDED">Refunded</option>
+          </select>
+        </label>
         <button type="button" className="secondary-button" onClick={() => setFilters({ q: "", status: "" })}>Reset</button>
       </div>
 
@@ -159,11 +181,16 @@ export default function InvoicesPage() {
       {status.success && <p className="success-text">{status.success}</p>}
 
       <div className="two-col">
-        <div className="panel-card">
+        <div className="panel-card" style={{ display: 'flex', flexDirection: 'column' }}>
           {status.loading ? <PageLoader compact title="Loading invoices" message="Preparing invoice list, branch scope, and payment status." /> : null}
-          <div className="list-stack">
-            {rows.map((row) => (
-              <div key={row.id} className={`list-item ${selectedInvoice?.id === row.id ? "active-row" : ""}`}>
+          <div className="list-stack" style={{ flex: 1 }}>
+            {currentRows.map((row) => (
+              <div 
+                key={row.id} 
+                className={`list-item hoverable ${selectedInvoice?.id === row.id ? "active-row" : ""}`}
+                onClick={() => openDetail(row.id)}
+                style={{ cursor: "pointer", transition: "background 0.2s" }}
+              >
                 <div className="item-head">
                   <div>
                     <strong>{row.invoiceNumber}</strong>
@@ -172,15 +199,48 @@ export default function InvoicesPage() {
                   </div>
                   <span className={`badge badge-${String(row.status).toLowerCase()}`}>{row.status}</span>
                 </div>
-                <div className="inline-actions" style={{ marginTop: 10 }}>
-                  <button type="button" className="secondary-button" onClick={() => openDetail(row.id)}>View Detail</button>
-                  <button type="button" className="secondary-button" onClick={() => downloadFromApi(`/owner/invoices/${row.id}/receipt`, { fallbackFilename: `receipt-${row.invoiceNumber || row.id}.html` })}>Download Receipt</button>
-                  <button type="button" className="secondary-button" onClick={() => downloadFromApi(`/owner/invoices/${row.id}/pdf`, { fallbackFilename: `invoice-${row.invoiceNumber || row.id}.pdf` })}>Download PDF</button>
+                <div className="inline-actions" style={{ marginTop: 10 }} onClick={(e) => e.stopPropagation()}>
+                  <button type="button" className="secondary-button" onClick={() => openDetail(row.id)} style={{ padding: "6px 12px", display: "flex", alignItems: "center", gap: 6 }}>
+                    <Eye size={14} /> View
+                  </button>
+                  <button type="button" className="secondary-button" onClick={() => downloadFromApi(`/owner/invoices/${row.id}/receipt`, { fallbackFilename: `receipt-${row.invoiceNumber || row.id}.html` })} style={{ padding: "6px 12px", display: "flex", alignItems: "center", gap: 6 }}>
+                    <Download size={14} /> Receipt
+                  </button>
+                  <button type="button" className="secondary-button" onClick={() => downloadFromApi(`/owner/invoices/${row.id}/pdf`, { fallbackFilename: `invoice-${row.invoiceNumber || row.id}.pdf` })} style={{ padding: "6px 12px", display: "flex", alignItems: "center", gap: 6 }}>
+                    <FileText size={14} /> PDF
+                  </button>
                 </div>
               </div>
             ))}
             {!status.loading && !rows.length && <EmptyState title="No invoices found" message="Try another branch or status filter to find matching invoices." />}
           </div>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingTop: 16, borderTop: "1px solid #e2e8f0" }}>
+              <span className="muted" style={{ fontSize: "0.85rem" }}>Showing page {currentPage} of {totalPages}</span>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  style={{ padding: "6px", display: "flex", alignItems: "center" }}
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(c => Math.max(1, c - 1))}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  style={{ padding: "6px", display: "flex", alignItems: "center" }}
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(c => Math.min(totalPages, c + 1))}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="panel-card" style={{ background: 'transparent', boxShadow: 'none', border: 'none', padding: 0 }}>
@@ -193,7 +253,6 @@ export default function InvoicesPage() {
           {selectedInvoice && (
             <>
               <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12, gap: 10 }}>
-                <button type="button" className="secondary-button" onClick={() => window.print()}>Print Invoice</button>
                 {selectedInvoice.status !== "PAID" && selectedInvoice.status !== "CANCELLED" && (
                   <button type="button" className="secondary-button" onClick={() => sendReminder(selectedInvoice.id)}>Send Reminder</button>
                 )}
@@ -203,101 +262,18 @@ export default function InvoicesPage() {
               </div>
               {reminderPreview && <p className="muted no-print" style={{ marginBottom: 12, textAlign: 'right' }}>{reminderPreview}</p>}
 
-              <div className="invoice-paper">
-                <div className="invoice-header">
-                  <div>
-                    <h1>INVOICE</h1>
-                    <p style={{ margin: 0, color: '#64748b' }}>Invoice #: <strong>{selectedInvoice.invoiceNumber}</strong></p>
-                    <p style={{ margin: '6px 0 0 0', color: '#64748b' }}>Status: <span className={`badge badge-${String(selectedInvoice.status).toLowerCase()}`}>{selectedInvoice.status}</span></p>
-                  </div>
-                  <div className="invoice-meta-info">
-                    <h2 style={{ margin: '0 0 8px 0', color: '#0f172a' }}>{selectedInvoice.branch?.name || "Main salon"}</h2>
-                    <p style={{ margin: 0, color: '#475569' }}>Billed To: <strong>{selectedInvoice.customer?.name || "Walk-in Customer"}</strong></p>
-                    <p style={{ margin: '6px 0 0 0', color: '#475569' }}>Date: {selectedInvoice.createdAt ? new Date(selectedInvoice.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}</p>
-                  </div>
-                </div>
-
-                <table className="invoice-table">
-                  <thead>
-                    <tr>
-                      <th>Description</th>
-                      <th>Staff</th>
-                      <th>Qty</th>
-                      <th>Unit Price</th>
-                      <th style={{ textAlign: 'right' }}>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedInvoice.items.map((item) => (
-                      <tr key={item.id}>
-                        <td><strong>{item.serviceName}</strong></td>
-                        <td>{item.staffName || "-"}</td>
-                        <td>{item.qty}</td>
-                        <td>{String(item.unitPrice)}</td>
-                        <td style={{ textAlign: 'right', fontWeight: 500 }}>{String(Number(item.qty) * Number(item.unitPrice))}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                <div className="invoice-totals">
-                  <div className="invoice-totals-box">
-                    <div className="invoice-totals-row">
-                      <span>Subtotal</span>
-                      <span>{String(selectedInvoice.total)}</span>
-                    </div>
-                    <div className="invoice-totals-row">
-                      <span>Discount</span>
-                      <span>{String(selectedInvoice.discount)}</span>
-                    </div>
-                    <div className="invoice-totals-row">
-                      <span>Tax</span>
-                      <span>{String(selectedInvoice.tax)}</span>
-                    </div>
-                    <div className="invoice-totals-row grand-total">
-                      <span>Total</span>
-                      <span>{String(selectedInvoice.total)}</span>
-                    </div>
-                    <div className="invoice-totals-row" style={{ marginTop: 8 }}>
-                      <span>Amount Paid</span>
-                      <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{String(selectedInvoice.paidAmount)}</span>
-                    </div>
-                    <div className="invoice-totals-row balance-due">
-                      <span>Balance Due</span>
-                      <span>{String(selectedInvoice.balanceAmount)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {selectedInvoice.payments.length > 0 && (
-                  <div style={{ marginTop: 40 }}>
-                    <h4 style={{ borderBottom: '2px solid #f1f5f9', paddingBottom: 8, margin: '0 0 16px 0' }}>Payment History</h4>
-                    <table className="invoice-table">
-                      <thead>
-                        <tr>
-                          <th>Date</th>
-                          <th>Method</th>
-                          <th>Note</th>
-                          <th style={{ textAlign: 'right' }}>Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectedInvoice.payments.map((payment) => (
-                          <tr key={payment.id}>
-                            <td>{payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : "Recorded"}</td>
-                            <td><span className="badge">{payment.mode}</span></td>
-                            <td className="muted">{payment.note || "-"}</td>
-                            <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--accent)' }}>{String(payment.amount)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+              {/* Replacing the old HTML invoice view with PosReceipt inline */}
+              <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', marginBottom: '24px' }}>
+                <PosReceipt 
+                  invoice={selectedInvoice} 
+                  inline={true} 
+                  onPrint={handlePrint}
+                  onDownload={() => downloadFromApi(`/owner/invoices/${selectedInvoice.id}/receipt`, { fallbackFilename: `receipt-${selectedInvoice.invoiceNumber || selectedInvoice.id}.html` })}
+                />
               </div>
 
               {selectedInvoice.status !== "PAID" && selectedInvoice.status !== "CANCELLED" && (
-                <div className="panel-card no-print" style={{ marginTop: 24 }}>
+                <div className="panel-card no-print">
                   <h4 style={{ marginTop: 0 }}>Record Payment</h4>
                   <div style={{ fontSize: "0.82rem", color: "#64748b", marginBottom: 8 }}>Balance Due: <strong style={{ color: "#dc2626" }}>{String(selectedInvoice.balanceAmount)}</strong></div>
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: 'flex-end' }}>
@@ -336,4 +312,3 @@ export default function InvoicesPage() {
     </div>
   );
 }
-

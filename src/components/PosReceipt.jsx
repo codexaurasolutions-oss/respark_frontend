@@ -97,7 +97,7 @@ const FakeBarcode = () => {
   );
 };
 
-export default function PosReceipt({ invoice, salonName, salonAddress, salonPhone, currencyCode = "INR", onClose, onPrint, onDownload }) {
+export default function PosReceipt({ invoice, salonName, salonAddress, salonPhone, currencyCode = "INR", onClose, onPrint, onDownload, inline = false }) {
   const { auth } = useAuth();
   const salonId = auth?.salonId || auth?.membership?.salonId || auth?.membership?.salon?.id || "global";
   const cachedSettings = readSalonSettingsCache(salonId);
@@ -122,12 +122,12 @@ export default function PosReceipt({ invoice, salonName, salonAddress, salonPhon
   const money = (value) => formatCurrency(value || 0, currencyCode, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <div style={S.overlay} className="pos-receipt-overlay" onClick={onClose}>
-      <div style={S.wrap} className="invoice-paper" onClick={(e) => e.stopPropagation()}>
+    <div style={inline ? { display: "flex", justifyContent: "center", width: "100%", padding: "20px 0" } : S.overlay} className={inline ? "" : "pos-receipt-overlay"} onClick={inline ? undefined : onClose}>
+      <div style={{ ...S.wrap, ...(inline ? { maxHeight: "none", boxShadow: "0 10px 40px -10px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0" } : {}) }} className="invoice-paper" onClick={inline ? undefined : (e) => e.stopPropagation()}>
         <div style={S.actionBar} className="no-print">
           {onPrint && <div style={S.iconBtn()} title="Print" onClick={onPrint}><Printer size={15} /></div>}
           {onDownload && <div style={S.iconBtn()} title="Download" onClick={onDownload}><Download size={15} /></div>}
-          <div style={S.iconBtn("#ef4444")} title="Close" onClick={onClose}><X size={15} /></div>
+          {onClose && !inline && <div style={S.iconBtn("#ef4444")} title="Close" onClick={onClose}><X size={15} /></div>}
         </div>
 
         <div style={S.body}>

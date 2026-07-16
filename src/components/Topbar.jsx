@@ -120,6 +120,7 @@ export default function Topbar({ auth, sidebarExpanded, onToggleSidebar, onLogou
   const tabs = [
     { label: "DASHBOARD", path: "/admin/dashboard", moduleKey: "dashboard", icon: <LayoutDashboard size={14} style={{marginRight: 6}} /> },
     { label: "POS", path: "/admin/pos", moduleKey: "pos", featureKey: "pos", icon: <Monitor size={14} style={{marginRight: 6}} /> },
+    { label: "INVOICES", path: "/admin/invoices", moduleKey: "pos", icon: <FileText size={14} style={{marginRight: 6}} /> },
     { label: "POS DASHBOARD", path: "/admin/order-dashboard", moduleKey: "orders", featureKey: "onlineOrders", icon: <Package size={14} style={{marginRight: 6}} /> },
     { label: "APPOINTMENT", path: "/admin/appointments", moduleKey: "appointments", featureKey: "appointments", icon: <CalendarIcon size={14} style={{marginRight: 6}} /> },
     { label: "CRM", path: "/admin/customers", moduleKey: "customers", icon: <Users size={14} style={{marginRight: 6}} /> },
