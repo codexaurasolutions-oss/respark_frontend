@@ -1,5 +1,7 @@
 import { Download, Printer, QrCode, X } from "lucide-react";
 import { formatCurrency } from "../utils/currency";
+import { useAuth } from "../context/AuthContext";
+import { readSalonSettingsCache } from "../utils/salonSettings";
 
 const Divider = ({ dashed = false, style = {} }) => (
   <div
@@ -96,10 +98,15 @@ const FakeBarcode = () => {
 };
 
 export default function PosReceipt({ invoice, salonName, salonAddress, salonPhone, currencyCode = "INR", onClose, onPrint, onDownload }) {
+  const { auth } = useAuth();
+  const salonId = auth?.salonId || auth?.membership?.salonId || auth?.membership?.salon?.id || "global";
+  const cachedSettings = readSalonSettingsCache(salonId);
+  const customSalonName = cachedSettings?.advancedSettings?.genericSettings?.salonName;
+
   const safeInv = invoice || {};
   const items = safeInv.items || [];
   const customer = safeInv.customer || {};
-  const displaySalonName = salonName || "";
+  const displaySalonName = customSalonName || salonName || "";
   const displayAddress = salonAddress || "";
   const displayPhone = salonPhone || "";
   const invDate = safeInv.createdAt ? new Date(safeInv.createdAt) : new Date();

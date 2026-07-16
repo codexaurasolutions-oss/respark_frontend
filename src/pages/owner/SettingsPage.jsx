@@ -45,6 +45,7 @@ const defaultAdvancedSettings = {
   allowReportDownloading: true,
   allowRosterMgtSettings: true,
   genericSettings: {
+    salonName: "",
     businessOpen: true,
     businessStart: "09:00",
     businessEnd: "21:00",
@@ -1080,6 +1081,19 @@ export default function SettingsPage() {
                 </label>
                 <span className="toggle-status-text" style={{ marginLeft: 8 }}>{generic.businessOpen ? "On" : "Off"}</span>
               </div>
+            </div>
+
+            <div className="business-settings-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.5fr", gap: "24px", alignItems: "start", marginBottom: "24px" }}>
+              <label className="checkbox-option" style={{ gridColumn: "1 / -1" }}>
+                <span style={{ fontWeight: 600, display: "block", marginBottom: 6 }}>Display Salon Name on Invoice :</span>
+                <input
+                  type="text"
+                  value={generic.salonName || ""}
+                  onChange={(event) => updateGeneric("salonName", event.target.value)}
+                  placeholder="Enter the actual salon name to display on invoices..."
+                  style={{ padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", width: "100%", maxWidth: "400px" }}
+                />
+              </label>
             </div>
 
             <div className="business-settings-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.5fr", gap: "24px", alignItems: "start" }}>
