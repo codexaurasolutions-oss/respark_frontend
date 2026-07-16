@@ -3707,3 +3707,6 @@ pre {
   }
 }
 
+
+.hoverable { transition: background 0.2s; }
+.hoverable:hover { background: #f1f5f9; }
