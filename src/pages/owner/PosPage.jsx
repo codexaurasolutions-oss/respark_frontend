@@ -110,6 +110,7 @@ export default function PosPage() {
   const [pkgProductSearch, setPkgProductSearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submittingPkg, setSubmittingPkg] = useState(false);
+  const [submittingMem, setSubmittingMem] = useState(false);
   const [showPkgDetailModal, setShowPkgDetailModal] = useState(null);
   const [showMemModal, setShowMemModal] = useState(false);
   const [memModalMem, setMemModalMem] = useState(null);
@@ -980,29 +981,124 @@ export default function PosPage() {
     }
   };
 
-  const handleAddMemToCart = () => {
+  const handleBuyMembershipDirect = async () => {
     const mem = memModalMem;
-    setForm(c => ({
-      ...c,
-      items: [...c.items.filter(i => i.serviceId || i.productId || i.membershipPlanId || i.packageId || i.giftCardId || i.itemType === "GIFT_CARD"), {
-        itemType: "MEMBERSHIP",
-        membershipPlanId: mem?.id || "",
-        name: mem?.name || "Membership",
-        serviceName: mem?.name || "Membership",
-        staffUserSalonId: memDraft.staffId || "",
-        qty: 1,
-        unitPrice: Number(memDraft.price || 0),
-        originalUnitPrice: Number(memDraft.price || 0),
-        discountPct: 0,
-        discountAmt: 0,
-        taxPct: 0,
-        validityDays: Number(memDraft.validityDays || 30),
-        purchaseDate: memDraft.purchaseDate,
-        customServices: memDraft.customServices,
-        isCustom: true
-      }]
-    }));
-    setShowMemModal(false);
+    if (!mem || !memDraft.staffId) {
+      setStatus({ error: "Please select a membership and staff.", success: "" });
+      return;
+    }
+    if (!form.customerId) {
+      setStatus({ error: "Guest selection is required before purchase. Please select a guest on the main POS screen.", success: "" });
+      return;
+    }
+    if (!form.branchId) {
+      setStatus({ error: "Branch selection is required before purchase.", success: "" });
+      return;
+    }
+
+    const price = Number(memDraft.price || 0);
+    const online = Number(memDraft.online || 0);
+    const offline = Number(memDraft.offline || 0);
+    const balance = Number(memDraft.balance || 0);
+
+    const totalPaid = online + offline;
+    if (totalPaid > price + 0.01) {
+      setStatus({ error: "Payment amount exceeds membership price. Please check the amounts.", success: "" });
+      return;
+    }
+
+    const totalPaymentsCovered = online + offline + balance;
+    if (Math.abs(totalPaymentsCovered - price) > 0.01) {
+      setStatus({ error: `Payment allocation error. Expected total: ${price}, actual: ${totalPaymentsCovered.toFixed(2)}`, success: "" });
+      return;
+    }
+
+    setSubmittingMem(true);
+    setStatus({ error: "", success: "" });
+
+    const finalPayments = [];
+    if (online > 0) {
+      finalPayments.push({ mode: "ONLINE", amount: online, note: `Online payment for membership: ${mem.name}` });
+    }
+    if (offline > 0) {
+      finalPayments.push({ mode: "CASH", amount: offline, note: `Cash payment for membership: ${mem.name}` });
+    }
+
+    const payload = {
+      customerId: form.customerId,
+      branchId: form.branchId,
+      appliedMembershipId: "",
+      discount: 0,
+      tax: 0,
+      couponCode: "",
+      giftVoucherCode: "",
+      loyaltyPointsUsed: 0,
+      notes: memDraft.remark || "",
+      items: [
+        {
+          itemType: "MEMBERSHIP",
+          membershipPlanId: mem.id === "CUSTOM" ? "CUSTOM" : mem.id || "CUSTOM",
+          name: mem.name || "Custom Membership",
+          staffUserId: memDraft.staffId || "",
+          staffUserSalonId: memDraft.staffId || "",
+          qty: 1,
+          unitPrice: price,
+          originalUnitPrice: price,
+          discountPct: 0,
+          discountAmt: 0,
+          taxPct: 0,
+          validityDays: Number(memDraft.validityDays || 30),
+          purchaseDate: memDraft.purchaseDate || new Date().toISOString().slice(0, 10),
+          customServices: (memDraft.customServices || []).map(s => ({
+            id: s.id || s.serviceId || "",
+            serviceId: s.id || s.serviceId || "",
+            name: s.name || "",
+            price: Number(s.price || 0),
+            qty: Number(s.qty || 1)
+          })),
+          paymentBreakup: {
+            balance: balance,
+            online: online,
+            offline: offline
+          },
+          remark: memDraft.remark || "",
+          isCustom: mem?.id === "CUSTOM" || !mem
+        }
+      ],
+      packageRedemptions: [],
+      payments: finalPayments,
+      sendFeedbackMessage: form.sendFeedbackMessage !== false,
+      sendInvoiceMessage: form.sendInvoiceMessage !== false
+    };
+
+    try {
+      const response = await api.post("/owner/pos/invoices", payload);
+      setResult(response.data);
+      setStatus({ error: "", success: `Invoice ${response.data.invoiceNumber} created successfully.` });
+      
+      setCreatedInvoice(response.data);
+      setShowSuccessModal(true);
+
+      // Reset main POS form
+      setGuestSearchInput("");
+      setCouponValidation(null);
+      setCouponCodeInput("");
+      setForm(current => ({
+        ...current,
+        customerId: "",
+        items: [emptyServiceItem],
+        packageRedemptions: [],
+        payments: [emptyPayment]
+      }));
+      setGiftCardDiscount(0);
+
+      setShowMemModal(false);
+      await loadContext("", form.branchId);
+    } catch (error) {
+      setStatus({ error: formatApiError(error, "Could not create membership purchase invoice"), success: "" });
+    } finally {
+      setSubmittingMem(false);
+    }
   };
 
   const handleAddGcToCart = () => {
@@ -2529,7 +2625,11 @@ export default function PosPage() {
                             name: s.service?.name,
                             price: s.service?.salesPrice || s.service?.price || 0,
                             qty: 1
-                          }))
+                          })),
+                          online: "",
+                          offline: "",
+                          balance: "0",
+                          remark: ""
                         });
                       }}
                       style={{
@@ -2610,12 +2710,76 @@ export default function PosPage() {
                     <input type="date" value={memDraft.purchaseDate} onChange={e=>setMemDraft(d=>({...d,purchaseDate:e.target.value}))} max={new Date().toISOString().slice(0, 10)} style={{ width:"100%", padding:"10px 12px", border:"1px solid #cbd5e1", borderRadius:8, fontSize:"0.9rem", boxSizing:"border-box" }} />
                   </div>
                 </div>
+
+                {/* Membership Payments */}
+                <div style={{ marginTop: 16, padding: "16px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                    <div style={{ fontWeight: 700, color: "#0f172a" }}>Payment Split</div>
+                    <div style={{ fontWeight: 700, color: "#2563eb", fontSize: "1.1rem" }}>Total: ₹{memDraft.price || 0}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                    <div style={{ flex: 1, minWidth: 120 }}>
+                      <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Balance</label>
+                      <input type="number" readOnly value={memDraft.balance || 0} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", background: "#e2e8f0", color: "#64748b", boxSizing: "border-box" }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 120 }}>
+                      <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Online</label>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: "1.2rem" }}>📱</span>
+                        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.0" value={memDraft.online} onFocus={() => {
+                          const total = Math.max(0, Number(memDraft.price || 0));
+                          setMemDraft(d => ({ ...d, online: String(total), offline: "", balance: "0" }));
+                        }} onChange={e => setMemDraft(d => { const total = Math.max(0, Number(d.price || 0)); const offline = Math.max(0, Number(d.offline || 0)); const online = clampMoneyInput(e.target.value, Math.max(0, total - offline)); const nextBalance = Math.max(0, Number((total - Number(online || 0) - offline).toFixed(2))); return { ...d, online, balance: String(nextBalance) }; })} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 120 }}>
+                      <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Offline</label>
+                      <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.0" value={memDraft.offline} onFocus={() => {
+                        const total = Math.max(0, Number(memDraft.price || 0));
+                        setMemDraft(d => ({ ...d, offline: String(total), online: "", balance: "0" }));
+                      }} onChange={e => setMemDraft(d => { const total = Math.max(0, Number(d.price || 0)); const online = Math.max(0, Number(d.online || 0)); const offline = clampMoneyInput(e.target.value, Math.max(0, total - online)); const nextBalance = Math.max(0, Number((total - online - Number(offline || 0)).toFixed(2))); return { ...d, offline, balance: String(nextBalance) }; })} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Remark */}
+                <div style={{ marginTop: 8 }}>
+                  <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Remark:</label>
+                  <textarea placeholder="Add remark..." value={memDraft.remark} onChange={e => setMemDraft(d => ({ ...d, remark: e.target.value }))} rows={2} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box", resize: "vertical" }} />
+                </div>
+
+                {/* Warning / Error details */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                  {!form.customerId ? (
+                    <div style={{ fontSize: "0.82rem", color: "#dc2626", fontWeight: 600 }}>
+                      ⚠️ Guest selection is required before purchase. Please select a guest on the main POS screen.
+                    </div>
+                  ) : null}
+                  {!form.branchId ? (
+                    <div style={{ fontSize: "0.82rem", color: "#dc2626", fontWeight: 600 }}>
+                      ⚠️ Branch selection is required before purchase. Please select a branch on the main POS screen.
+                    </div>
+                  ) : null}
+                  {!memDraft.staffId ? (
+                    <div style={{ fontSize: "0.82rem", color: "#dc2626", fontWeight: 600 }}>
+                      ⚠️ Staff selection is required before purchase.
+                    </div>
+                  ) : null}
+                  {status.error ? (
+                    <div style={{ fontSize: "0.85rem", color: "#dc2626", fontWeight: 600, padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8 }}>
+                      ⚠️ {status.error}
+                    </div>
+                  ) : null}
+                </div>
+
               </div>
             </div>
 
             <div style={{ padding:"16px 24px", borderTop:"1px solid #f1f5f9", display:"flex", justifyContent:"flex-end", gap:12 }}>
-              <button onClick={() => setShowMemModal(false)} style={{ padding:"10px 24px", background:"#fff", border:"1px solid #cbd5e1", borderRadius:8, fontWeight:600, cursor:"pointer", color:"#475569" }}>Cancel</button>
-              <button onClick={handleAddMemToCart} disabled={!memModalMem || !memDraft.staffId} style={{ padding:"10px 24px", background:"#2563eb", color:"#fff", border:"none", borderRadius:8, fontWeight:700, cursor:(memModalMem && memDraft.staffId)?"pointer":"not-allowed", opacity:(memModalMem && memDraft.staffId)?1:0.6 }}>Add Membership</button>
+              <button onClick={() => { setShowMemModal(false); setStatus({ error: "", success: "" }); }} style={{ padding:"10px 24px", background:"#fff", border:"1px solid #cbd5e1", borderRadius:8, fontWeight:600, cursor:"pointer", color:"#475569" }}>Cancel</button>
+              <button onClick={handleBuyMembershipDirect} disabled={!memModalMem || !memDraft.staffId || submittingMem} style={{ padding:"10px 24px", background:"#2563eb", color:"#fff", border:"none", borderRadius:8, fontWeight:700, cursor:(memModalMem && memDraft.staffId && !submittingMem)?"pointer":"not-allowed", opacity:(memModalMem && memDraft.staffId && !submittingMem)?1:0.6 }}>
+                {submittingMem ? "Purchasing..." : "Purchase Membership"}
+              </button>
             </div>
           </div>
         </div>
