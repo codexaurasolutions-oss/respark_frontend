@@ -2452,6 +2452,27 @@ export default function PosPage() {
                 {(!showPkgDetailModal?.package?.services || showPkgDetailModal.package.services.length === 0) && (
                   <div style={{ color:"#64748b", fontSize:"0.85rem", padding:"6px 0" }}>No services found</div>
                 )}
+                {showPkgDetailModal?.soldInvoice?.items?.filter(item => item.itemType === 'PRODUCT').length > 0 && (
+                  <>
+                    <div style={{ fontWeight:600, marginBottom:8, marginTop:16 }}>products:</div>
+                    <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"0.9rem" }}>
+                      <thead>
+                        <tr style={{ borderBottom:"1px solid #e2e8f0" }}>
+                          <th style={{ textAlign:"left", padding:"6px 8px", color:"#475569" }}>Name</th>
+                          <th style={{ textAlign:"right", padding:"6px 8px", color:"#475569" }}>Qty</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {showPkgDetailModal.soldInvoice.items.filter(item => item.itemType === 'PRODUCT').map((p, i) => (
+                          <tr key={i} style={{ borderBottom:"1px solid #f1f5f9" }}>
+                            <td style={{ padding:"6px 8px", color:"#334155" }}>- {p.serviceName || p.product?.name || "Product"}</td>
+                            <td style={{ padding:"6px 8px", textAlign:"right", fontWeight:600 }}>{p.qty || 1}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
               </div>
             </div>
           </div>
