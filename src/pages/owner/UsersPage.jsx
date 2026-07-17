@@ -268,7 +268,7 @@ export default function UsersPage() {
   };
 
   const openAccessControl = () => {
-    window.open("/#/admin/roles-permissions", "_blank", "noopener,noreferrer");
+    window.open("/admin/roles-permissions", "_blank", "noopener,noreferrer");
   };
 
   const startCreate = () => {

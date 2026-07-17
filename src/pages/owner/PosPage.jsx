@@ -1630,7 +1630,7 @@ export default function PosPage() {
                       <div><strong style={{color:"#0f172a"}}>Membership :</strong> {activeMembership?.membershipPlan?.name || "NA"}</div>
                     </div>
                     <div style={{display: "flex", alignItems: "flex-start"}}>
-                      <button style={{background: "none", border: "none", cursor: "pointer", color: "var(--accent, #3b82f6)"}} onClick={() => window.open('/#/customers', '_blank')}>
+                      <button style={{background: "none", border: "none", cursor: "pointer", color: "var(--accent, #3b82f6)"}} onClick={() => window.open(`/admin/customers/${customer.id}`, '_blank')}>
                         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                       </button>
                     </div>
