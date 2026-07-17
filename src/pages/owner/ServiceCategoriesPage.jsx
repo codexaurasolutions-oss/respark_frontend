@@ -67,6 +67,8 @@ export default function ServiceCategoriesPage() {
   const [subInput, setSubInput] = useState("");
   const [editingSubId, setEditingSubId] = useState("");
   const [svcSearch, setSvcSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState("");
@@ -125,6 +127,14 @@ export default function ServiceCategoriesPage() {
       return haystack.includes(query);
     });
   }, [selectedSubcategory, svcSearch]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedSubcategory, svcSearch]);
+
+  const totalPages = Math.ceil(items.length / itemsPerPage);
+  const currentItems = items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
 
   const totalSubcategories = useMemo(
     () => categories.reduce((count, category) => count + (category.children?.length || 0), 0),
@@ -618,22 +628,24 @@ export default function ServiceCategoriesPage() {
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
               <button
                 type="button"
+                className="secondary-button"
                 onClick={handleImportClick}
-                style={{ padding: "8px 12px", borderRadius: 10, fontSize: 13, whiteSpace: "nowrap", background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", fontWeight: 700, cursor: "pointer" }}
+                style={{ padding: "8px 16px", borderRadius: 10, fontSize: 13, whiteSpace: "nowrap", fontWeight: 700 }}
               >
                 Import CSV
               </button>
               <button
                 type="button"
+                className="secondary-button"
                 onClick={handleExport}
-                style={{ padding: "8px 12px", borderRadius: 10, fontSize: 13, whiteSpace: "nowrap", background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", fontWeight: 700, cursor: "pointer" }}
+                style={{ padding: "8px 16px", borderRadius: 10, fontSize: 13, whiteSpace: "nowrap", fontWeight: 700 }}
               >
                 Export CSV
               </button>
               <button
                 type="button"
                 onClick={openNewService}
-                style={{ padding: "8px 12px", borderRadius: 10, fontSize: 13, whiteSpace: "nowrap", background: "#2563eb", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer" }}
+                style={{ padding: "8px 16px", borderRadius: 10, fontSize: 13, whiteSpace: "nowrap", fontWeight: 700 }}
               >
                 + Add service
               </button>
@@ -655,48 +667,75 @@ export default function ServiceCategoriesPage() {
             ) : items.length === 0 ? (
               <EmptyState title={svcSearch ? "No matching services" : "No services yet"} message={svcSearch ? "Clear the search and try again." : "Add the first service to this subcategory."} />
             ) : (
-              items.map((service) => (
-                <div
-                  key={service.id}
-                  style={{
-                    padding: "16px 14px",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 14,
-                    display: "flex",
-                    alignItems: "flex-start",
-                    justifyContent: "space-between",
-                    gap: 14
-                  }}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a" }}>{service.name}</div>
-                    <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <span className="badge">₹ {Number(service.price || 0)}</span>
-                      <span className="badge">{service.durationMin || 30} min</span>
-                      <span className="badge">{service.gender || "UNISEX"}</span>
-                      <span className="badge">{service.branch?.name || "Salon wide"}</span>
-                      <span className="badge">{service.onlineBookingEnabled ? "Online booking on" : "Online booking off"}</span>
-                    </div>
-                    {service.description && (
-                      <div style={{ marginTop: 10, color: "#64748b", fontSize: 13 }}>
-                        {service.description}
+              <>
+                {currentItems.map((service) => (
+                  <div
+                    key={service.id}
+                    style={{
+                      padding: "16px 14px",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 14,
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      gap: 14
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a" }}>{service.name}</div>
+                      <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <span className="badge">₹ {Number(service.price || 0)}</span>
+                        <span className="badge">{service.durationMin || 30} min</span>
+                        <span className="badge">{service.gender || "UNISEX"}</span>
+                        <span className="badge">{service.branch?.name || "Salon wide"}</span>
+                        <span className="badge">{service.onlineBookingEnabled ? "Online booking on" : "Online booking off"}</span>
                       </div>
-                    )}
+                      {service.description && (
+                        <div style={{ marginTop: 10, color: "#64748b", fontSize: 13 }}>
+                          {service.description}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <IconButton title="Edit service" onClick={() => startEditService(service)}>
+                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </IconButton>
+                      <IconButton title="Archive service" color="#dc2626" onClick={() => archiveService(service.id)}>
+                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </IconButton>
+                    </div>
                   </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <IconButton title="Edit service" onClick={() => startEditService(service)}>
-                      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </IconButton>
-                    <IconButton title="Archive service" color="#dc2626" onClick={() => archiveService(service.id)}>
-                      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </IconButton>
+                ))}
+                {totalPages > 1 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      style={{ padding: "6px 14px", borderRadius: 8, fontSize: 13 }}
+                    >
+                      Previous
+                    </button>
+                    <div style={{ fontSize: 13, color: "#64748b", fontWeight: 500 }}>
+                      Page {currentPage} of {totalPages}
+                    </div>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      style={{ padding: "6px 14px", borderRadius: 8, fontSize: 13 }}
+                    >
+                      Next
+                    </button>
                   </div>
-                </div>
-              ))
+                )}
+              </>
             )}
           </div>
 
