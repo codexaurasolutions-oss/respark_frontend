@@ -1,7 +1,9 @@
+import React, { useState, useEffect } from "react";
 import { Download, Printer, QrCode, X } from "lucide-react";
 import { formatCurrency } from "../utils/currency";
 import { useAuth } from "../context/AuthContext";
 import { readSalonSettingsCache } from "../utils/salonSettings";
+import { api } from "../api/client";
 
 const Divider = ({ dashed = false, style = {} }) => (
   <div
@@ -100,13 +102,32 @@ const FakeBarcode = () => {
 export default function PosReceipt({ invoice, salonName, salonAddress, salonPhone, currencyCode = "INR", onClose, onPrint, onDownload, inline = false }) {
   const { auth } = useAuth();
   const salonId = auth?.salonId || auth?.membership?.salonId || auth?.membership?.salon?.id || "global";
+  
+  const [liveSettingsName, setLiveSettingsName] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    const fetchSettings = async () => {
+      try {
+        const response = await api.get("/owner/settings");
+        if (active && response.data?.advancedSettings?.genericSettings?.salonName) {
+          setLiveSettingsName(response.data.advancedSettings.genericSettings.salonName);
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    fetchSettings();
+    return () => { active = false; };
+  }, []);
+
   const cachedSettings = readSalonSettingsCache(salonId);
   const customSalonName = cachedSettings?.advancedSettings?.genericSettings?.salonName;
 
   const safeInv = invoice || {};
   const items = safeInv.items || [];
   const customer = safeInv.customer || {};
-  const displaySalonName = customSalonName || salonName || "";
+  const displaySalonName = liveSettingsName || customSalonName || salonName || "";
   const displayAddress = salonAddress || "";
   const displayPhone = salonPhone || "";
   const invDate = safeInv.createdAt ? new Date(safeInv.createdAt) : new Date();
