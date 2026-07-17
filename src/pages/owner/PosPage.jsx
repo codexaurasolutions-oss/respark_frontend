@@ -124,6 +124,8 @@ export default function PosPage() {
   const [consumableSearch, setConsumableSearch] = useState("");
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [timeModalDraft, setTimeModalDraft] = useState({ index: null, startTime: "", endTime: "" });
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [reminderModalDraft, setReminderModalDraft] = useState({ index: null, serviceId: "", serviceName: "", reminderDays: "" });
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [discountDraft, setDiscountDraft] = useState({ type: "FIX", value: "" });
   const [showApplyMembershipModal, setShowApplyMembershipModal] = useState(false);
@@ -1907,7 +1909,7 @@ export default function PosPage() {
                         <td>{Math.max(0, total - Number(item.membershipWalletUsed || 0)).toFixed(0)}</td>
                         <td style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                           {item.itemType === "SERVICE" && (
-                            <button type="button" title="Set Service Time" onClick={() => { setShowTimeModal(true); setTimeModalDraft({ index, startTime: item.startTime || "", endTime: item.endTime || "" }); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a' }}>
+                            <button type="button" title="Update Service Reminder" onClick={() => { setShowReminderModal(true); setReminderModalDraft({ index, serviceId: item.serviceId, serviceName: baseObj.name, reminderDays: String(baseObj.serviceRemainderDays || 0) }); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a' }}>
                               <AlarmClock size={20} />
                             </button>
                           )}
@@ -3016,6 +3018,55 @@ export default function PosPage() {
               <button onClick={() => { setShowMemModal(false); setStatus({ error: "", success: "" }); }} style={{ padding:"10px 24px", background:"#fff", border:"1px solid #cbd5e1", borderRadius:8, fontWeight:600, cursor:"pointer", color:"#475569" }}>Cancel</button>
               <button onClick={handleBuyMembershipDirect} disabled={!memModalMem || !memDraft.staffId || submittingMem} style={{ padding:"10px 24px", background:"#2563eb", color:"#fff", border:"none", borderRadius:8, fontWeight:700, cursor:(memModalMem && memDraft.staffId && !submittingMem)?"pointer":"not-allowed", opacity:(memModalMem && memDraft.staffId && !submittingMem)?1:0.6 }}>
                 {submittingMem ? "Purchasing..." : "Purchase Membership"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showReminderModal && reminderModalDraft.index !== null && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setShowReminderModal(false)}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 450, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h2 style={{ fontSize: "1.1rem", fontWeight: 700, margin: 0, color: "#0f172a" }}>Update service reminder</h2>
+              <button onClick={() => setShowReminderModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ padding: '0 24px 20px', flex: 1, overflowY: 'auto' }}>
+              <p style={{ fontSize: "0.9rem", color: "#475569", marginBottom: 12 }}>
+                Set reminder for service (In days):- {reminderModalDraft.serviceName}
+              </p>
+              <input
+                type="number"
+                min="0"
+                value={reminderModalDraft.reminderDays}
+                onChange={(e) => setReminderModalDraft({ ...reminderModalDraft, reminderDays: e.target.value })}
+                placeholder="Enter Reminder In Days"
+                style={{ width: "100%", padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 6, boxSizing: "border-box", fontSize: "0.9rem" }}
+              />
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'center', gap: 12, background: '#f8fafc' }}>
+              <button type="button" onClick={() => setShowReminderModal(false)} style={{ padding: '10px 24px', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button type="button" onClick={async () => {
+                try {
+                  await api.patch(`/owner/services/${reminderModalDraft.serviceId}`, {
+                    serviceRemainderDays: Number(reminderModalDraft.reminderDays)
+                  });
+                  setContext(prev => {
+                    if (!prev || !prev.services) return prev;
+                    return {
+                      ...prev,
+                      services: prev.services.map(s => s.id === reminderModalDraft.serviceId ? { ...s, serviceRemainderDays: Number(reminderModalDraft.reminderDays) } : s)
+                    };
+                  });
+                  setShowReminderModal(false);
+                } catch (error) {
+                  alert("Failed to update reminder: " + (error.response?.data?.message || error.message));
+                }
+              }} style={{ padding: '10px 24px', borderRadius: 6, border: 'none', background: 'var(--button-bg-solid, #3b82f6)', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>
+                Update Reminder
               </button>
             </div>
           </div>
