@@ -342,7 +342,108 @@ export default function MembershipsPage() {
         actions={customerId ? <Link to={`/admin/customers/${customerId}/history`} className="module-tab">Back to CRM</Link> : null}
       />
       <div className="settings-section-grid">
-        {(activeSection === "memberships") && !customerMembershipMode && (
+        {(activeSection === "memberships") && <div className="panel-card">
+          <h3>{customerMembershipMode ? "Assigned Memberships" : "Membership Plans"}</h3>
+          {loading ? <PageLoader compact title="Loading memberships" message="Preparing plans, assignments, and customer usage balances." /> : null}
+          <div className="list-stack" style={{ maxHeight: "55vh", overflowY: "auto" }}>
+            {(customerMembershipMode ? (selectedCustomerHistory?.memberships || []) : memberships).map((item) => (
+              <div key={item.id} className="list-item">
+                <div className="item-head">
+                  <strong>{customerMembershipMode ? item.membershipPlan?.name : item.name}</strong>
+                  <span className="badge">{customerMembershipMode ? item.status : Number(item.price || 0).toFixed(2)}</span>
+                </div>
+                <div className="item-meta">
+                  {customerMembershipMode
+                    ? `Ends ${String(item.endsAt).slice(0, 10)} | Wallet ${Number(item.remainingWalletValue || 0).toFixed(2)}`
+                    : `${item.benefitType} | ${item.validityDays} days`}
+                </div>
+                {(customerMembershipMode ? item.membershipPlan?.description : item.description) ? (
+                  <p className="muted" style={{ margin: "8px 0 0" }}>{customerMembershipMode ? item.membershipPlan.description : item.description}</p>
+                ) : null}
+                {cleanBenefits(customerMembershipMode ? item.membershipPlan?.benefits : item.benefits).length ? (
+                  <div className="badge-row" style={{ marginTop: 10 }}>
+                    {cleanBenefits(customerMembershipMode ? item.membershipPlan?.benefits : item.benefits).map((benefit) => (
+                      <span key={`${benefit.label}-${benefit.value}`} className="badge">{benefit.label}{benefit.value ? `: ${benefit.value}` : ""}</span>
+                    ))}
+                  </div>
+                ) : null}
+                {!customerMembershipMode && (
+                  <div className="inline-actions" style={{ marginTop: 10, display: "flex", gap: 8 }}>
+                    <Link to={`/admin/memberships/${item.id}/edit`} className="cta-secondary">Edit</Link>
+                    <button type="button" className="cta-secondary" style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }} disabled={deletingId === item.id} onClick={async () => {
+                      if (!window.confirm(`Delete membership plan "${item.name}"?`)) return;
+                      try {
+                        setDeletingId(item.id);
+                        await api.delete(`/owner/memberships/${item.id}`);
+                        setStatus({ error: "", success: "Membership plan deleted." });
+                        setTimeout(() => setStatus({ error: "", success: "" }), 3000);
+                        await loadAll(customerId);
+                      } catch (error) {
+                        setStatus({ error: formatApiError(error, "Could not delete membership plan"), success: "" });
+                      } finally {
+                        setDeletingId(null);
+                      }
+                    }}>{deletingId === item.id ? "..." : <Trash2 size={14} />}</button>
+                  </div>
+                )}
+                {customerMembershipMode && (
+                  <div className="inline-actions" style={{ marginTop: 10 }}>
+                    <button type="button" className="secondary-button" onClick={() => setMembershipLifecycleForm((current) => ({ ...current, customerMembershipId: item.id }))}>Manage Lifecycle</button>
+                  </div>
+                )}
+              </div>
+            ))}
+            {customerMembershipMode && !loading && !selectedCustomerHistory?.memberships?.length && <EmptyState title="No memberships assigned yet" message="Assign a membership to start tracking customer benefits and renewal activity." />}
+            {!customerMembershipMode && !loading && !memberships.length && <EmptyState title="No membership plans yet" message="Create your first membership plan to launch recurring loyalty offers." />}
+          </div>
+        </div>}
+
+        {(activeSection === "packages") && <div className="panel-card">
+          <h3>{customerPackageMode ? "Assigned Packages" : "Packages"}</h3>
+          <div className="list-stack" style={{ maxHeight: "55vh", overflowY: "auto" }}>
+            {(customerPackageMode ? (selectedCustomerHistory?.packages || []) : packages).map((item) => (
+              <div key={item.id} className="list-item">
+                <div className="item-head">
+                  <strong>{customerPackageMode ? item.package?.name : item.name}</strong>
+                  <span className="badge">{customerPackageMode ? item.status : Number(item.price || 0).toFixed(2)}</span>
+                </div>
+                <div className="item-meta">
+                  {customerPackageMode
+                    ? `Remaining ${item.remainingSessions} | Ends ${String(item.endsAt).slice(0, 10)}`
+                    : `${item.totalSessions} sessions | ${item.validityDays} days`}
+                </div>
+                {!customerPackageMode && (
+                  <div className="inline-actions" style={{ marginTop: 10, display: "flex", gap: 8 }}>
+                    <Link to={`/admin/packages/${item.id}/edit`} className="cta-secondary">Edit</Link>
+                    <button type="button" className="cta-secondary" style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }} disabled={deletingId === item.id} onClick={async () => {
+                      if (!window.confirm(`Delete package "${item.name}"?`)) return;
+                      try {
+                        setDeletingId(item.id);
+                        await api.delete(`/owner/packages/${item.id}`);
+                        setStatus({ error: "", success: "Package deleted." });
+                        setTimeout(() => setStatus({ error: "", success: "" }), 3000);
+                        await loadAll(customerId);
+                      } catch (error) {
+                        setStatus({ error: formatApiError(error, "Could not delete package"), success: "" });
+                      } finally {
+                        setDeletingId(null);
+                      }
+                    }}>{deletingId === item.id ? "..." : <Trash2 size={14} />}</button>
+                  </div>
+                )}
+                {customerPackageMode && (
+                  <div className="inline-actions" style={{ marginTop: 10 }}>
+                    <button type="button" className="secondary-button" onClick={() => setPackageLifecycleForm((current) => ({ ...current, customerPackageId: item.id }))}>Manage Lifecycle</button>
+                  </div>
+                )}
+              </div>
+            ))}
+            {customerPackageMode && !loading && !selectedCustomerHistory?.packages?.length && <EmptyState title="No packages assigned yet" message="Assign a package to start tracking prepaid sessions for this customer." />}
+            {!customerPackageMode && !loading && !packages.length && <EmptyState title="No packages yet" message="Create your first package to launch prepaid session bundles." />}
+          </div>
+        </div>}
+
+      {(activeSection === "memberships") && !customerMembershipMode && (
           <div style={{ background: "transparent", border: "none", padding: "0" }}>
             <h3 style={{ color: "#2563eb", margin: "0 0 14px 0", fontSize: "0.88rem", fontWeight: 700, paddingBottom: "8px", borderBottom: "1px solid #f1f5f9" }}>
               {membershipEditMode ? "Edit Membership Plan" : "Create New Membership Plan"}
@@ -832,107 +933,6 @@ export default function MembershipsPage() {
             </form>
           </div>
         )}
-
-      {(activeSection === "memberships") && <div className="panel-card">
-          <h3>{customerMembershipMode ? "Assigned Memberships" : "Membership Plans"}</h3>
-          {loading ? <PageLoader compact title="Loading memberships" message="Preparing plans, assignments, and customer usage balances." /> : null}
-          <div className="list-stack" style={{ maxHeight: "55vh", overflowY: "auto" }}>
-            {(customerMembershipMode ? (selectedCustomerHistory?.memberships || []) : memberships).map((item) => (
-              <div key={item.id} className="list-item">
-                <div className="item-head">
-                  <strong>{customerMembershipMode ? item.membershipPlan?.name : item.name}</strong>
-                  <span className="badge">{customerMembershipMode ? item.status : Number(item.price || 0).toFixed(2)}</span>
-                </div>
-                <div className="item-meta">
-                  {customerMembershipMode
-                    ? `Ends ${String(item.endsAt).slice(0, 10)} | Wallet ${Number(item.remainingWalletValue || 0).toFixed(2)}`
-                    : `${item.benefitType} | ${item.validityDays} days`}
-                </div>
-                {(customerMembershipMode ? item.membershipPlan?.description : item.description) ? (
-                  <p className="muted" style={{ margin: "8px 0 0" }}>{customerMembershipMode ? item.membershipPlan.description : item.description}</p>
-                ) : null}
-                {cleanBenefits(customerMembershipMode ? item.membershipPlan?.benefits : item.benefits).length ? (
-                  <div className="badge-row" style={{ marginTop: 10 }}>
-                    {cleanBenefits(customerMembershipMode ? item.membershipPlan?.benefits : item.benefits).map((benefit) => (
-                      <span key={`${benefit.label}-${benefit.value}`} className="badge">{benefit.label}{benefit.value ? `: ${benefit.value}` : ""}</span>
-                    ))}
-                  </div>
-                ) : null}
-                {!customerMembershipMode && (
-                  <div className="inline-actions" style={{ marginTop: 10, display: "flex", gap: 8 }}>
-                    <Link to={`/admin/memberships/${item.id}/edit`} className="cta-secondary">Edit</Link>
-                    <button type="button" className="cta-secondary" style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }} disabled={deletingId === item.id} onClick={async () => {
-                      if (!window.confirm(`Delete membership plan "${item.name}"?`)) return;
-                      try {
-                        setDeletingId(item.id);
-                        await api.delete(`/owner/memberships/${item.id}`);
-                        setStatus({ error: "", success: "Membership plan deleted." });
-                        setTimeout(() => setStatus({ error: "", success: "" }), 3000);
-                        await loadAll(customerId);
-                      } catch (error) {
-                        setStatus({ error: formatApiError(error, "Could not delete membership plan"), success: "" });
-                      } finally {
-                        setDeletingId(null);
-                      }
-                    }}>{deletingId === item.id ? "..." : <Trash2 size={14} />}</button>
-                  </div>
-                )}
-                {customerMembershipMode && (
-                  <div className="inline-actions" style={{ marginTop: 10 }}>
-                    <button type="button" className="secondary-button" onClick={() => setMembershipLifecycleForm((current) => ({ ...current, customerMembershipId: item.id }))}>Manage Lifecycle</button>
-                  </div>
-                )}
-              </div>
-            ))}
-            {customerMembershipMode && !loading && !selectedCustomerHistory?.memberships?.length && <EmptyState title="No memberships assigned yet" message="Assign a membership to start tracking customer benefits and renewal activity." />}
-            {!customerMembershipMode && !loading && !memberships.length && <EmptyState title="No membership plans yet" message="Create your first membership plan to launch recurring loyalty offers." />}
-          </div>
-        </div>}
-
-        {(activeSection === "packages") && <div className="panel-card">
-          <h3>{customerPackageMode ? "Assigned Packages" : "Packages"}</h3>
-          <div className="list-stack" style={{ maxHeight: "55vh", overflowY: "auto" }}>
-            {(customerPackageMode ? (selectedCustomerHistory?.packages || []) : packages).map((item) => (
-              <div key={item.id} className="list-item">
-                <div className="item-head">
-                  <strong>{customerPackageMode ? item.package?.name : item.name}</strong>
-                  <span className="badge">{customerPackageMode ? item.status : Number(item.price || 0).toFixed(2)}</span>
-                </div>
-                <div className="item-meta">
-                  {customerPackageMode
-                    ? `Remaining ${item.remainingSessions} | Ends ${String(item.endsAt).slice(0, 10)}`
-                    : `${item.totalSessions} sessions | ${item.validityDays} days`}
-                </div>
-                {!customerPackageMode && (
-                  <div className="inline-actions" style={{ marginTop: 10, display: "flex", gap: 8 }}>
-                    <Link to={`/admin/packages/${item.id}/edit`} className="cta-secondary">Edit</Link>
-                    <button type="button" className="cta-secondary" style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }} disabled={deletingId === item.id} onClick={async () => {
-                      if (!window.confirm(`Delete package "${item.name}"?`)) return;
-                      try {
-                        setDeletingId(item.id);
-                        await api.delete(`/owner/packages/${item.id}`);
-                        setStatus({ error: "", success: "Package deleted." });
-                        setTimeout(() => setStatus({ error: "", success: "" }), 3000);
-                        await loadAll(customerId);
-                      } catch (error) {
-                        setStatus({ error: formatApiError(error, "Could not delete package"), success: "" });
-                      } finally {
-                        setDeletingId(null);
-                      }
-                    }}>{deletingId === item.id ? "..." : <Trash2 size={14} />}</button>
-                  </div>
-                )}
-                {customerPackageMode && (
-                  <div className="inline-actions" style={{ marginTop: 10 }}>
-                    <button type="button" className="secondary-button" onClick={() => setPackageLifecycleForm((current) => ({ ...current, customerPackageId: item.id }))}>Manage Lifecycle</button>
-                  </div>
-                )}
-              </div>
-            ))}
-            {customerPackageMode && !loading && !selectedCustomerHistory?.packages?.length && <EmptyState title="No packages assigned yet" message="Assign a package to start tracking prepaid sessions for this customer." />}
-            {!customerPackageMode && !loading && !packages.length && <EmptyState title="No packages yet" message="Create your first package to launch prepaid session bundles." />}
-          </div>
-        </div>}
 
         {(activeSection === "memberships") && <div className="panel-card">
           <h3>Assign Membership</h3>
