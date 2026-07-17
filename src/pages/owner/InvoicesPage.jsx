@@ -174,7 +174,9 @@ export default function InvoicesPage() {
             <option value="REFUNDED">Refunded</option>
           </select>
         </label>
-        <button type="button" className="secondary-button" onClick={() => setFilters({ q: "", status: "" })}>Reset</button>
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+          <button type="button" className="secondary-button" onClick={() => setFilters({ q: "", status: "" })} style={{ width: 'fit-content', padding: '0 20px', height: 44 }}>Reset Filters</button>
+        </div>
       </div>
 
       {status.error && <p className="error-text">{status.error}</p>}
