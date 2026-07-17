@@ -99,7 +99,8 @@ export default function PosPage() {
   
   const [showGcModal, setShowGcModal] = useState(false);
   const [gcModalGc, setGcModalGc] = useState(null);
-  const [gcDraft, setGcDraft] = useState({ staffId: "", price: "", validityDays: "", purchaseDate: new Date().toISOString().slice(0, 10) });
+  const [gcDraft, setGcDraft] = useState({ staffId: "", price: "", validityDays: "", purchaseDate: new Date().toISOString().slice(0, 10), online: "", offline: "", code: "", remark: "" });
+  const [submittingGc, setSubmittingGc] = useState(false);
   const [gcSearch, setGcSearch] = useState("");
 
   const [showPkgModal, setShowPkgModal] = useState(false);
@@ -125,6 +126,10 @@ export default function PosPage() {
   const [timeModalDraft, setTimeModalDraft] = useState({ index: null, startTime: "", endTime: "" });
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [discountDraft, setDiscountDraft] = useState({ type: "FIX", value: "" });
+  const [showApplyMembershipModal, setShowApplyMembershipModal] = useState(false);
+  const [selectedMembershipForApply, setSelectedMembershipForApply] = useState(null);
+  const [showMembershipItemsModal, setShowMembershipItemsModal] = useState(false);
+  const [membershipItemsDraft, setMembershipItemsDraft] = useState([]);
   const [showApplyPkgRedemptionModal, setShowApplyPkgRedemptionModal] = useState(false);
   const [customerPackages, setCustomerPackages] = useState([]);
   const [loadingCustomerPkgs, setLoadingCustomerPkgs] = useState(false);
@@ -443,6 +448,96 @@ export default function PosPage() {
     setGiftCardDiscount(0);
     setGcRedemptionResult(null);
     setGcRedemptionCode("");
+  };
+
+  // === Apply Membership ===
+  const openApplyMembershipModal = () => {
+    if (!form.customerId) {
+      setToastMessage({ type: "error", title: "Select Guest", message: "Please select a guest first to apply membership." });
+      return;
+    }
+    const customer = context.customers.find(c => c.id === form.customerId);
+    if (!customer?.memberships?.length) {
+      setToastMessage({ type: "error", title: "No Membership", message: "This guest does not have any active memberships." });
+      return;
+    }
+    const activeMemberships = customer.memberships.filter(m => m.status === "ACTIVE" && new Date(m.endsAt) > new Date());
+    if (!activeMemberships.length) {
+      setToastMessage({ type: "error", title: "No Active Membership", message: "This guest does not have any active memberships." });
+      return;
+    }
+    setSelectedMembershipForApply(null);
+    setShowApplyMembershipModal(true);
+  };
+
+  const selectMembershipForApply = (membership) => {
+    setSelectedMembershipForApply(membership);
+    setShowApplyMembershipModal(false);
+    
+    // Prepare items draft
+    const eligibleDrafts = form.items.map((item, idx) => {
+      let isEligible = false;
+      let eligibleAmount = 0;
+      if (item.itemType === "SERVICE" && item.serviceId) {
+        if (!membership.membershipPlan?.serviceSpecificOnly || membership.membershipPlan?.services?.some(s => s.serviceId === item.serviceId)) {
+          isEligible = true;
+          eligibleAmount = Number(item.unitPrice || 0) * Number(item.qty || 1);
+        }
+      }
+      return {
+        ...item,
+        cartIndex: idx,
+        isEligible,
+        walletDeduction: isEligible ? eligibleAmount : 0,
+        apply: isEligible
+      };
+    });
+    setMembershipItemsDraft(eligibleDrafts);
+    setShowMembershipItemsModal(true);
+  };
+
+  const confirmMembershipItemsApply = () => {
+    let totalDeduction = 0;
+    const newItems = [...form.items];
+    
+    membershipItemsDraft.forEach(draft => {
+      if (draft.apply && draft.isEligible) {
+        const amount = Number(draft.walletDeduction || 0);
+        newItems[draft.cartIndex].membershipWalletUsed = amount;
+        totalDeduction += amount;
+      } else {
+        newItems[draft.cartIndex].membershipWalletUsed = 0;
+      }
+    });
+
+    if (totalDeduction > Number(selectedMembershipForApply?.remainingWalletValue || 0)) {
+       setToastMessage({ type: "error", title: "Insufficient Balance", message: "Deduction exceeds remaining wallet balance." });
+       return;
+    }
+
+    setForm(c => {
+      const preservedPaid = (c.payments || []).filter(p => !["WALLET", "BALANCE"].includes(p.mode)).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      let newPayments = (c.payments || []).filter(p => p.mode !== "WALLET" && p.mode !== "BALANCE");
+      if (totalDeduction > 0) {
+        newPayments.push({ mode: "WALLET", amount: totalDeduction, note: `Membership applied` });
+      }
+      
+      const paidSoFar = newPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const balanceNeeded = Math.max(0, totals.total - paidSoFar);
+      if (balanceNeeded > 0) {
+        newPayments.push({ mode: "BALANCE", amount: balanceNeeded, note: "" });
+      }
+
+      return {
+        ...c,
+        items: newItems,
+        appliedMembershipId: totalDeduction > 0 ? selectedMembershipForApply.id : "",
+        payments: newPayments
+      };
+    });
+    
+    setShowMembershipItemsModal(false);
+    setToastMessage({ type: "success", title: "Membership Applied", message: `Membership wallet applied successfully.` });
   };
 
   // === Add Tip ===
@@ -1103,29 +1198,103 @@ export default function PosPage() {
     }
   };
 
-  const handleAddGcToCart = () => {
+  const handleAddGiftCard = async () => {
+    if (!form.customerId) {
+      setStatus({ error: "Please select a guest to purchase the gift card.", success: "" });
+      return;
+    }
     const gc = gcModalGc;
-    setForm(c => ({
-      ...c,
-      items: [...c.items.filter(i => i.serviceId || i.productId || i.membershipPlanId || i.packageId || i.giftCardId || i.itemType === "GIFT_CARD"), {
-        itemType: "GIFT_CARD",
-        giftCardId: gc?.id || "",
-        name: gc?.name || "Gift Card",
-        serviceName: gc?.name || "Gift Card",
-        staffUserSalonId: gcDraft.staffId || "",
-        qty: 1,
-        unitPrice: Number(gcDraft.price || 0),
-        originalUnitPrice: Number(gcDraft.price || 0),
-        discountPct: 0,
-        discountAmt: 0,
-        taxPct: 0,
-        validityDays: Number(gcDraft.validityDays || 30),
-        purchaseDate: gcDraft.purchaseDate,
-        gcCode: gcDraft.code || undefined,
-        isCustom: true
-      }]
-    }));
-    setShowGcModal(false);
+    const price = Number(gcDraft.price || 0);
+    const online = Number(gcDraft.online || 0);
+    const offline = Number(gcDraft.offline || 0);
+    const balance = Math.max(0, price - online - offline);
+
+    const totalPaid = online + offline;
+    if (totalPaid > price + 0.01) {
+      setStatus({ error: "Payment amount exceeds gift card price. Please check the amounts.", success: "" });
+      return;
+    }
+
+    setSubmittingGc(true);
+    setStatus({ error: "", success: "" });
+
+    const finalPayments = [];
+    if (online > 0) {
+      finalPayments.push({ mode: "ONLINE", amount: online, note: `Online payment for gift card: ${gc.name}` });
+    }
+    if (offline > 0) {
+      finalPayments.push({ mode: "CASH", amount: offline, note: `Cash payment for gift card: ${gc.name}` });
+    }
+
+    const payload = {
+      customerId: form.customerId,
+      branchId: form.branchId,
+      appliedMembershipId: "",
+      discount: 0,
+      tax: 0,
+      couponCode: "",
+      giftVoucherCode: "",
+      loyaltyPointsUsed: 0,
+      notes: gcDraft.remark || "",
+      items: [
+        {
+          itemType: "GIFT_CARD",
+          giftCardId: gc?.id === "CUSTOM" ? "" : (gc?.id || ""),
+          name: gc?.name || "Gift Card",
+          staffUserId: gcDraft.staffId || "",
+          staffUserSalonId: gcDraft.staffId || "",
+          qty: 1,
+          unitPrice: price,
+          originalUnitPrice: price,
+          discountPct: 0,
+          discountAmt: 0,
+          taxPct: 0,
+          validityDays: Number(gcDraft.validityDays || 30),
+          purchaseDate: gcDraft.purchaseDate || new Date().toISOString().slice(0, 10),
+          gcCode: gcDraft.code || undefined,
+          paymentBreakup: {
+            balance: balance,
+            online: online,
+            offline: offline
+          },
+          remark: gcDraft.remark || "",
+          isCustom: gc?.id === "CUSTOM" || !gc
+        }
+      ],
+      packageRedemptions: [],
+      payments: finalPayments,
+      sendFeedbackMessage: form.sendFeedbackMessage !== false,
+      sendInvoiceMessage: form.sendInvoiceMessage !== false
+    };
+
+    try {
+      const response = await api.post("/owner/pos/invoices", payload);
+      setResult(response.data);
+      setStatus({ error: "", success: `Invoice ${response.data.invoiceNumber} created successfully.` });
+      
+      setCreatedInvoice(response.data);
+      setShowSuccessModal(true);
+
+      // Reset main POS form
+      setGuestSearchInput("");
+      setCouponValidation(null);
+      setCouponCodeInput("");
+      setForm(current => ({
+        ...current,
+        customerId: "",
+        items: [emptyServiceItem],
+        packageRedemptions: [],
+        payments: [emptyPayment]
+      }));
+      setGiftCardDiscount(0);
+
+      setShowGcModal(false);
+      await loadContext("", form.branchId);
+    } catch (error) {
+      setStatus({ error: formatApiError(error, "Could not create gift card invoice"), success: "" });
+    } finally {
+      setSubmittingGc(false);
+    }
   };
 
   const getCatalogBasePrice = useCallback((item) => {
@@ -1157,9 +1326,10 @@ export default function PosPage() {
     const discount = Number(form.discount || 0);
     const couponDiscount = Number(couponValidation?.totalDiscount || 0);
     const gcDiscount = Number(giftCardDiscount || 0);
-    const total = subtotal + itemTax - discount - couponDiscount - gcDiscount;
-    const paid = form.payments.filter(p => p.mode !== "BALANCE").reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-    return { subtotal, itemTax, total, paid, due: Math.max(0, total - paid), couponDiscount, gcDiscount };
+    const membershipWalletUsed = form.items.reduce((sum, item) => sum + Number(item.membershipWalletUsed || 0), 0);
+    const total = subtotal + itemTax - discount - couponDiscount - gcDiscount - membershipWalletUsed;
+    const paid = form.payments.filter(p => p.mode !== "BALANCE" && p.mode !== "WALLET").reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    return { subtotal, itemTax, total, paid, due: Math.max(0, total - paid), couponDiscount, gcDiscount, membershipWalletUsed };
   }, [form, getCatalogBasePrice, context.settings, couponValidation, giftCardDiscount]);
 
   const getEligibleStaffUsers = useCallback((item) => {
@@ -1734,7 +1904,7 @@ export default function PosPage() {
                           />
                         </td>
                         <td>{tax.toFixed(0)}</td>
-                        <td>{total.toFixed(0)}</td>
+                        <td>{Math.max(0, total - Number(item.membershipWalletUsed || 0)).toFixed(0)}</td>
                         <td style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                           {item.itemType === "SERVICE" && (
                             <button type="button" title="Set Service Time" onClick={() => { setShowTimeModal(true); setTimeModalDraft({ index, startTime: item.startTime || "", endTime: item.endTime || "" }); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a' }}>
@@ -1823,6 +1993,7 @@ export default function PosPage() {
             </div>
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", padding: "8px 0" }}>
+              <button type="button" onClick={openApplyMembershipModal} style={{ padding: "8px 18px", background: "#fff", border: "1px solid var(--accent, #3b82f6)", borderRadius: 20, cursor: "pointer", fontWeight: 600, color: "var(--accent, #3b82f6)", fontSize: 13, whiteSpace: "nowrap" }}>Apply Membership</button>
               <button type="button" onClick={openDiscountModal} style={{ padding: "8px 18px", background: "#fff", border: "1px solid var(--accent, #3b82f6)", borderRadius: 20, cursor: "pointer", fontWeight: 600, color: "var(--accent, #3b82f6)", fontSize: 13, whiteSpace: "nowrap" }}>Apply Discount</button>
               <button type="button" onClick={loadCustomerPackagesForRedemption} disabled={loadingCustomerPkgs} style={{ padding: "8px 18px", background: "#fff", border: "1px solid var(--accent, #3b82f6)", borderRadius: 20, cursor: loadingCustomerPkgs ? "not-allowed" : "pointer", fontWeight: 600, color: "var(--accent, #3b82f6)", fontSize: 13, whiteSpace: "nowrap", opacity: loadingCustomerPkgs ? 0.6 : 1 }}>{loadingCustomerPkgs ? "Loading..." : "Apply Package"}</button>
               <button type="button" onClick={() => { setGcRedemptionCode(""); setGcRedemptionResult(null); setShowGcRedemptionModal(true); }} style={{ padding: "8px 18px", background: "#fff", border: "1px solid var(--accent, #3b82f6)", borderRadius: 20, cursor: "pointer", fontWeight: 600, color: "var(--accent, #3b82f6)", fontSize: 13, whiteSpace: "nowrap" }}>Apply Gift Card</button>
@@ -1920,11 +2091,36 @@ export default function PosPage() {
                 <span style={{ fontSize: '0.75rem', color: '#64748b' }}>(Click amount field to auto-fill remaining balance)</span>
               </div>
               <div className="pos-payment-grid">
+                {form.payments.find(p => p.mode === "WALLET") && (
+                  <div className="pos-payment-input" style={{ gridColumn: "1 / -1" }}>
+                    <label><svg width="16" height="16" style={{ color: "#2563eb" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg> Membership</label>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <input type="number" readOnly value={form.payments.find((payment) => payment.mode === "WALLET")?.amount || ""} style={{ background: "#f1f5f9", cursor: "not-allowed", flex: 1, padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: 8 }} />
+                      <button type="button" onClick={() => {
+                        setForm(c => {
+                          const newPayments = (c.payments || []).filter(p => p.mode !== "WALLET");
+                          const newItems = (c.items || []).map(item => ({ ...item, membershipWalletUsed: 0 }));
+                          
+                          const paidSoFar = newPayments.filter(p => p.mode !== "BALANCE").reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                          const balanceNeeded = Math.max(0, totals.total - paidSoFar);
+                          const balanceEntry = newPayments.find(p => p.mode === "BALANCE");
+                          if (balanceEntry) {
+                            balanceEntry.amount = balanceNeeded;
+                          } else if (balanceNeeded > 0) {
+                            newPayments.push({ mode: "BALANCE", amount: balanceNeeded, note: "" });
+                          }
+
+                          return { ...c, payments: newPayments, items: newItems, appliedMembershipId: "" };
+                        });
+                      }} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontWeight: 700, padding: "0 8px", fontSize: 13 }}>Remove</button>
+                    </div>
+                  </div>
+                )}
                 <div className="pos-payment-input">
                   <label><svg width="16" height="16" style={{ color: "#10b981" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> Online</label>
                   <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "ONLINE")?.amount || ""} onFocus={() => {
                     setForm((current) => {
-                      const preservedPayments = (current.payments || []).filter(p => !["ONLINE", "CASH", "BALANCE"].includes(p.mode));
+                      const preservedPayments = (current.payments || []).filter(p => !["ONLINE", "CASH", "BALANCE", "WALLET"].includes(p.mode));
                       const preservedPaid = preservedPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
                       const maxOnline = Math.max(0, totals.total - preservedPaid);
                       let newPayments = (current.payments || []).filter(p => p.mode !== "ONLINE" && p.mode !== "CASH" && p.mode !== "BALANCE");
@@ -1936,13 +2132,13 @@ export default function PosPage() {
                       return { ...current, payments: newPayments };
                     });
                   }} onChange={(e) => {
-                    const preservedPaid = (form.payments || []).filter(p => !["ONLINE", "BALANCE"].includes(p.mode)).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                    const preservedPaid = (form.payments || []).filter(p => !["ONLINE", "BALANCE", "WALLET"].includes(p.mode)).reduce((sum, p) => sum + Number(p.amount || 0), 0);
                     const maxOnline = Math.max(0, totals.total - preservedPaid);
                     const amount = Math.min(Number(e.target.value) || 0, maxOnline);
                     setForm((current) => {
                       const newPayments = (current.payments || []).filter(p => p.mode !== "ONLINE");
                       newPayments.push({ mode: "ONLINE", amount, note: "" });
-                      const paidSoFar = newPayments.filter(p => p.mode !== "BALANCE").reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const paidSoFar = newPayments.filter(p => p.mode !== "BALANCE" && p.mode !== "WALLET").reduce((sum, p) => sum + Number(p.amount || 0), 0);
                       const balanceNeeded = Math.max(0, totals.total - paidSoFar);
                       const balanceEntry = newPayments.find(p => p.mode === "BALANCE");
                       if (balanceEntry) {
@@ -1958,7 +2154,7 @@ export default function PosPage() {
                   <label><svg width="16" height="16" style={{ color: "#64748b" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg> Cash</label>
                   <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "CASH")?.amount || ""} onFocus={() => {
                     setForm((current) => {
-                      const preservedPayments = (current.payments || []).filter(p => !["ONLINE", "CASH", "BALANCE"].includes(p.mode));
+                      const preservedPayments = (current.payments || []).filter(p => !["ONLINE", "CASH", "BALANCE", "WALLET"].includes(p.mode));
                       const preservedPaid = preservedPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
                       const maxCash = Math.max(0, totals.total - preservedPaid);
                       let newPayments = (current.payments || []).filter(p => p.mode !== "ONLINE" && p.mode !== "CASH" && p.mode !== "BALANCE");
@@ -1970,13 +2166,13 @@ export default function PosPage() {
                       return { ...current, payments: newPayments };
                     });
                   }} onChange={(e) => {
-                    const preservedPaid = (form.payments || []).filter(p => !["CASH", "BALANCE"].includes(p.mode)).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                    const preservedPaid = (form.payments || []).filter(p => !["CASH", "BALANCE", "WALLET"].includes(p.mode)).reduce((sum, p) => sum + Number(p.amount || 0), 0);
                     const maxCash = Math.max(0, totals.total - preservedPaid);
                     const amount = Math.min(Number(e.target.value) || 0, maxCash);
                     setForm((current) => {
                       const newPayments = (current.payments || []).filter(p => p.mode !== "CASH");
                       newPayments.push({ mode: "CASH", amount, note: "" });
-                      const paidSoFar = newPayments.filter(p => p.mode !== "BALANCE").reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const paidSoFar = newPayments.filter(p => p.mode !== "BALANCE" && p.mode !== "WALLET").reduce((sum, p) => sum + Number(p.amount || 0), 0);
                       const balanceNeeded = Math.max(0, totals.total - paidSoFar);
                       const balanceEntry = newPayments.find(p => p.mode === "BALANCE");
                       if (balanceEntry) {
@@ -1992,7 +2188,7 @@ export default function PosPage() {
                   <label><svg width="16" height="16" style={{ color: "#f59e0b" }} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg> Balance</label>
                   <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "BALANCE")?.amount || ""} onFocus={() => {
                     setForm((current) => {
-                      const paidSoFar = (current.payments || []).filter(p => p.mode !== "BALANCE").reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const paidSoFar = (current.payments || []).filter(p => p.mode !== "BALANCE" && p.mode !== "WALLET").reduce((sum, p) => sum + Number(p.amount || 0), 0);
                       const balance = Math.max(0, totals.total - paidSoFar);
                       const newPayments = (current.payments || []).filter(p => p.mode !== "BALANCE");
                       newPayments.push({ mode: "BALANCE", amount: balance, note: "" });
@@ -2020,12 +2216,12 @@ export default function PosPage() {
                         Advance ({formatMoney(adv)})
                       </label>
                       <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "ADVANCE")?.amount || ""} onFocus={() => {
-                        const nonAdvancePaid = (form.payments || []).filter(p => p.mode !== "ADVANCE").reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                        const nonAdvancePaid = (form.payments || []).filter(p => p.mode !== "ADVANCE" && p.mode !== "WALLET").reduce((sum, p) => sum + Number(p.amount || 0), 0);
                         const remaining = Math.max(0, totals.total - nonAdvancePaid);
                         const useAdv = Math.min(remaining, adv);
                         setForm((current) => ({ ...current, payments: [...(current.payments || []).filter(p => p.mode !== "ADVANCE"), { mode: "ADVANCE", amount: useAdv, note: "Advance used" }] }));
                       }} onChange={(e) => {
-                        const nonAdvancePaid = (form.payments || []).filter(p => p.mode !== "ADVANCE").reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                        const nonAdvancePaid = (form.payments || []).filter(p => p.mode !== "ADVANCE" && p.mode !== "WALLET").reduce((sum, p) => sum + Number(p.amount || 0), 0);
                         const maxAdv = Math.max(0, Math.min(adv, totals.total - nonAdvancePaid));
                         const amount = Math.min(Number(e.target.value) || 0, maxAdv);
                         setForm((current) => ({ ...current, payments: [...(current.payments || []).filter(p => p.mode !== "ADVANCE"), { mode: "ADVANCE", amount, note: "Advance used" }] }));
@@ -2041,12 +2237,12 @@ export default function PosPage() {
                     </label>
                     <input type="number" placeholder="0.0" value={form.payments.find((payment) => payment.mode === "AFFILIATE_CREDIT")?.amount || ""} onFocus={() => {
                       const walletBalance = Number(affiliateWallet.balance || 0) * affiliateServiceCreditValue;
-                      const nonAffiliatePaid = (form.payments || []).filter(p => !["AFFILIATE_CREDIT", "BALANCE"].includes(p.mode)).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const nonAffiliatePaid = (form.payments || []).filter(p => !["AFFILIATE_CREDIT", "BALANCE", "WALLET"].includes(p.mode)).reduce((sum, p) => sum + Number(p.amount || 0), 0);
                       const useCredits = Math.min(walletBalance, Math.max(0, totals.total - nonAffiliatePaid));
                       setForm((current) => ({ ...current, payments: [...(current.payments || []).filter(p => p.mode !== "AFFILIATE_CREDIT"), { mode: "AFFILIATE_CREDIT", amount: useCredits, note: "Affiliate service credit used" }] }));
                     }} onChange={(e) => {
                       const walletBalance = Number(affiliateWallet.balance || 0) * affiliateServiceCreditValue;
-                      const nonAffiliatePaid = (form.payments || []).filter(p => !["AFFILIATE_CREDIT", "BALANCE"].includes(p.mode)).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                      const nonAffiliatePaid = (form.payments || []).filter(p => !["AFFILIATE_CREDIT", "BALANCE", "WALLET"].includes(p.mode)).reduce((sum, p) => sum + Number(p.amount || 0), 0);
                       const maxCredits = Math.max(0, Math.min(walletBalance, totals.total - nonAffiliatePaid));
                       const amount = Math.min(Number(e.target.value) || 0, maxCredits);
                       setForm((current) => ({ ...current, payments: [...(current.payments || []).filter(p => p.mode !== "AFFILIATE_CREDIT"), { mode: "AFFILIATE_CREDIT", amount, note: "Affiliate service credit used" }] }));
@@ -2065,6 +2261,11 @@ export default function PosPage() {
                   <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13 }}>
                     <input type="checkbox" checked={form.sendInvoiceMessage !== false} onChange={(e) => setForm(c => ({ ...c, sendInvoiceMessage: e.target.checked }))} style={{ width: 16, height: 16, margin: 0, cursor: "pointer" }} /> Invoice Message
                   </label>
+                  {totals.membershipWalletUsed > 0 && (
+                    <div style={{ fontSize: "0.9rem", color: "#64748b", fontWeight: 600, marginTop: 8 }}>
+                      Payment done by: <span style={{ color: "#0f172a" }}>Membership ₹{totals.membershipWalletUsed.toFixed(0)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -2266,9 +2467,31 @@ export default function PosPage() {
                </div>
              </div>
 
+               {/* GiftCard Payments */}
+               <div style={{ marginTop: 16, padding: "16px", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                   <div style={{ fontWeight: 600, color: "#0f172a" }}>Payment Breakup</div>
+                   <div style={{ fontWeight: 700, color: "var(--accent, #3b82f6)" }}>Total: {formatMoney(Number(gcDraft.price || 0))}</div>
+                 </div>
+                 <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                   <div style={{ flex: 1, minWidth: 120 }}>
+                     <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Online Amount</label>
+                     <input type="number" placeholder="0" value={gcDraft.online} onChange={e => setGcDraft(d => ({ ...d, online: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
+                   </div>
+                   <div style={{ flex: 1, minWidth: 120 }}>
+                     <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Cash Amount</label>
+                     <input type="number" placeholder="0" value={gcDraft.offline} onChange={e => setGcDraft(d => ({ ...d, offline: e.target.value }))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box" }} />
+                   </div>
+                   <div style={{ flex: 1, minWidth: 120 }}>
+                     <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Balance</label>
+                     <input readOnly value={Math.max(0, Number(gcDraft.price || 0) - Number(gcDraft.online || 0) - Number(gcDraft.offline || 0))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: "0.9rem", boxSizing: "border-box", background: "#f1f5f9", color: "#64748b" }} />
+                   </div>
+                 </div>
+               </div>
+
              <div style={{ padding:"16px 24px", borderTop:"1px solid #f1f5f9", display:"flex", justifyContent:"flex-end", gap:12 }}>
                <button onClick={() => setShowGcModal(false)} style={{ padding:"10px 24px", background:"#fff", border:"1px solid #cbd5e1", borderRadius:8, fontWeight:600, cursor:"pointer", color:"#475569" }}>Cancel</button>
-               <button onClick={handleAddGcToCart} disabled={!gcModalGc || !gcDraft.staffId} style={{ padding:"10px 24px", background:"#2563eb", color:"#fff", border:"none", borderRadius:8, fontWeight:700, cursor:(gcModalGc && gcDraft.staffId)?"pointer":"not-allowed", opacity:(gcModalGc && gcDraft.staffId)?1:0.6 }}>Add Gift Card</button>
+               <button onClick={handleAddGiftCard} disabled={!gcModalGc || !gcDraft.staffId || submittingGc} style={{ padding:"10px 24px", background:"#2563eb", color:"#fff", border:"none", borderRadius:8, fontWeight:700, cursor:(gcModalGc && gcDraft.staffId && !submittingGc)?"pointer":"not-allowed", opacity:(gcModalGc && gcDraft.staffId && !submittingGc)?1:0.6 }}>{submittingGc ? "Processing..." : "Create Invoice"}</button>
              </div>
           </div>
         </div>
@@ -3140,6 +3363,97 @@ export default function PosPage() {
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 20 }}>
               <button type="button" onClick={() => setShowTipModal(false)} style={{ padding: "10px 24px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", color: "#475569" }}>Cancel</button>
               <button type="button" onClick={() => { setShowTipModal(false); setStatus({ error: "", success: `Total tips: ${formatMoney(tipEntries.reduce((s, e) => s + Number(e.amount || 0), 0))}` }); }} style={{ padding: "10px 24px", background: "var(--button-bg-solid, #2563eb)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Select Membership to Apply Modal */}
+      {showApplyMembershipModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setShowApplyMembershipModal(false)}>
+          <div style={{ background: "#fff", borderRadius: 16, width: "min(95vw, 600px)", padding: 24, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <strong style={{ fontSize: 20, color: "#0f172a" }}>Select Membership to Apply</strong>
+              <button type="button" onClick={() => setShowApplyMembershipModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: 20 }}>&#x2715;</button>
+            </div>
+            <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 12 }}>
+              {(context.customers.find(c => c.id === form.customerId)?.memberships || [])
+                .filter(m => m.status === "ACTIVE" && new Date(m.endsAt) > new Date())
+                .map(membership => {
+                  const daysLeft = Math.ceil((new Date(membership.endsAt).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+                  const isSelected = form.appliedMembershipId === membership.id;
+                  return (
+                    <div key={membership.id} style={{ minWidth: 280, padding: "20px", border: isSelected ? "1px solid #e2e8f0" : "1px solid #f1f5f9", borderRadius: 12, display: "flex", flexDirection: "column", gap: 8, background: "#fff", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
+                      <div style={{ fontSize: "0.9rem", color: "#475569" }}>Membership ID: <span style={{ fontWeight: 600, color: "#0f172a" }}>{membership.id.slice(0,8).toUpperCase()}</span></div>
+                      <div style={{ fontSize: "0.9rem", color: "#475569" }}>Active Membership: <span style={{ fontWeight: 600, color: "#0f172a" }}>{membership.membershipPlan?.name}</span></div>
+                      <div style={{ fontSize: "0.9rem", color: "#475569" }}>Membership Type: <span style={{ fontWeight: 600, color: "#0f172a" }}>{membership.membershipPlan?.benefitType === "WALLET_VALUE" ? "Fixed" : "Discount"}</span></div>
+                      <div style={{ fontSize: "0.9rem", color: "#475569" }}>Expiry Date: <span style={{ fontWeight: 600, color: "#0f172a" }}>{new Date(membership.endsAt).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(/ /g, '-')}</span></div>
+                      <div style={{ fontSize: "0.9rem", color: "#475569" }}>Expires In: <span style={{ fontWeight: 600, color: "#0f172a" }}>{daysLeft} days</span></div>
+                      <div style={{ fontSize: "0.9rem", color: "#475569" }}>Balance Amount: <span style={{ fontWeight: 600, color: "#0f172a" }}>₹ {Number(membership.remainingWalletValue || 0)}</span></div>
+                      
+                      <button type="button" onClick={() => !isSelected && selectMembershipForApply(membership)} style={{ marginTop: 12, padding: "10px", background: isSelected ? "#fff" : "var(--button-bg-solid, #3b82f6)", color: isSelected ? "#0f172a" : "#fff", border: isSelected ? "1px solid #e2e8f0" : "none", borderRadius: 6, fontWeight: 600, cursor: isSelected ? "default" : "pointer", boxShadow: isSelected ? "none" : "0 4px 6px -1px rgba(59, 130, 246, 0.3)" }}>{isSelected ? "Selected" : "Select"}</button>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Select Items For Membership Modal */}
+      {showMembershipItemsModal && selectedMembershipForApply && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#fff", borderRadius: 16, width: "min(95vw, 650px)", maxHeight: "90vh", overflowY: "auto", padding: 24, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <strong style={{ fontSize: 20, color: "#0f172a" }}>Select Items For Membership</strong>
+            </div>
+            <div style={{ marginBottom: 20, padding: "12px 16px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, color: "#166534", fontWeight: 600 }}>
+              Available Balance: {formatMoney(Number(selectedMembershipForApply.remainingWalletValue || 0))}
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+              {membershipItemsDraft.map((draft, idx) => (
+                <div key={idx} style={{ padding: "14px", border: draft.isEligible ? "1px solid #cbd5e1" : "1px solid #f1f5f9", borderRadius: 10, background: draft.isEligible ? "#fff" : "#f8fafc", opacity: draft.isEligible ? 1 : 0.6 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: draft.apply ? 12 : 0 }}>
+                    <div>
+                      <div style={{ fontWeight: 600, color: "#0f172a" }}>{draft.serviceName || "Item"}</div>
+                      <div style={{ fontSize: "0.85rem", color: "#64748b" }}>Amount: {formatMoney(Number(draft.unitPrice || 0) * Number(draft.qty || 1))}</div>
+                      {!draft.isEligible && <div style={{ fontSize: "0.8rem", color: "#ef4444", marginTop: 4 }}>Not eligible for this membership</div>}
+                    </div>
+                    {draft.isEligible && (
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setMembershipItemsDraft(prev => prev.map((p, i) => i === idx ? { ...p, apply: !p.apply } : p));
+                        }} 
+                        style={{ padding: "6px 16px", background: draft.apply ? "#ef4444" : "#16a34a", color: "#fff", border: "none", borderRadius: 20, fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}
+                      >
+                        {draft.apply ? "Remove" : "Apply"}
+                      </button>
+                    )}
+                  </div>
+                  {draft.apply && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px", background: "#f8fafc", borderRadius: 8, marginTop: 10 }}>
+                      <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "#475569" }}>Amount to Deduct:</label>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        value={draft.walletDeduction} 
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setMembershipItemsDraft(prev => prev.map((p, i) => i === idx ? { ...p, walletDeduction: val } : p));
+                        }} 
+                        style={{ padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, width: "100px" }}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+              <button type="button" onClick={() => setShowMembershipItemsModal(false)} style={{ padding: "10px 24px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", color: "#475569" }}>Cancel</button>
+              <button type="button" onClick={confirmMembershipItemsApply} style={{ padding: "10px 24px", background: "var(--button-bg-solid, #2563eb)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>Confirm & Apply</button>
             </div>
           </div>
         </div>
