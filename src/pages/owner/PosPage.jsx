@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, AlarmClock, Gift, Droplet, X } from "lucide-react";
 import { downloadFromApi } from "../../utils/download";
 import { useSalonSettings } from "../../context/SalonSettingsContext";
 import { useBranch } from '../../context/BranchContext';
@@ -121,6 +121,8 @@ export default function PosPage() {
   const [consumableItemIndex, setConsumableItemIndex] = useState(null);
   const [consumableItems, setConsumableItems] = useState([]);
   const [consumableSearch, setConsumableSearch] = useState("");
+  const [showTimeModal, setShowTimeModal] = useState(false);
+  const [timeModalDraft, setTimeModalDraft] = useState({ index: null, startTime: "", endTime: "" });
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [discountDraft, setDiscountDraft] = useState({ type: "FIX", value: "" });
   const [showApplyPkgRedemptionModal, setShowApplyPkgRedemptionModal] = useState(false);
@@ -1735,12 +1737,24 @@ export default function PosPage() {
                         <td>{total.toFixed(0)}</td>
                         <td style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                           {item.itemType === "SERVICE" && (
-                            <button type="button" title="Add Consumable Items For Service" onClick={() => openConsumableModal(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, fontSize: 16, color: '#2563eb', borderRadius: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>📦</button>
+                            <button type="button" title="Set Service Time" onClick={() => { setShowTimeModal(true); setTimeModalDraft({ index, startTime: item.startTime || "", endTime: item.endTime || "" }); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a' }}>
+                              <AlarmClock size={20} />
+                            </button>
+                          )}
+                          {(item.itemType === "SERVICE" || item.itemType === "PRODUCT") && (
+                            <button type="button" title="Mark as Complimentary" onClick={() => {
+                              const isGift = !item.isGift;
+                              updateItem(index, isGift ? { isGift, discountPct: 100, discountAmt: 0 } : { isGift, discountPct: 0 });
+                            }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: item.isGift ? '#3b82f6' : '#94a3b8' }}>
+                              <Gift size={20} />
+                            </button>
                           )}
                           {item.itemType === "SERVICE" && (
-                            <span title={`${item.consumableItems?.length || 0} consumable item(s)`} style={{ fontSize: 11, color: item.consumableItems?.length ? '#16a34a' : '#94a3b8', fontWeight: 600, cursor: 'default' }}>{item.consumableItems?.length || 0}</span>
+                            <button type="button" title="Add Consumables" onClick={() => openConsumableModal(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: item.consumableItems?.length ? '#16a34a' : '#3b82f6' }}>
+                              <Droplet size={20} />
+                            </button>
                           )}
-                          <button type="button" className="pos-cart-remove" onClick={() => setForm(c => {
+                          <button type="button" className="pos-cart-remove" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }} onClick={() => setForm(c => {
                             const removedItem = c.items[index];
                             const nextItems = c.items.filter((_, i) => i !== index);
                             let nextRedemptions = c.packageRedemptions;
@@ -1751,7 +1765,7 @@ export default function PosPage() {
                               }
                             }
                             return { ...c, items: nextItems, packageRedemptions: nextRedemptions };
-                          })}>✕</button>
+                          })}><X size={20} /></button>
                         </td>
                       </tr>
                     );
@@ -2780,6 +2794,34 @@ export default function PosPage() {
               <button onClick={handleBuyMembershipDirect} disabled={!memModalMem || !memDraft.staffId || submittingMem} style={{ padding:"10px 24px", background:"#2563eb", color:"#fff", border:"none", borderRadius:8, fontWeight:700, cursor:(memModalMem && memDraft.staffId && !submittingMem)?"pointer":"not-allowed", opacity:(memModalMem && memDraft.staffId && !submittingMem)?1:0.6 }}>
                 {submittingMem ? "Purchasing..." : "Purchase Membership"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTimeModal && timeModalDraft.index !== null && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setShowTimeModal(false)}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', maxHeight: '80vh', overflow: 'hidden', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc' }}>
+              <h2 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a', fontWeight: 700 }}>Service Time</h2>
+              <button type="button" onClick={() => setShowTimeModal(false)} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#64748b' }}>✕</button>
+            </div>
+            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>Start Time</label>
+                <input type="time" value={timeModalDraft.startTime} onChange={e => setTimeModalDraft(d => ({ ...d, startTime: e.target.value }))} style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.9rem', boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>End Time</label>
+                <input type="time" value={timeModalDraft.endTime} onChange={e => setTimeModalDraft(d => ({ ...d, endTime: e.target.value }))} style={{ width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: '0.9rem', boxSizing: 'border-box' }} />
+              </div>
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+              <button type="button" onClick={() => setShowTimeModal(false)} style={{ padding: '10px 24px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 8, fontWeight: 600, cursor: 'pointer', color: '#475569' }}>Cancel</button>
+              <button type="button" onClick={() => {
+                updateItem(timeModalDraft.index, { startTime: timeModalDraft.startTime, endTime: timeModalDraft.endTime });
+                setShowTimeModal(false);
+              }} style={{ padding: '10px 24px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}>Save Time</button>
             </div>
           </div>
         </div>
