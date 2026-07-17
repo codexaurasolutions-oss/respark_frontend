@@ -786,7 +786,17 @@ export default function PosDashboardPage() {
   };
 
   return (
-    <div className="respark-pos-dashboard">
+    <div className="respark-pos-dashboard page-shell">
+      <div className="hero-card" style={{ padding: 24, marginBottom: 20 }}>
+        <div className="item-head">
+          <div>
+            <h1 style={{ margin: "0 0 4px 0", fontSize: "2.2rem" }}>POS Dashboard</h1>
+            <p style={{ margin: 0, color: "#64748b", fontSize: "1rem" }}>
+              Unified billing and point-of-sale overview for your salon.
+            </p>
+          </div>
+        </div>
+      </div>
       <div className="pos-dash-header">
         <div className="pos-dash-header-left">
           <div className="pos-dash-date-picker">
