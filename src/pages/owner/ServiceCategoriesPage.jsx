@@ -906,7 +906,7 @@ export default function ServiceCategoriesPage() {
                 </div>
                 {(serviceForm.consumables || []).map((item, idx) => (
                   <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "end" }}>
-                    <div style={{ flex: 3 }}>
+                    <div style={{ flex: 2, minWidth: 0 }}>
                       {idx === 0 && <label style={{ fontSize: 12, color: "#64748b", marginBottom: 4, display: "block" }}>Item</label>}
                       <select value={item.productId} onChange={e => {
                         const newItems = [...serviceForm.consumables];
@@ -918,16 +918,16 @@ export default function ServiceCategoriesPage() {
                         {products.filter(p => p.isActive && p.productType === "CONSUMABLE").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                     </div>
-                    <div style={{ flex: 2 }}>
+                    <div style={{ flex: 3, minWidth: 0 }}>
                       {idx === 0 && <label style={{ fontSize: 12, color: "#64748b", marginBottom: 4, display: "block" }}>Reqd Qty</label>}
-                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <input type="number" min="0" value={item.reqdQty} onChange={e => {
                           const newItems = [...serviceForm.consumables];
                           newItems[idx] = {...newItems[idx], reqdQty: e.target.value};
                           setServiceForm({...serviceForm, consumables: newItems});
                         }} style={{ flex: 1, minWidth: 0, padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 10, fontSize: 13 }} />
                         {item.productId && (
-                          <span style={{ fontSize: 12, color: "#64748b", flexShrink: 0 }}>
+                          <span style={{ fontSize: 12, color: "#64748b", flexShrink: 0, whiteSpace: "nowrap" }}>
                             {products.find(p => p.id === item.productId)?.unit || "pcs"}
                           </span>
                         )}
