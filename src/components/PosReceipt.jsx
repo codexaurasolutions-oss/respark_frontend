@@ -120,6 +120,47 @@ export default function PosReceipt({ invoice, salonName, salonAddress, salonPhon
     return () => { active = false; };
   }, []);
 
+  const handleLocalPrint = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const printContent = document.getElementById('receipt-print-area').innerHTML;
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+    
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map(node => node.outerHTML)
+      .join('');
+      
+    iframe.contentWindow.document.open();
+    iframe.contentWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Print Receipt</title>
+          ${styles}
+          <style>
+            body { background: white !important; margin: 0 !important; padding: 20px !important; display: flex !important; justify-content: center !important; }
+            .invoice-paper { max-width: 800px !important; width: 100% !important; margin: 0 auto !important; box-shadow: none !important; border: none !important; }
+            .no-print { display: none !important; }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-paper" style="max-width: 800px; width: 100%;">
+            ${printContent}
+          </div>
+        </body>
+      </html>
+    `);
+    iframe.contentWindow.document.close();
+    
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(() => document.body.removeChild(iframe), 1000);
+    }, 500);
+  };
+
   const cachedSettings = readSalonSettingsCache(salonId);
   const customSalonName = cachedSettings?.advancedSettings?.genericSettings?.salonName;
 
@@ -143,9 +184,9 @@ export default function PosReceipt({ invoice, salonName, salonAddress, salonPhon
 
   return (
     <div style={inline ? { display: "flex", justifyContent: "center", width: "100%", padding: "20px 0" } : S.overlay} className={inline ? "" : "pos-receipt-overlay"} onClick={inline ? undefined : onClose}>
-      <div style={{ ...S.wrap, ...(inline ? { maxHeight: "none", boxShadow: "0 10px 40px -10px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0" } : {}) }} className="invoice-paper" onClick={inline ? undefined : (e) => e.stopPropagation()}>
+      <div id="receipt-print-area" style={{ ...S.wrap, ...(inline ? { maxHeight: "none", boxShadow: "0 10px 40px -10px rgba(0,0,0,0.15)", border: "1px solid #e2e8f0" } : {}) }} className="invoice-paper" onClick={inline ? undefined : (e) => e.stopPropagation()}>
         <div style={S.actionBar} className="no-print">
-          {onPrint && <div style={S.iconBtn()} title="Print" onClick={onPrint}><Printer size={15} /></div>}
+          {onPrint && <div style={S.iconBtn()} title="Print" onClick={handleLocalPrint}><Printer size={15} /></div>}
           {onDownload && <div style={S.iconBtn()} title="Download" onClick={onDownload}><Download size={15} /></div>}
           {onClose && !inline && <div style={S.iconBtn("#ef4444")} title="Close" onClick={onClose}><X size={15} /></div>}
         </div>

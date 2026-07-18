@@ -185,7 +185,7 @@ export default function InvoicesPage() {
       <div className="two-col">
         <div className="panel-card" style={{ display: 'flex', flexDirection: 'column' }}>
           {status.loading ? <PageLoader compact title="Loading invoices" message="Preparing invoice list, branch scope, and payment status." /> : null}
-          <div className="list-stack" style={{ flex: 1 }}>
+          <div className="list-stack no-print" style={{ flex: 1 }}>
             {currentRows.map((row) => (
               <div 
                 key={row.id} 
