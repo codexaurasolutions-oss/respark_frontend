@@ -7,15 +7,17 @@ import PageLoader from "../../components/PageLoader";
 export default function MyAppointmentsPage() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
     (async () => {
+      setError("");
       const response = await api.get("/owner/my-appointments");
       if (!active) return;
       setRows(response.data);
       setLoading(false);
-    })().catch(() => { setLoading(false); });
+    })().catch((err) => { setError("Could not load appointments. Please try again."); setLoading(false); });
     return () => {
       active = false;
     };
@@ -61,6 +63,9 @@ export default function MyAppointmentsPage() {
         </div>
       </div>
       {loading ? <PageLoader title="Loading your appointments" message="Preparing your assigned bookings and service breakdown." /> : (
+      error ? (
+        <div style={{ padding: 16, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, color: "#991b1b", marginBottom: 16 }}>{error}</div>
+      ) : (
       <div className="list-stack">
         {rows.map((item) => (
           <div key={item.id} className="list-item">
@@ -83,7 +88,7 @@ export default function MyAppointmentsPage() {
         ))}
         {!rows.length && <EmptyState title="No appointments assigned yet" message="Assigned bookings will show up here when your schedule is populated." />}
       </div>
-      )}
+      ))}
     </div>
   );
 }
