@@ -66,26 +66,71 @@ export default function MyAppointmentsPage() {
       error ? (
         <div style={{ padding: 16, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, color: "#991b1b", marginBottom: 16 }}>{error}</div>
       ) : (
-      <div className="list-stack">
-        {rows.map((item) => (
-          <div key={item.id} className="list-item">
-            <div className="item-head">
-              <strong>{item.customer?.name}</strong>
-              <span className={`badge badge-${String(item.status).toLowerCase()}`}>{item.status}</span>
+      <div style={{ display: "grid", gap: 16 }}>
+        {rows.map((item) => {
+          const statusColors = {
+            SCHEDULED: { bg: "#e0f2fe", color: "#0369a1", border: "#bae6fd" },
+            IN_PROGRESS: { bg: "#fef9c3", color: "#a16207", border: "#fde047" },
+            COMPLETED: { bg: "#dcfce7", color: "#166534", border: "#bbf7d0" },
+            CANCELLED: { bg: "#f1f5f9", color: "#475569", border: "#e2e8f0" }
+          };
+          const sc = statusColors[item.status] || statusColors.SCHEDULED;
+
+          return (
+            <div key={item.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 20, boxShadow: "0 4px 12px rgba(0,0,0,0.03)", transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                <div>
+                  <h3 style={{ margin: "0 0 4px 0", fontSize: "1.1rem", color: "#0f172a" }}>{item.customer?.name}</h3>
+                  <div style={{ color: "#64748b", fontSize: "0.9rem", display: "flex", gap: 8, alignItems: "center" }}>
+                    <span>📍 {item.branch?.name || "Branch"}</span>
+                    <span>•</span>
+                    <span>🕒 {new Date(item.startAt).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                </div>
+                <span style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, padding: "4px 12px", borderRadius: 20, fontSize: "0.8rem", fontWeight: 700, letterSpacing: 0.5 }}>
+                  {item.status}
+                </span>
+              </div>
+              
+              <div style={{ background: "#f8fafc", padding: "12px 16px", borderRadius: 12, marginBottom: 16 }}>
+                <div style={{ fontSize: "0.85rem", color: "#64748b", textTransform: "uppercase", fontWeight: 700, letterSpacing: 0.5, marginBottom: 8 }}>Services Requested</div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {(item.items || []).map((serviceItem) => (
+                    <span key={serviceItem.id} style={{ background: "#fff", border: "1px solid #cbd5e1", padding: "4px 10px", borderRadius: 6, fontSize: "0.85rem", color: "#334155", fontWeight: 500 }}>
+                      {serviceItem.service?.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {(item.customerPreferences || item.customer?.notes) && (
+                <div style={{ background: "#fffbeb", border: "1px solid #fef08a", padding: "12px 16px", borderRadius: 12, marginBottom: 16 }}>
+                  <div style={{ fontSize: "0.85rem", color: "#a16207", fontWeight: 700, marginBottom: 4 }}>Customer Note</div>
+                  <div style={{ color: "#854d0e", fontSize: "0.9rem" }}>{item.customerPreferences || item.customer?.notes}</div>
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 12, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
+                <button 
+                  type="button" 
+                  disabled={updatingId === item.id || item.status === "IN_PROGRESS" || item.status === "COMPLETED"} 
+                  onClick={() => updateStatus(item.id, "IN_PROGRESS")}
+                  style={{ flex: 1, padding: "10px", borderRadius: 10, background: item.status === "SCHEDULED" ? "#3b82f6" : "#f1f5f9", color: item.status === "SCHEDULED" ? "#fff" : "#94a3b8", border: "none", fontWeight: 600, cursor: item.status === "SCHEDULED" ? "pointer" : "not-allowed" }}
+                >
+                  {updatingId === item.id ? "Updating..." : "Start Service"}
+                </button>
+                <button 
+                  type="button" 
+                  disabled={updatingId === item.id || item.status === "COMPLETED"} 
+                  onClick={() => updateStatus(item.id, "COMPLETED")}
+                  style={{ flex: 1, padding: "10px", borderRadius: 10, background: item.status === "IN_PROGRESS" ? "#10b981" : "#f1f5f9", color: item.status === "IN_PROGRESS" ? "#fff" : "#94a3b8", border: "none", fontWeight: 600, cursor: item.status === "IN_PROGRESS" || item.status === "SCHEDULED" ? "pointer" : "not-allowed" }}
+                >
+                  {updatingId === item.id ? "Updating..." : "Mark Completed"}
+                </button>
+              </div>
             </div>
-            <div className="item-meta">{item.branch?.name || "Branch"} | {new Date(item.startAt).toLocaleString()}</div>
-            <div className="badge-row">
-              {(item.items || []).map((serviceItem) => (
-                <span key={serviceItem.id} className="badge">{serviceItem.service?.name}</span>
-              ))}
-            </div>
-            <div className="item-meta">{item.customerPreferences || item.customer?.notes || "No customer notes shared."}</div>
-            <div className="badge-row">
-              <button type="button" className="secondary-button" disabled={updatingId === item.id} onClick={() => updateStatus(item.id, "IN_PROGRESS")}>{updatingId === item.id ? "Updating..." : "Start"}</button>
-              <button type="button" disabled={updatingId === item.id} onClick={() => updateStatus(item.id, "COMPLETED")}>{updatingId === item.id ? "Updating..." : "Complete"}</button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
         {!rows.length && <EmptyState title="No appointments assigned yet" message="Assigned bookings will show up here when your schedule is populated." />}
       </div>
       ))}

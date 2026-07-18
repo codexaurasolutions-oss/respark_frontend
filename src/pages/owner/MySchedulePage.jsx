@@ -40,26 +40,35 @@ export default function MySchedulePage() {
         </div>
       </div>
       {loading ? <PageLoader title="Loading your schedule" message="Collecting weekly working hours and break windows." /> : (
-      <div className="two-col">
-        <div className="panel-card">
-          <h3>Weekly Hours</h3>
-          <div className="list-stack">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24 }}>
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+          <h3 style={{ margin: "0 0 20px 0", fontSize: "1.2rem", color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Weekly Hours</h3>
+          <div style={{ display: "grid", gap: 12 }}>
             {data.schedules.map((item) => (
-              <div key={item.id} className="list-item">
-                <strong>Day {item.weekday}</strong>
-                <div className="item-meta">{item.isOffDay ? "Off day" : `${item.startTime} - ${item.endTime}`}</div>
+              <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: item.isOffDay ? "#f8fafc" : "#f0fdfa", border: `1px solid ${item.isOffDay ? "#e2e8f0" : "#ccfbf1"}`, borderRadius: 12 }}>
+                <strong style={{ color: item.isOffDay ? "#64748b" : "#0f766e", fontSize: "1rem" }}>
+                  {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][item.weekday] || `Day ${item.weekday}`}
+                </strong>
+                <div style={{ color: item.isOffDay ? "#94a3b8" : "#0d9488", fontSize: "0.95rem", fontWeight: 600, background: item.isOffDay ? "#f1f5f9" : "#fff", padding: "4px 12px", borderRadius: 20 }}>
+                  {item.isOffDay ? "Off day" : `${item.startTime} - ${item.endTime}`}
+                </div>
               </div>
             ))}
             {!data.schedules.length && <EmptyState title="No weekly schedule saved yet" message="Your scheduled working days and hours will appear here once configured." />}
           </div>
         </div>
-        <div className="panel-card">
-          <h3>Breaks</h3>
-          <div className="list-stack">
+        
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+          <h3 style={{ margin: "0 0 20px 0", fontSize: "1.2rem", color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Protected Breaks</h3>
+          <div style={{ display: "grid", gap: 12 }}>
             {data.breaks.map((item) => (
-              <div key={item.id} className="list-item">
-                <strong>Day {item.weekday}</strong>
-                <div className="item-meta">{item.startTime} - {item.endTime}</div>
+              <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "#fffbeb", border: "1px solid #fef08a", borderRadius: 12 }}>
+                <strong style={{ color: "#a16207", fontSize: "1rem" }}>
+                  {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][item.weekday] || `Day ${item.weekday}`}
+                </strong>
+                <div style={{ color: "#854d0e", fontSize: "0.95rem", fontWeight: 600, background: "#fff", padding: "4px 12px", borderRadius: 20 }}>
+                  {item.startTime} - {item.endTime}
+                </div>
               </div>
             ))}
             {!data.breaks.length && <EmptyState title="No break windows yet" message="Protected break times will appear here once they are added to your roster." />}

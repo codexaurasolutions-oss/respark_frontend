@@ -639,44 +639,62 @@ export default function MyDashboardPage() {
             <div className="stat-card"><div className="stat-label"><CalendarCheck size={14} /> Today Appointments</div><div className="stat-value">{data.todayAppointments.length}</div></div>
             <div className="stat-card"><div className="stat-label"><Clock size={14} /> Recent Assigned</div><div className="stat-value">{data.recentAppointments.length}</div></div>
           </div>
-        <div className="panel-card" style={{ marginTop: 18 }}>
-          <h3>Assigned Appointments</h3>
-          <div className="list-stack">
-            {data.recentAppointments.map((item) => (
-              <div key={item.id} className="list-item">
-                <div className="item-head">
-                  <strong>{item.customer?.name}</strong>
-                  <span className={`badge badge-${String(item.status).toLowerCase()}`}>{item.status}</span>
+        <div className="panel-card" style={{ marginTop: 18, padding: 24, borderRadius: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+          <h3 style={{ margin: "0 0 20px 0", fontSize: "1.2rem", color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Assigned Appointments</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
+            {data.recentAppointments.map((item) => {
+              const statusColors = {
+                SCHEDULED: { bg: "#e0f2fe", color: "#0369a1", border: "#bae6fd" },
+                IN_PROGRESS: { bg: "#fef9c3", color: "#a16207", border: "#fde047" },
+                COMPLETED: { bg: "#dcfce7", color: "#166534", border: "#bbf7d0" },
+                CANCELLED: { bg: "#f1f5f9", color: "#475569", border: "#e2e8f0" }
+              };
+              const sc = statusColors[item.status] || statusColors.SCHEDULED;
+
+              return (
+                <div key={item.id} style={{ display: "flex", flexDirection: "column", background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 20, transition: "transform 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <strong style={{ fontSize: "1.1rem", color: "#0f172a" }}>{item.customer?.name}</strong>
+                    <span style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, padding: "4px 10px", borderRadius: 20, fontSize: "0.75rem", fontWeight: 700, letterSpacing: 0.5 }}>
+                      {item.status}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, color: "#64748b", fontSize: "0.9rem", marginTop: "auto" }}>
+                    <span>🕒 {new Date(item.startAt).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
                 </div>
-                <div className="item-meta">{new Date(item.startAt).toLocaleString()}</div>
-              </div>
-            ))}
+              );
+            })}
             {!data.recentAppointments.length && <EmptyState title="No assigned appointments yet" message="Your next assigned bookings will appear here as soon as they are scheduled." />}
           </div>
         </div>
-        <div className="two-col" style={{ marginTop: 18 }}>
-          <div className="panel-card">
-            <h3>My Services</h3>
-            <div className="badge-row">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: 24, marginTop: 24 }}>
+          <div className="panel-card" style={{ padding: 24, borderRadius: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+            <h3 style={{ margin: "0 0 20px 0", fontSize: "1.2rem", color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>My Services</h3>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {(data.assignedServices || []).map((item) => (
-                <span key={item.id} className="badge">{item.service?.name}</span>
+                <span key={item.id} style={{ background: "#f8fafc", border: "1px solid #cbd5e1", padding: "6px 14px", borderRadius: 8, fontSize: "0.9rem", color: "#334155", fontWeight: 500 }}>
+                  {item.service?.name}
+                </span>
               ))}
               {!data.assignedServices?.length && <span className="muted">No service assignments yet.</span>}
             </div>
           </div>
-          <div className="panel-card">
-            <h3>Notifications</h3>
-            <div className="list-stack">
+          <div className="panel-card" style={{ padding: 24, borderRadius: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+            <h3 style={{ margin: "0 0 20px 0", fontSize: "1.2rem", color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>Notifications</h3>
+            <div style={{ display: "grid", gap: 12 }}>
               {(data.notifications || []).map((item) => (
-                <div key={item.id} className="list-item">
-                  <div className="item-head">
-                    <strong>{item.action}</strong>
-                    <span className="badge">{item.appointment?.status}</span>
+                <div key={item.id} style={{ display: "flex", flexDirection: "column", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <strong style={{ color: "#0f172a", fontSize: "1rem" }}>{item.action}</strong>
+                    <span style={{ background: "#e2e8f0", color: "#475569", padding: "2px 8px", borderRadius: 12, fontSize: "0.75rem", fontWeight: 700 }}>
+                      {item.appointment?.status}
+                    </span>
                   </div>
-                  <div className="item-meta">
+                  <div style={{ color: "#64748b", fontSize: "0.85rem", marginBottom: 4 }}>
                     {item.appointment?.customer?.name || "Customer"} | {item.appointment?.branch?.name || "Branch"}
                   </div>
-                  <div className="item-meta">{item.details || "No extra note"}</div>
+                  <div style={{ color: "#475569", fontSize: "0.9rem" }}>{item.details || "No extra note"}</div>
                 </div>
               ))}
               {!data.notifications?.length && <EmptyState title="No notifications yet" message="Booking and workflow notifications will show here when something needs your attention." />}
