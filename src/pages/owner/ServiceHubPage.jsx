@@ -645,7 +645,7 @@ export default function ServiceHubPage() {
                         setSrvForm({...srvForm, consumables: newItems});
                       }} style={{ width: "100%" }}>
                         <option value="">Select product</option>
-                        {products.filter(p => p.isActive).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        {products.filter(p => p.isActive && p.productType === "CONSUMABLE").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                     </div>
                     <div style={{ flex: 1 }}>
