@@ -48,28 +48,6 @@ export default function MyProfilePage() {
           <div className="badge-row">
             <span className="badge">{profileMeta?.salonRole || "Profile"}</span>
             <span className="badge">{services.length} services</span>
-
-  return (
-    <div className="page-shell">
-      <ModuleTabs
-        title="My Profile"
-        description="Staff-scoped profile, service assignment visibility, and basic personal workspace settings."
-        items={[
-          { label: "My Dashboard", to: "/admin/my-dashboard", hint: "Overview" },
-          { label: "My Appointments", to: "/admin/my-appointments", hint: "Queue" },
-          { label: "My Schedule", to: "/admin/my-schedule", hint: "Hours" },
-          { label: "My Profile", to: "/admin/my-profile", hint: "Profile" }
-        ]}
-      />
-      <div className="hero-card" style={{ padding: 24, marginBottom: 20 }}>
-        <div className="item-head">
-          <div>
-            <h1 style={{ marginTop: 0 }}>My Profile</h1>
-            <p style={{ marginBottom: 0 }}>Keep your staff identity, contact information, and service visibility current.</p>
-          </div>
-          <div className="badge-row">
-            <span className="badge">{profileMeta?.salonRole || "Profile"}</span>
-            <span className="badge">{services.length} services</span>
           </div>
         </div>
       </div>
