@@ -48,6 +48,28 @@ export default function MyProfilePage() {
           <div className="badge-row">
             <span className="badge">{profileMeta?.salonRole || "Profile"}</span>
             <span className="badge">{services.length} services</span>
+
+  return (
+    <div className="page-shell">
+      <ModuleTabs
+        title="My Profile"
+        description="Staff-scoped profile, service assignment visibility, and basic personal workspace settings."
+        items={[
+          { label: "My Dashboard", to: "/admin/my-dashboard", hint: "Overview" },
+          { label: "My Appointments", to: "/admin/my-appointments", hint: "Queue" },
+          { label: "My Schedule", to: "/admin/my-schedule", hint: "Hours" },
+          { label: "My Profile", to: "/admin/my-profile", hint: "Profile" }
+        ]}
+      />
+      <div className="hero-card" style={{ padding: 24, marginBottom: 20 }}>
+        <div className="item-head">
+          <div>
+            <h1 style={{ marginTop: 0 }}>My Profile</h1>
+            <p style={{ marginBottom: 0 }}>Keep your staff identity, contact information, and service visibility current.</p>
+          </div>
+          <div className="badge-row">
+            <span className="badge">{profileMeta?.salonRole || "Profile"}</span>
+            <span className="badge">{services.length} services</span>
           </div>
         </div>
       </div>
@@ -58,22 +80,42 @@ export default function MyProfilePage() {
             event.preventDefault();
             try {
               await api.patch("/owner/my-profile", form);
-              setStatus("Profile updated.");
+              setStatus("Profile updated successfully.");
+              setTimeout(() => setStatus(""), 3000);
             } catch (err) {
               setStatus("Failed to save profile.");
+              setTimeout(() => setStatus(""), 3000);
             }
-          }} style={{ display: "grid", gap: 10 }}>
-            <label>
-              <span className="muted">Phone</span>
+          }} style={{ display: "grid", gap: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 8 }}>
+              {form.avatarUrl ? (
+                <img src={form.avatarUrl} alt="Avatar" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "2px solid #e2e8f0" }} onError={(e) => e.target.style.display = 'none'} />
+              ) : (
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, color: "#94a3b8", border: "2px solid #e2e8f0" }}>👤</div>
+              )}
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.1rem" }}>{profileMeta?.user?.name || "Your Profile"}</h3>
+                <div style={{ color: "#64748b", fontSize: "0.9rem" }}>Update your photo and personal details</div>
+              </div>
+            </div>
+            
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontWeight: 600, color: "#334155", fontSize: "0.9rem" }}>Phone Number</span>
               <IndianPhoneInput value={form.phone} onChange={(phone) => setForm((current) => ({ ...current, phone }))} />
             </label>
-            <label>
-              <span className="muted">Avatar URL</span>
-              <input value={form.avatarUrl} placeholder="Avatar URL" onChange={(event) => setForm((current) => ({ ...current, avatarUrl: event.target.value }))} />
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontWeight: 600, color: "#334155", fontSize: "0.9rem" }}>Avatar URL</span>
+              <input type="text" className="input-field" value={form.avatarUrl} placeholder="https://example.com/photo.jpg" onChange={(event) => setForm((current) => ({ ...current, avatarUrl: event.target.value }))} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #cbd5e1" }} />
             </label>
-            <textarea value={form.profileNote} placeholder="Profile note" onChange={(event) => setForm((current) => ({ ...current, profileNote: event.target.value }))} />
-            <button>Save Profile</button>
-            {status && <p className="success-text">{status}</p>}
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontWeight: 600, color: "#334155", fontSize: "0.9rem" }}>Profile Note / Bio</span>
+              <textarea className="input-field" value={form.profileNote} placeholder="Share a brief bio or specialty..." onChange={(event) => setForm((current) => ({ ...current, profileNote: event.target.value }))} style={{ padding: "10px 14px", borderRadius: 8, border: "1px solid #cbd5e1", minHeight: 100, fontFamily: "inherit", resize: "vertical" }} />
+            </label>
+            
+            <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 8 }}>
+              <button type="submit" className="primary-button" style={{ padding: "10px 24px", minWidth: 140 }}>Save Changes</button>
+              {status && <span style={{ color: status.includes("Failed") ? "#ef4444" : "#10b981", fontWeight: 500, fontSize: "0.9rem" }}>{status}</span>}
+            </div>
           </form>
         </div>
         <div className="panel-card">

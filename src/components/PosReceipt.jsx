@@ -140,6 +140,7 @@ export default function PosReceipt({ invoice, salonName, salonAddress, salonPhon
           <title>Print Receipt</title>
           ${styles}
           <style>
+            @page { margin: 0; }
             body { background: white !important; margin: 0 !important; padding: 20px !important; display: flex !important; justify-content: center !important; }
             .invoice-paper { max-width: 800px !important; width: 100% !important; margin: 0 auto !important; box-shadow: none !important; border: none !important; }
             .no-print { display: none !important; }
@@ -227,7 +228,7 @@ export default function PosReceipt({ invoice, salonName, salonAddress, salonPhon
               return (
                 <div key={idx} style={S.itemRow}>
                   <div style={{ flex: 1 }}>
-                    <div style={S.itemName}>{item.serviceName || item.productName || item.name || "Item"}</div>
+                    <div style={S.itemName}>{(typeof (item.serviceName || item.productName || item.name) === "string" ? (item.serviceName || item.productName || item.name).replace(/\[Package:\s*(.*?)\]/i, "Package: $1 |") : (item.serviceName || item.productName || item.name || "Item"))}</div>
                     <div style={S.itemSub}>{qty} × {money(rate)}</div>
                     {item.staffName && <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>Staff: {item.staffName}</div>}
                   </div>
