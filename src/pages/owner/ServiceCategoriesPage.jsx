@@ -787,13 +787,19 @@ export default function ServiceCategoriesPage() {
               {editingServiceId ? "Edit Service" : "Create Service"}
             </div>
 
+            {status.error && (
+              <div style={{ margin: "12px 24px 0", padding: "10px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, color: "#dc2626", fontSize: 13 }}>
+                {status.error}
+              </div>
+            )}
+
             <div style={{ padding: 24, display: "grid", gap: 18 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1.7fr 1fr", gap: 16 }}>
                 <div>
                   <label style={{ display: "block", marginBottom: 8, fontWeight: 700, color: "#334155" }}>Name *</label>
                   <input
                     value={serviceForm.name}
-                    onChange={(event) => setServiceForm((current) => ({ ...current, name: event.target.value }))}
+                    onChange={(event) => { setServiceForm((current) => ({ ...current, name: event.target.value })); if (status.error) setStatus((c) => ({ ...c, error: "" })); }}
                     placeholder="Trendy Cut, Cleanup, Facial..."
                     style={{ width: "100%", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 14 }}
                   />
