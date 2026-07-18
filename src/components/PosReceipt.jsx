@@ -168,7 +168,7 @@ export default function PosReceipt({ invoice, salonName, salonAddress, salonPhon
   const safeInv = invoice || {};
   const items = safeInv.items || [];
   const customer = safeInv.customer || {};
-  const displaySalonName = liveSettingsName || customSalonName || salonName || "";
+  const displaySalonName = liveSettingsName || customSalonName || salonName || auth?.membership?.salon?.name || auth?.membership?.salonName || safeInv?.salon?.name || safeInv?.branch?.name || "My Salon";
   const displayAddress = salonAddress || "";
   const displayPhone = salonPhone || "";
   const invDate = safeInv.createdAt ? new Date(safeInv.createdAt) : new Date();
