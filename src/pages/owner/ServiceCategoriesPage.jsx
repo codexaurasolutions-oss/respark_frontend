@@ -925,7 +925,7 @@ export default function ServiceCategoriesPage() {
                           const newItems = [...serviceForm.consumables];
                           newItems[idx] = {...newItems[idx], reqdQty: e.target.value};
                           setServiceForm({...serviceForm, consumables: newItems});
-                        }} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 10, fontSize: 13 }} />
+                        }} style={{ flex: 1, minWidth: 0, padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 10, fontSize: 13 }} />
                         {item.productId && (
                           <span style={{ fontSize: 12, color: "#64748b", flexShrink: 0 }}>
                             {products.find(p => p.id === item.productId)?.unit || "pcs"}
