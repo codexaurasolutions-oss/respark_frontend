@@ -628,7 +628,19 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
                       const rowDiscountTotal = rowDiscountValue * qty;
                       return (
                         <div key={index} style={{ display: "grid", gridTemplateColumns: "2fr 2fr 0.5fr 1fr 1fr 1fr 1fr 1fr 1fr 0.5fr", gap: "8px", padding: "8px 0", borderBottom: "1px solid #f1f5f9", fontSize: "0.7rem", alignItems: "center" }}>
-                          <div style={{ fontWeight: 600, color: "#1e293b" }}>{item.name || "Item"}</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <div style={{ fontWeight: 600, color: "#1e293b" }}>{item.name || "Item"}</div>
+                            {item.itemType === 'SERVICE' && (
+                              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                                {posContext.services.find(s => s.id === item.serviceId)?.consumables?.map((c, i) => (
+                                  <div key={i} style={{ fontSize: "0.6rem", color: "#64748b", display: "flex", alignItems: "center", gap: "4px" }}>
+                                    <span style={{ color: "#3b82f6" }}>↳</span>
+                                    <span>{c.product?.name} ({c.reqdQty} {c.product?.unit || 'qty'})</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                           
                           {/* Staff Selection Dropdown */}
                           <div>

@@ -516,15 +516,8 @@ export default function ServiceHubPage() {
                 </div>
               </div>
 
-              {/* Branch + Category */}
+              {/* Category */}
               <div className="hub-form-row">
-                <div className="hub-form-group">
-                  <label>Branch</label>
-                  <select className="hub-input" value={srvForm.branchId} onChange={e => setSrvForm({...srvForm, branchId: e.target.value})}>
-                    <option value="">Salon wide</option>
-                    {branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
-                  </select>
-                </div>
                 <div className="hub-form-group">
                   <label>Category</label>
                   <select className="hub-input" value={srvForm.categoryId} onChange={e => setSrvForm({...srvForm, categoryId: e.target.value})}>
@@ -657,11 +650,18 @@ export default function ServiceHubPage() {
                     </div>
                     <div style={{ flex: 1 }}>
                       {idx === 0 && <label style={{ fontSize: 12, color: "#64748b", marginBottom: 4, display: "block" }}>Reqd Qty</label>}
-                      <input type="number" min="0" className="hub-input" value={item.reqdQty} onChange={e => {
-                        const newItems = [...srvForm.consumables];
-                        newItems[idx] = {...newItems[idx], reqdQty: e.target.value};
-                        setSrvForm({...srvForm, consumables: newItems});
-                      }} style={{ width: "100%" }} />
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <input type="number" min="0" className="hub-input" value={item.reqdQty} onChange={e => {
+                          const newItems = [...srvForm.consumables];
+                          newItems[idx] = {...newItems[idx], reqdQty: e.target.value};
+                          setSrvForm({...srvForm, consumables: newItems});
+                        }} style={{ width: "100%" }} />
+                        {item.productId && (
+                          <span style={{ fontSize: 12, color: "#64748b", flexShrink: 0 }}>
+                            {products.find(p => p.id === item.productId)?.unit || "pcs"}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <button type="button" onClick={() => {
                       const newItems = srvForm.consumables.filter((_, i) => i !== idx);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Download, Printer, QrCode, X } from "lucide-react";
+import { Download, Printer, X } from "lucide-react";
 import { formatCurrency } from "../utils/currency";
 import { useAuth } from "../context/AuthContext";
 import { readSalonSettingsCache } from "../utils/salonSettings";
@@ -79,7 +79,6 @@ const S = {
   footer: { textAlign: "center", padding: "16px 0 20px" },
   thankYou: { fontSize: 15, fontWeight: 800, color: "#0f172a", letterSpacing: 1.5, marginBottom: 4 },
   footerSub: { fontSize: 10, color: "#94a3b8", letterSpacing: 2, fontWeight: 600 },
-  qrBox: { width: 64, height: 64, margin: "14px auto 0", border: "1.5px solid #e2e8f0", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "#cbd5e1", background: "#fafbfc" },
   barcode: { margin: "14px auto 0", width: "75%", height: 36, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 1.5 }
 };
 
@@ -225,8 +224,7 @@ export default function PosReceipt({ invoice, salonName, salonAddress, salonPhon
             <div style={S.thankYou}>Thank You!</div>
             <div style={S.footerSub}>Visit Again</div>
             <FakeBarcode />
-            <div style={S.qrBox}><QrCode size={24} /></div>
-            <div style={{ fontSize: 9, color: "#cbd5e1", marginTop: 8, letterSpacing: 2, fontFamily: "'JetBrains Mono', monospace" }}>{safeInv.invoiceNumber || "—"}</div>
+            <div style={{ fontSize: 9, color: "#cbd5e1", marginTop: 16, letterSpacing: 2, fontFamily: "'JetBrains Mono', monospace" }}>{safeInv.invoiceNumber || "—"}</div>
           </div>
         </div>
 

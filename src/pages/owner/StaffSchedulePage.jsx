@@ -29,7 +29,7 @@ export default function StaffSchedulePage() {
         api.get("/owner/staff-availability", { params: branchParams })
       ]);
       setSchedules(scheduleResponse.data);
-      setStaff(usersResponse.data);
+      setStaff(selectedBranchId ? usersResponse.data.filter(s => s.branchId === selectedBranchId) : usersResponse.data);
       setBranches(branchesResponse.data);
       setAvailability(availabilityResponse.data);
     } catch (err) {
@@ -49,7 +49,7 @@ export default function StaffSchedulePage() {
       ]);
       if (!active) return;
       setSchedules(scheduleResponse.data);
-      setStaff(usersResponse.data);
+      setStaff(selectedBranchId ? usersResponse.data.filter(s => s.branchId === selectedBranchId) : usersResponse.data);
       setBranches(branchesResponse.data);
       setAvailability(availabilityResponse.data);
       setLoading(false);

@@ -219,6 +219,7 @@
   flex-direction: column;
   gap: 20px;
   overflow-y: auto;
+  max-height: 60vh;
 }
 
 .hub-form-row {

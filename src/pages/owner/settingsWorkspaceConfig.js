@@ -9,7 +9,6 @@ export const SETTINGS_WORKSPACE_SECTIONS = [
   { key: "sms-center", label: "Messaging Center", to: "/admin/settings/sms-center", hint: "Email gateway" },
   { key: "coupons", label: "Coupons & Gift Cards", to: "/admin/coupons", hint: "Promo rules" },
   { key: "referrals", label: "Referral Program", to: "/admin/referral-coupons", hint: "Referral benefits" },
-  { key: "designation", label: "Designation", to: "/admin/settings/designation", hint: "Job titles" },
   { key: "privacy-policy", label: "Privacy Policy", to: "/admin/settings/privacy-policy", hint: "Legal copy" },
   { key: "terms-and-conditions", label: "Terms & Conditions", to: "/admin/settings/terms-and-conditions", hint: "Policies" },
   { key: "pnl-categories", label: "PNL Categories", to: "/admin/settings/pnl-categories", hint: "Profit buckets" },

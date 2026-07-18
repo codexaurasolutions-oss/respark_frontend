@@ -3,6 +3,14 @@ import { X } from "lucide-react";
 import { api } from "../../api/client";
 import { useBranch } from '../../context/BranchContext';
 import "./ServiceHubPage.css";
+
+const getImageUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  const base = api.defaults.baseURL || "http://localhost:5050/api/v1";
+  const root = base.replace(/\/api\/v1\/?$/, '');
+  return `${root}${path.startsWith('/') ? '' : '/'}${path}`;
+};
 import IndianPhoneInput from "../../components/IndianPhoneInput";
 import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
@@ -585,44 +593,74 @@ export default function UsersPage() {
         <div className="hub-items-col" style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
           {selectedRow ? (
             <>
-              <div className="hub-items-header-bar" style={{ padding: '20px 32px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
-                <div>
-                  <div style={{ color: '#0f172a', fontWeight: 600, fontSize: 20, marginBottom: 4 }}>{selectedRow.user?.name}</div>
-                  <div style={{ color: '#64748b', fontSize: 14 }}>{selectedRow.user?.email}</div>
-                </div>
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <button
-                    type="button"
-                    onClick={() => toggleUserStatus(selectedRow)}
-                    style={{ padding: '8px 16px', borderRadius: 6, fontSize: 14, cursor: 'pointer', border: '1px solid #e2e8f0', background: 'white', color: selectedRow.user?.isActive ? '#ef4444' : '#10b981' }}
-                  >
-                    {selectedRow.user?.isActive ? "Deactivate Login" : "Activate Login"}
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => archiveUser(selectedRow)}
-                    style={{ padding: '8px 16px', borderRadius: 6, fontSize: 14, cursor: 'pointer', border: 'none', background: '#ef4444', color: 'white' }}
-                  >
-                    Archive
-                  </button>
+              <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'white', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ height: 100, background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)' }}></div>
+                <div style={{ padding: '0 32px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: -40 }}>
+                  <div style={{ display: 'flex', gap: 20, alignItems: 'flex-end' }}>
+                    <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'white', padding: 4, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                      {selectedRow.avatarUrl ? (
+                        <img src={getImageUrl(selectedRow.avatarUrl)} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 28, fontWeight: 600 }}>
+                          {selectedRow.user?.name?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ paddingBottom: 4 }}>
+                      <div style={{ color: '#0f172a', fontWeight: 700, fontSize: 24, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {selectedRow.user?.name}
+                        {selectedRow.user?.isActive ? (
+                          <span style={{ fontSize: 11, background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: 12, fontWeight: 600 }}>ACTIVE</span>
+                        ) : (
+                          <span style={{ fontSize: 11, background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: 12, fontWeight: 600 }}>INACTIVE</span>
+                        )}
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: 14, marginTop: 2 }}>{selectedRow.user?.email}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 12, paddingBottom: 4 }}>
+                    <button
+                      type="button"
+                      onClick={() => toggleUserStatus(selectedRow)}
+                      style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: selectedRow.user?.isActive ? '1px solid #fca5a5' : '1px solid #86efac', background: selectedRow.user?.isActive ? '#fef2f2' : '#f0fdf4', color: selectedRow.user?.isActive ? '#dc2626' : '#16a34a', transition: 'all 0.2s' }}
+                    >
+                      {selectedRow.user?.isActive ? "Deactivate Login" : "Activate Login"}
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => archiveUser(selectedRow)}
+                      style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', transition: 'all 0.2s' }}
+                    >
+                      Archive Profile
+                    </button>
+                  </div>
                 </div>
               </div>
 
               <div style={{ padding: '32px', maxWidth: 900, margin: '0 auto' }}>
-                <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 32 }}>
-                   <div style={{ background: 'white', padding: 20, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                     <div style={{ fontSize: 12, textTransform: 'uppercase', color: '#64748b', fontWeight: 600, marginBottom: 8 }}>Current Role</div>
-                     <div style={{ fontSize: 16, fontWeight: 600, color: '#0f172a' }}>{selectedRow.roleTitle || selectedRow.customRole?.name || resolveRoleLabel(selectedRow.salonRole)}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 32 }}>
+                   <div style={{ background: 'white', padding: 20, borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                       <div style={{ background: '#f0fdf4', padding: 6, borderRadius: 8, color: '#16a34a' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
+                       <div style={{ fontSize: 12, textTransform: 'uppercase', color: '#64748b', fontWeight: 700, letterSpacing: '0.05em' }}>Current Role</div>
+                     </div>
+                     <div style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{selectedRow.roleTitle || selectedRow.customRole?.name || resolveRoleLabel(selectedRow.salonRole)}</div>
                      <div style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>{selectedRow.phone || "No phone added"}</div>
                    </div>
-                   <div style={{ background: 'white', padding: 20, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                     <div style={{ fontSize: 12, textTransform: 'uppercase', color: '#64748b', fontWeight: 600, marginBottom: 8 }}>Page Access</div>
-                     <div style={{ fontSize: 16, fontWeight: 600, color: '#0f172a' }}>{countGrantedModules(selectedRow.permissions || {})} Modules</div>
+                   <div style={{ background: 'white', padding: 20, borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                       <div style={{ background: '#eff6ff', padding: 6, borderRadius: 8, color: '#2563eb' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
+                       <div style={{ fontSize: 12, textTransform: 'uppercase', color: '#64748b', fontWeight: 700, letterSpacing: '0.05em' }}>Page Access</div>
+                     </div>
+                     <div style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{countGrantedModules(selectedRow.permissions || {})} Modules</div>
                      <div style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>{countGrantedActions(selectedRow.permissions || {})} switches enabled</div>
                    </div>
-                   <div style={{ background: 'white', padding: 20, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                     <div style={{ fontSize: 12, textTransform: 'uppercase', color: '#64748b', fontWeight: 600, marginBottom: 8 }}>Services</div>
-                     <div style={{ fontSize: 16, fontWeight: 600, color: '#0f172a' }}>{selectedRow.serviceAssignments?.length || 0} Services</div>
+                   <div style={{ background: 'white', padding: 20, borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                       <div style={{ background: '#fef2f2', padding: 6, borderRadius: 8, color: '#dc2626' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></div>
+                       <div style={{ fontSize: 12, textTransform: 'uppercase', color: '#64748b', fontWeight: 700, letterSpacing: '0.05em' }}>Services</div>
+                     </div>
+                     <div style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{selectedRow.serviceAssignments?.length || 0} Assigned</div>
                      <div style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>{selectedRow.showInCatalog ? "Visible in catalog" : "Hidden from catalog"}</div>
                    </div>
                 </div>
@@ -710,7 +748,7 @@ export default function UsersPage() {
                           <label>Profile Avatar</label>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             {form.avatarUrl ? (
-                              <img src={form.avatarUrl} alt="Avatar" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1px solid #cbd5e1' }} />
+                              <img src={getImageUrl(form.avatarUrl)} alt="Avatar" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1px solid #cbd5e1' }} />
                             ) : (
                               <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -742,7 +780,7 @@ export default function UsersPage() {
                         <label style={{ display: 'block', fontSize: 12, color: '#475569', marginBottom: 8 }}>Enrollment Selfie</label>
                         {form.attendanceEnrollmentPhotoUrl ? (
                           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                            <img src={form.attendanceEnrollmentPhotoUrl} alt="Enrollment selfie" style={{ width: 80, height: 80, borderRadius: 12, objectFit: 'cover', border: '2px solid #22c55e' }} />
+                            <img src={getImageUrl(form.attendanceEnrollmentPhotoUrl)} alt="Enrollment selfie" style={{ width: 80, height: 80, borderRadius: 12, objectFit: 'cover', border: '2px solid #22c55e' }} />
                             <div style={{ display: 'grid', gap: 6 }}>
                               <div style={{ fontSize: 12, color: '#166534', fontWeight: 600 }}>Enrollment selfie captured</div>
                               <button type="button" className="secondary-button" style={{ fontSize: 12, padding: '6px 12px', width: 'fit-content', cursor: 'pointer' }} onClick={openEnrollmentCamera}>Retake</button>
@@ -790,16 +828,7 @@ export default function UsersPage() {
                           <label>Date of Joining</label>
                           <input type="date" className="hub-input" value={form.joiningDate} onChange={(event) => setForm({ ...form, joiningDate: event.target.value })} />
                         </div>
-                        <div className="hub-form-group">
-                          <label>Designation</label>
-                          <div style={{ display: "grid", gap: 8 }}>
-                            <select className="hub-input" value={designationOptions.includes(form.designation) ? form.designation : ""} onChange={(event) => setForm({ ...form, designation: event.target.value || form.designation })}>
-                              <option value="">Select saved designation</option>
-                              {designationOptions.map((designation) => <option key={designation} value={designation}>{designation}</option>)}
-                            </select>
-                            <input type="text" className="hub-input" value={form.designation} onChange={(event) => setForm({ ...form, designation: event.target.value })} placeholder="e.g. Senior Stylist" />
-                          </div>
-                        </div>
+
                         <div className="hub-form-group">
                           <label>UAN Number</label>
                           <input type="text" className="hub-input" value={form.uanNumber} onChange={(event) => setForm({ ...form, uanNumber: event.target.value })} placeholder="12-digit UAN" pattern="\d{12}" maxLength={12} />
@@ -938,7 +967,7 @@ export default function UsersPage() {
                   <label>Profile Avatar</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     {form.avatarUrl ? (
-                      <img src={form.avatarUrl} alt="Avatar" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1px solid #cbd5e1' }} />
+                      <img src={getImageUrl(form.avatarUrl)} alt="Avatar" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1px solid #cbd5e1' }} />
                     ) : (
                       <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -973,7 +1002,7 @@ export default function UsersPage() {
                     <label>Enrollment Selfie</label>
                     {form.attendanceEnrollmentPhotoUrl ? (
                       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 6 }}>
-                        <img src={form.attendanceEnrollmentPhotoUrl} alt="Enrollment selfie" style={{ width: 80, height: 80, borderRadius: 12, objectFit: 'cover', border: '2px solid #22c55e' }} />
+                        <img src={getImageUrl(form.attendanceEnrollmentPhotoUrl)} alt="Enrollment selfie" style={{ width: 80, height: 80, borderRadius: 12, objectFit: 'cover', border: '2px solid #22c55e' }} />
                         <div style={{ display: 'grid', gap: 6 }}>
                           <div style={{ fontSize: 12, color: '#166534', fontWeight: 600 }}>Enrollment selfie captured</div>
                           <button type="button" className="secondary-button" style={{ fontSize: 12, padding: '6px 12px', width: 'fit-content', cursor: 'pointer' }} onClick={openEnrollmentCamera}>Retake</button>
@@ -992,13 +1021,7 @@ export default function UsersPage() {
                   </div>
                 </div>
 
-                <div className="hub-form-group" style={{ marginBottom: 16 }}>
-                  <label>Designation</label>
-                  <select className="hub-input" value={designationOptions.includes(form.designation) ? form.designation : ""} onChange={e => setForm({ ...form, designation: e.target.value })}>
-                    <option value="">Select designation</option>
-                    {designationOptions.map((designation) => <option key={designation} value={designation}>{designation}</option>)}
-                  </select>
-                </div>
+
 
                 <h4 style={{ fontSize: 14, color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, margin: '8px 0 12px' }}>Employment & HR Details</h4>
                 <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>

@@ -4886,8 +4886,6 @@ export default function SettingsPage() {
         return renderSmsSection();
       case "crm-segment":
         return renderSegmentSection();
-      case "designation":
-        return renderDesignationSection();
       case "privacy-policy":
         return renderLegalSection("Privacy Policy", "privacyPolicy");
       case "terms-and-conditions":

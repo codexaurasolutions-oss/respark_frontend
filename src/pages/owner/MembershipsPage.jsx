@@ -326,21 +326,30 @@ export default function MembershipsPage() {
   return (
     <div className="mem-page">
       <div className="page-shell">
-      <ModuleTabs
-        title="Memberships & Packages"
-        description="Control recurring loyalty products, prepaid sessions, and service access in one revenue workspace."
-        items={[
-          { label: "Membership Plans", to: "/admin/memberships", hint: "Recurring" },
-          { label: "Create Membership", to: "/admin/memberships/create", hint: "New" },
-          { label: "Packages", to: "/admin/packages", hint: "Prepaid" },
-          { label: "Create Package", to: "/admin/packages/create", hint: "New" },
-          ...(customerId ? [
-            { label: "Customer Memberships", to: `/admin/customers/${customerId}/memberships`, hint: "Assigned" },
-            { label: "Customer Packages", to: `/admin/customers/${customerId}/packages`, hint: "Balance" }
-          ] : [])
-        ]}
-        actions={customerId ? <Link to={`/admin/customers/${customerId}/history`} className="module-tab">Back to CRM</Link> : null}
-      />
+      {customerId ? (
+        <ModuleTabs
+          title="Customer Timeline"
+          description="Complete CRM view with service history, billing, memberships, packages, and event trail."
+          items={[
+            { label: "Customer List", to: "/admin/customers", hint: "Back" },
+            { label: "History View", to: `/admin/customers/${customerId}/history`, hint: "Profile" },
+            { label: "Memberships", to: `/admin/customers/${customerId}/memberships`, hint: "Loyalty" },
+            { label: "Packages", to: `/admin/customers/${customerId}/packages`, hint: "Prepaid" }
+          ]}
+          actions={<Link to="/admin/customers" className="module-tab">Back to Customers</Link>}
+        />
+      ) : (
+        <ModuleTabs
+          title="Memberships & Packages"
+          description="Control recurring loyalty products, prepaid sessions, and service access in one revenue workspace."
+          items={[
+            { label: "Membership Plans", to: "/admin/memberships", hint: "Recurring" },
+            { label: "Create Membership", to: "/admin/memberships/create", hint: "New" },
+            { label: "Packages", to: "/admin/packages", hint: "Prepaid" },
+            { label: "Create Package", to: "/admin/packages/create", hint: "New" }
+          ]}
+        />
+      )}
       <div className="settings-section-grid">
         {(activeSection === "memberships") && <div className="panel-card">
           <h3>{customerMembershipMode ? "Assigned Memberships" : "Membership Plans"}</h3>
