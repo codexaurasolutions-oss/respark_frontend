@@ -435,9 +435,14 @@ export default function PosDashboardPage() {
 
   const downloadInvoiceFromCard = async (event, invoiceId, invoiceNumber) => {
     event.stopPropagation();
-    await downloadFromApi(`/owner/invoices/${invoiceId}/pdf`, {
-      fallbackFilename: `invoice-${invoiceNumber || invoiceId}.pdf`
-    });
+    event.preventDefault();
+    try {
+      await downloadFromApi(`/owner/invoices/${invoiceId}/pdf`, {
+        fallbackFilename: `invoice-${invoiceNumber || invoiceId}.pdf`
+      });
+    } catch (err) {
+      console.error("PDF download failed:", err);
+    }
   };
 
   const closeDetail = () => {
