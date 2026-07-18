@@ -3052,6 +3052,7 @@ export default function PosPage() {
               <button type="button" onClick={async () => {
                 try {
                   await api.patch(`/owner/services/${reminderModalDraft.serviceId}`, {
+                    name: reminderModalDraft.serviceName,
                     serviceRemainderDays: Number(reminderModalDraft.reminderDays)
                   });
                   setContext(prev => {
