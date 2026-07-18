@@ -28,7 +28,8 @@ const initialServiceForm = {
   onlineBookingEnabled: false,
   description: "",
   isFeatured: false,
-  isPopular: false
+  isPopular: false,
+  consumables: []
 };
 
 function IconButton({ title, color = "#64748b", onClick, children }) {
@@ -57,6 +58,7 @@ export default function ServiceCategoriesPage() {
   const { selectedBranchId } = useBranch();
   const [categories, setCategories] = useState([]);
   const [branches, setBranches] = useState([]);
+  const [products, setProducts] = useState([]);
   const [selectedCatId, setSelectedCatId] = useState("");
   const [selectedSubId, setSelectedSubId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -80,12 +82,14 @@ export default function ServiceCategoriesPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const [categoriesRes, branchesRes] = await Promise.all([
+      const [categoriesRes, branchesRes, productsRes] = await Promise.all([
         api.get("/owner/service-categories", { params: { branchId: selectedBranchId || undefined } }),
-        api.get("/owner/branches")
+        api.get("/owner/branches"),
+        api.get("/owner/inventory/products")
       ]);
       setCategories(categoriesRes.data || []);
       setBranches(branchesRes.data || []);
+      setProducts(productsRes.data || []);
     } catch (err) {
       setError(formatApiError(err, "Failed to load service manager"));
     } finally {
@@ -186,7 +190,8 @@ export default function ServiceCategoriesPage() {
       description: service.description || "",
       imageUrl: service.imageUrl || "",
       isFeatured: Boolean(service.isFeatured),
-      isPopular: Boolean(service.isPopular)
+      isPopular: Boolean(service.isPopular),
+      consumables: (service.consumables || []).map(c => ({ productId: c.productId || c.product?.id || "", reqdQty: Number(c.reqdQty || 0), productName: c.product?.name || "" }))
     });
     setServiceModalOpen(true);
   };
@@ -299,7 +304,8 @@ export default function ServiceCategoriesPage() {
       description: serviceForm.description || undefined,
       imageUrl: serviceForm.imageUrl || undefined,
       isFeatured: Boolean(serviceForm.isFeatured),
-      isPopular: Boolean(serviceForm.isPopular)
+      isPopular: Boolean(serviceForm.isPopular),
+      consumables: (serviceForm.consumables || []).filter(c => c.productId).map(c => ({ productId: c.productId, reqdQty: Number(c.reqdQty) }))
     };
     setStatus({ error: "", success: "" });
     try {
@@ -891,6 +897,48 @@ export default function ServiceCategoriesPage() {
                   placeholder="Optional service notes..."
                   style={{ width: "100%", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 14, resize: "vertical", marginBottom: 16 }}
                 />
+              </div>
+
+              <div style={{ padding: "12px 0", borderTop: "1px solid #f1f5f9" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#334155", margin: 0 }}>Consumables</label>
+                  <button type="button" onClick={() => setServiceForm({...serviceForm, consumables: [...(serviceForm.consumables || []), { productId: '', reqdQty: 0, productName: '' }]})} style={{ background: "#2563eb", color: "white", border: "none", borderRadius: "50%", width: 24, height: 24, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+                </div>
+                {(serviceForm.consumables || []).map((item, idx) => (
+                  <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "end" }}>
+                    <div style={{ flex: 2 }}>
+                      {idx === 0 && <label style={{ fontSize: 12, color: "#64748b", marginBottom: 4, display: "block" }}>Item</label>}
+                      <select value={item.productId} onChange={e => {
+                        const newItems = [...serviceForm.consumables];
+                        const prod = products.find(p => p.id === e.target.value);
+                        newItems[idx] = {...newItems[idx], productId: e.target.value, productName: prod?.name || ''};
+                        setServiceForm({...serviceForm, consumables: newItems});
+                      }} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 10, fontSize: 13, background: "white" }}>
+                        <option value="">Select product</option>
+                        {products.filter(p => p.isActive && p.productType === "CONSUMABLE").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      {idx === 0 && <label style={{ fontSize: 12, color: "#64748b", marginBottom: 4, display: "block" }}>Reqd Qty</label>}
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <input type="number" min="0" value={item.reqdQty} onChange={e => {
+                          const newItems = [...serviceForm.consumables];
+                          newItems[idx] = {...newItems[idx], reqdQty: e.target.value};
+                          setServiceForm({...serviceForm, consumables: newItems});
+                        }} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 10, fontSize: 13 }} />
+                        {item.productId && (
+                          <span style={{ fontSize: 12, color: "#64748b", flexShrink: 0 }}>
+                            {products.find(p => p.id === item.productId)?.unit || "pcs"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => {
+                      const newItems = serviceForm.consumables.filter((_, i) => i !== idx);
+                      setServiceForm({...serviceForm, consumables: newItems});
+                    }} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 18, padding: "4px 8px", lineHeight: 1, marginBottom: 2 }}>✕</button>
+                  </div>
+                ))}
               </div>
 
               <div style={{ marginBottom: 16, padding: "12px 0", borderTop: "1px solid #f1f5f9" }}>
