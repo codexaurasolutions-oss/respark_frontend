@@ -381,21 +381,9 @@ export default function ProductCategoriesPage() {
               <button type="button" onClick={() => setShowCategoryModal(false)} style={{ background: "#f1f5f9", border: "none", cursor: "pointer", color: "#64748b", padding: 6, borderRadius: "50%", display: "flex" }} onMouseEnter={e=>e.currentTarget.style.background="#e2e8f0"} onMouseLeave={e=>e.currentTarget.style.background="#f1f5f9"}><X size={16} /></button>
             </div>
             <form onSubmit={handleSaveCategory} style={{ padding: "24px" }}>
-              <div className="hub-form-group" style={{ marginBottom: 20 }}>
+              <div className="hub-form-group" style={{ marginBottom: 24 }}>
                 <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6, display: "block" }}>Name *</label>
                 <input type="text" required className="hub-input" value={categoryForm.name} onChange={e => setCategoryForm({...categoryForm, name: e.target.value})} placeholder="e.g. Skin Care" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid #cbd5e1" }} />
-              </div>
-              <div style={{ display: "flex", gap: 20, marginBottom: 24 }}>
-                <div className="hub-form-group" style={{ flex: 1 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6, display: "block" }}>Position (Sort Order)</label>
-                  <input type="number" className="hub-input" value={categoryForm.sortOrder} onChange={e => setCategoryForm({...categoryForm, sortOrder: parseInt(e.target.value) || 0})} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid #cbd5e1" }} />
-                </div>
-                <div className="hub-form-group" style={{ flex: 1, display: "flex", alignItems: "end", paddingBottom: 10 }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 600, color: "#334155", cursor: "pointer" }}>
-                    <input type="checkbox" checked={categoryForm.isPublicVisible} onChange={e => setCategoryForm({...categoryForm, isPublicVisible: e.target.checked})} style={{ width: 20, height: 20, accentColor: "#2563eb" }} />
-                    Active Category
-                  </label>
-                </div>
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, borderTop: "1px solid #f1f5f9", paddingTop: 20 }}>
                 <button type="button" onClick={() => setShowCategoryModal(false)} style={{ padding: "10px 20px", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, color: "#475569", cursor: "pointer" }}>Cancel</button>
