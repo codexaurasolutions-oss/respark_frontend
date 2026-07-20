@@ -1849,140 +1849,168 @@ export default function SettingsPage() {
         <SectionHeader title="Shift Management" description="Create reusable shift templates with per-day timing so roster planning stays consistent across staff, roles, and branches." badges={[`${shiftList.length} shifts`]} action={<button type="button" onClick={saveShift} disabled={!selectedShift || shiftSaving} className="primary-button" style={{ padding: "8px 18px", background: "var(--button-bg-solid, #3b82f6)", color: "white", border: "none", borderRadius: 8, fontWeight: 600, cursor: shiftSaving ? "not-allowed" : "pointer", opacity: !selectedShift || shiftSaving ? 0.6 : 1 }}>{shiftSaving ? "Saving..." : "Save Shift"}</button>} />
 
         <div className="shift-layout-grid">
-          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: 12, height: "fit-content" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+          <div style={{ background: "#fff", border: "1px solid rgba(226, 232, 240, 0.8)", borderRadius: 16, padding: 16, height: "fit-content", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
               {shiftList.map((shift) => (
                 <button
                   key={shift.id}
                   type="button"
                   onClick={() => setSelectedShiftId(shift.id)}
                   style={{
-                    padding: "10px 14px",
+                    padding: "14px 16px",
                     border: selectedShiftId === shift.id ? "2px solid #3b82f6" : "1px solid #e2e8f0",
-                    borderRadius: 8,
-                    background: selectedShiftId === shift.id ? "#eff6ff" : "#fff",
+                    borderRadius: 12,
+                    background: selectedShiftId === shift.id ? "linear-gradient(to right, #eff6ff, #ffffff)" : "#fff",
                     textAlign: "left",
                     fontSize: 14,
-                    color: "#0f172a",
+                    color: selectedShiftId === shift.id ? "#1e40af" : "#334155",
                     cursor: "pointer",
-                    fontWeight: selectedShiftId === shift.id ? 600 : 500,
+                    fontWeight: selectedShiftId === shift.id ? 700 : 600,
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    width: "100%"
+                    width: "100%",
+                    boxShadow: selectedShiftId === shift.id ? "0 4px 12px rgba(59, 130, 246, 0.15)" : "0 2px 4px rgba(0,0,0,0.02)",
+                    transition: "all 0.2s ease"
                   }}
+                  onMouseEnter={(e) => { if (selectedShiftId !== shift.id) { e.currentTarget.style.borderColor = "#cbd5e1"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.05)"; } }}
+                  onMouseLeave={(e) => { if (selectedShiftId !== shift.id) { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.02)"; } }}
                 >
-                  <span>{shift.name || "Untitled Shift"}</span>
-                  {!shift.active && <span style={{ color: "#ef4444", fontSize: 12 }}>(Inactive)</span>}
+                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: shift.active ? "#10b981" : "#ef4444" }} />
+                    {shift.name || "Untitled Shift"}
+                  </span>
+                  {!shift.active && <span style={{ background: "#fee2e2", color: "#991b1b", fontSize: 11, padding: "2px 8px", borderRadius: 12, fontWeight: 700 }}>INACTIVE</span>}
                 </button>
               ))}
               {shiftList.length === 0 && (
-                <div style={{ padding: "20px 14px", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>No shifts yet</div>
+                <div style={{ padding: "20px 14px", textAlign: "center", color: "#94a3b8", fontSize: 13, fontWeight: 500 }}>No shifts yet</div>
               )}
             </div>
             <button
               type="button"
               onClick={createShift}
               disabled={shiftSaving}
-              style={{ width: "100%", padding: "10px 16px", background: "var(--button-bg-solid, #3b82f6)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, cursor: shiftSaving ? "not-allowed" : "pointer", fontSize: 14 }}
+              style={{ width: "100%", padding: "12px 16px", background: "var(--button-bg-solid, #3b82f6)", color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, cursor: shiftSaving ? "not-allowed" : "pointer", fontSize: 14, display: "flex", justifyContent: "center", alignItems: "center", gap: 8, boxShadow: "0 4px 12px rgba(59, 130, 246, 0.2)" }}
             >
-              {shiftSaving ? "Creating..." : "Create New"}
+              <Plus size={18} /> {shiftSaving ? "Creating..." : "Create New Shift"}
             </button>
           </div>
 
-          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: 20 }}>
+          <div style={{ background: "#fff", border: "1px solid rgba(226, 232, 240, 0.8)", borderRadius: 16, padding: 32, boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}>
             {!selectedShift || !shiftDraft ? (
-              <div style={{ padding: "60px 20px", textAlign: "center", color: "#94a3b8" }}>
-                <strong>Select a shift to edit</strong>
-                <div style={{ fontSize: 12, marginTop: 4 }}>Or create a new shift to get started.</div>
+              <div style={{ padding: "60px 20px", textAlign: "center", color: "#64748b" }}>
+                <div style={{ fontSize: 40, opacity: 0.3, marginBottom: 16 }}>🗓️</div>
+                <strong style={{ fontSize: 16 }}>Select a shift to edit</strong>
+                <div style={{ fontSize: 14, marginTop: 8 }}>Or create a new shift to get started.</div>
               </div>
             ) : (
               <>
-                <h2 style={{ margin: 0, marginBottom: 16, fontSize: 20, fontWeight: 700, color: "#2563eb" }}>Shift Details</h2>
-                <div className="settings-form-grid" style={{ marginBottom: 16, alignItems: "center" }}>
-                  <label style={{ display: "block" }}>
-                    <div style={{ fontSize: 13, color: "#475569", marginBottom: 4, fontWeight: 600 }}>Shift Name</div>
-                    <input
-                      value={shiftDraft.name || ""}
-                      onChange={(event) => updateDraftField("name", event.target.value)}
-                      placeholder="Enter shift name"
-                      style={{ width: "100%", padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 14 }}
-                    />
-                  </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-end", cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      checked={Boolean(shiftDraft.active)}
-                      onChange={(event) => updateDraftField("active", event.target.checked)}
-                      style={{ width: 18, height: 18 }}
-                    />
-                    <span style={{ fontSize: 14, fontWeight: 600 }}>Active</span>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, paddingBottom: 16, borderBottom: "1px solid #f1f5f9" }}>
+                  <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#1e293b", display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ background: "#eff6ff", color: "#3b82f6", width: 36, height: 36, display: "flex", justifyContent: "center", alignItems: "center", borderRadius: 10, fontSize: 18 }}>🕒</span> 
+                    Shift Details
+                  </h2>
+                  <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", background: shiftDraft.active ? "#ecfdf5" : "#f1f5f9", padding: "8px 16px", borderRadius: 20, transition: "background 0.2s" }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: shiftDraft.active ? "#059669" : "#64748b" }}>{shiftDraft.active ? "Active" : "Inactive"}</span>
+                    <div className="toggle-switch-label" style={{ margin: 0 }}>
+                      <input type="checkbox" checked={Boolean(shiftDraft.active)} onChange={(event) => updateDraftField("active", event.target.checked)} />
+                      <span className="toggle-switch-slider" />
+                    </div>
                   </label>
                 </div>
 
-                <label style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "#f8fafc", borderRadius: 8, marginBottom: 16, cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(shiftDraft.sameForAllDays)}
-                    onChange={(event) => toggleSameForAllDays(event.target.checked)}
-                    style={{ width: 18, height: 18 }}
-                  />
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>Same For All Days</span>
-                </label>
+                <div className="settings-form-grid" style={{ marginBottom: 24 }}>
+                  <label style={{ display: "block" }}>
+                    <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>Shift Name</div>
+                    <input
+                      value={shiftDraft.name || ""}
+                      onChange={(event) => updateDraftField("name", event.target.value)}
+                      placeholder="e.g. Morning Shift"
+                      style={{ width: "100%", padding: "12px 16px", border: "2px solid #e2e8f0", borderRadius: 12, fontSize: 15, fontWeight: 600, color: "#1e293b", outline: "none", transition: "border-color 0.2s", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}
+                      onFocus={(e) => e.target.style.borderColor = "#3b82f6"}
+                      onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}
+                    />
+                  </label>
+                  <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", paddingTop: 20 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", background: shiftDraft.sameForAllDays ? "#eff6ff" : "#f8fafc", borderRadius: 12, border: shiftDraft.sameForAllDays ? "1px solid #bfdbfe" : "1px solid #e2e8f0", cursor: "pointer", transition: "all 0.2s" }}>
+                      <div className="toggle-switch-label" style={{ margin: 0 }}>
+                        <input type="checkbox" checked={Boolean(shiftDraft.sameForAllDays)} onChange={(event) => toggleSameForAllDays(event.target.checked)} />
+                        <span className="toggle-switch-slider" />
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: shiftDraft.sameForAllDays ? "#1e40af" : "#334155" }}>Same Timing For All Days</span>
+                        <span style={{ fontSize: 12, color: shiftDraft.sameForAllDays ? "#3b82f6" : "#64748b", marginTop: 2 }}>Apply one schedule to every day</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
 
                 {shiftDraft.sameForAllDays ? (
-                  <div className="settings-form-grid" style={{ marginBottom: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24, background: "#f8fafc", padding: 24, borderRadius: 12, border: "1px solid #e2e8f0" }}>
                     <label>
-                      <div style={{ fontSize: 13, color: "#475569", marginBottom: 4, fontWeight: 600 }}>Start Time</div>
+                      <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>Start Time</div>
                       <input
                         type="time"
                         value={shiftDraft.startTime || "09:00"}
                         onChange={(event) => updateDraftField("startTime", event.target.value)}
-                        style={{ width: "100%", padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 14 }}
+                        style={{ width: "100%", padding: "12px 16px", border: "2px solid #e2e8f0", borderRadius: 10, fontSize: 15, fontWeight: 600, color: "#1e293b", outline: "none", background: "#fff", transition: "border-color 0.2s" }}
+                        onFocus={(e) => e.target.style.borderColor = "#3b82f6"}
+                        onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}
                       />
                     </label>
                     <label>
-                      <div style={{ fontSize: 13, color: "#475569", marginBottom: 4, fontWeight: 600 }}>End Time</div>
+                      <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>End Time</div>
                       <input
                         type="time"
                         value={shiftDraft.endTime || "21:00"}
                         onChange={(event) => updateDraftField("endTime", event.target.value)}
-                        style={{ width: "100%", padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 14 }}
+                        style={{ width: "100%", padding: "12px 16px", border: "2px solid #e2e8f0", borderRadius: 10, fontSize: 15, fontWeight: 600, color: "#1e293b", outline: "none", background: "#fff", transition: "border-color 0.2s" }}
+                        onFocus={(e) => e.target.style.borderColor = "#3b82f6"}
+                        onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}
                       />
                     </label>
                   </div>
                 ) : (
-                  <div className="settings-table-wrap" style={{ marginBottom: 16, overflowX: "auto" }}>
-                    <div style={{ minWidth: 400 }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr 60px", gap: 12, padding: "8px 12px", background: "#f8fafc", borderRadius: "6px 6px 0 0", borderBottom: "1px solid #e2e8f0", fontSize: 12, fontWeight: 600, color: "#475569" }}>
+                  <div className="settings-table-wrap" style={{ marginBottom: 24, overflowX: "auto" }}>
+                    <div style={{ minWidth: 500, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr 80px", gap: 16, padding: "16px 20px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5 }}>
                         <div>Day</div>
                         <div>Start Time</div>
                         <div>End Time</div>
-                        <div>Active</div>
+                        <div>Status</div>
                       </div>
                     {WEEK_DAYS.map((day) => {
                       const dayData = (shiftDraft.days || []).find(d => d.dayOfWeek === day.dayOfWeekValue) || { dayOfWeek: day.dayOfWeekValue, startTime: "09:00", endTime: "21:00", active: true };
                       return (
-                        <div key={day.key} style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr 60px", gap: 12, padding: "10px 12px", borderBottom: "1px solid #f1f5f9", alignItems: "center" }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{day.label}</div>
+                        <div key={day.key} style={{ display: "grid", gridTemplateColumns: "120px 1fr 1fr 80px", gap: 16, padding: "12px 20px", borderBottom: "1px solid #f1f5f9", alignItems: "center", opacity: dayData.active !== false ? 1 : 0.6 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>{day.label}</div>
                           <input
                             type="time"
+                            disabled={dayData.active === false}
                             value={dayData.startTime || "09:00"}
                             onChange={(event) => updateDayField(day.dayOfWeekValue, { startTime: event.target.value })}
-                            style={{ width: "100%", padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13 }}
+                            style={{ width: "100%", padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, color: "#334155", outline: "none", transition: "border-color 0.2s" }}
+                            onFocus={(e) => e.target.style.borderColor = "#3b82f6"}
+                            onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}
                           />
                           <input
                             type="time"
+                            disabled={dayData.active === false}
                             value={dayData.endTime || "21:00"}
                             onChange={(event) => updateDayField(day.dayOfWeekValue, { endTime: event.target.value })}
-                            style={{ width: "100%", padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13 }}
+                            style={{ width: "100%", padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: 8, fontSize: 14, color: "#334155", outline: "none", transition: "border-color 0.2s" }}
+                            onFocus={(e) => e.target.style.borderColor = "#3b82f6"}
+                            onBlur={(e) => e.target.style.borderColor = "#e2e8f0"}
                           />
-                          <input
-                            type="checkbox"
-                            checked={dayData.active !== false}
-                            onChange={(event) => updateDayField(day.dayOfWeekValue, { active: event.target.checked })}
-                            style={{ width: 18, height: 18 }}
-                          />
+                          <div className="toggle-switch-label" style={{ margin: 0 }}>
+                            <input
+                              type="checkbox"
+                              checked={dayData.active !== false}
+                              onChange={(event) => updateDayField(day.dayOfWeekValue, { active: event.target.checked })}
+                            />
+                            <span className="toggle-switch-slider" />
+                          </div>
                         </div>
                       );
                     })}
@@ -1991,57 +2019,68 @@ export default function SettingsPage() {
                 )}
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#0f172a" }}>Break Types</h3>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#1e293b", display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 18 }}>☕</span> Break Types
+                  </h3>
                   <button
                     type="button"
                     onClick={addBreakToDraft}
-                    style={{ padding: "6px 14px", background: "var(--button-bg-solid, #3b82f6)", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 12 }}
+                    style={{ padding: "8px 16px", background: "#f1f5f9", color: "#334155", border: "1px solid #e2e8f0", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#e2e8f0"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "#f1f5f9"; }}
                   >
-                    + Add Break
+                    <Plus size={14} /> Add Break
                   </button>
                 </div>
 
                 {(shiftDraft.breaks || []).length === 0 && (
-                  <div style={{ padding: "16px", textAlign: "center", color: "#94a3b8", fontSize: 13, background: "#f8fafc", borderRadius: 8, marginBottom: 12 }}>
-                    No breaks added yet.
+                  <div style={{ padding: "24px", textAlign: "center", color: "#94a3b8", fontSize: 14, background: "#f8fafc", borderRadius: 12, border: "1px dashed #cbd5e1", marginBottom: 24 }}>
+                    No breaks added yet. Add lunch or rest breaks here.
                   </div>
                 )}
 
                 {(shiftDraft.breaks || []).map((brk, idx) => (
-                  <div key={idx} style={{ padding: 16, background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0", position: "relative", marginBottom: 12 }}>
-                    <button type="button" onClick={() => removeBreakFromDraft(idx)} style={{ position: "absolute", top: 8, right: 8, background: "#fee2e2", color: "#991b1b", border: "none", cursor: "pointer", width: 24, height: 24, borderRadius: 6, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 100px", gap: 12, marginBottom: 12, paddingRight: 30 }}>
+                  <div key={idx} style={{ padding: 20, background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", position: "relative", marginBottom: 16, boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
+                    <button type="button" onClick={() => removeBreakFromDraft(idx)} style={{ position: "absolute", top: 12, right: 12, background: "#fee2e2", color: "#991b1b", border: "none", cursor: "pointer", width: 28, height: 28, borderRadius: 8, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s" }} onMouseEnter={(e) => e.currentTarget.style.background = "#fca5a5"} onMouseLeave={(e) => e.currentTarget.style.background = "#fee2e2"}>✕</button>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: 20, marginBottom: 16, paddingRight: 40 }}>
                       <label>
-                        <div style={{ fontSize: 12, color: "#475569", marginBottom: 4, fontWeight: 600 }}>Break Name</div>
-                        <input value={brk.name || ""} onChange={(e) => updateBreakInDraft(idx, { name: e.target.value })} placeholder="e.g. Lunch" style={{ padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 6, width: "100%", fontSize: 13, outline: "none" }} />
+                        <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>Break Name</div>
+                        <input value={brk.name || ""} onChange={(e) => updateBreakInDraft(idx, { name: e.target.value })} placeholder="e.g. Lunch" style={{ padding: "10px 14px", border: "2px solid #e2e8f0", borderRadius: 8, width: "100%", fontSize: 14, fontWeight: 600, outline: "none", transition: "border-color 0.2s" }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = "#e2e8f0"} />
                       </label>
-                      <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 18, cursor: "pointer" }}>
-                        <input type="checkbox" checked={brk.active !== false} onChange={(e) => updateBreakInDraft(idx, { active: e.target.checked })} style={{ width: 16, height: 16 }} />
-                        <span style={{ fontSize: 12 }}>Active</span>
-                      </label>
-                    </div>
-                    <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
-                      <div style={{ fontSize: 12, color: "#475569", marginBottom: 8, fontWeight: 600 }}>Break Timing</div>
-                      <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569" }}>
-                          From
-                          <input type="time" value={brk.fromTime || ""} onChange={(e) => updateBreakInDraft(idx, { fromTime: e.target.value })} style={{ padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 6, outline: "none" }} />
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>Status</div>
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                          <div className="toggle-switch-label" style={{ margin: 0 }}>
+                            <input type="checkbox" checked={brk.active !== false} onChange={(e) => updateBreakInDraft(idx, { active: e.target.checked })} />
+                            <span className="toggle-switch-slider" />
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: brk.active !== false ? "#059669" : "#64748b" }}>{brk.active !== false ? "Active" : "Off"}</span>
                         </label>
-                        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569" }}>
-                          To
-                          <input type="time" value={brk.toTime || ""} onChange={(e) => updateBreakInDraft(idx, { toTime: e.target.value })} style={{ padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: 6, outline: "none" }} />
+                      </div>
+                    </div>
+                    <div style={{ borderTop: "1px dashed #e2e8f0", paddingTop: 16 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                        <label>
+                          <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>From Time</div>
+                          <input type="time" value={brk.fromTime || ""} onChange={(e) => updateBreakInDraft(idx, { fromTime: e.target.value })} style={{ padding: "10px 14px", border: "2px solid #e2e8f0", borderRadius: 8, width: "100%", outline: "none", transition: "border-color 0.2s", fontWeight: 600, fontSize: 14 }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = "#e2e8f0"} />
+                        </label>
+                        <label>
+                          <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>To Time</div>
+                          <input type="time" value={brk.toTime || ""} onChange={(e) => updateBreakInDraft(idx, { toTime: e.target.value })} style={{ padding: "10px 14px", border: "2px solid #e2e8f0", borderRadius: 8, width: "100%", outline: "none", transition: "border-color 0.2s", fontWeight: 600, fontSize: 14 }} onFocus={(e) => e.target.style.borderColor = "#3b82f6"} onBlur={(e) => e.target.style.borderColor = "#e2e8f0"} />
                         </label>
                       </div>
                     </div>
                   </div>
                 ))}
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20, paddingTop: 16, borderTop: "1px solid #f1f5f9" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 24, paddingTop: 20, borderTop: "1px solid #f1f5f9" }}>
                   <button
                     type="button"
                     onClick={() => deleteShift(selectedShift.id)}
                     disabled={shiftSaving}
-                    style={{ padding: "10px 20px", background: "#fff", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 8, fontWeight: 600, cursor: shiftSaving ? "not-allowed" : "pointer", fontSize: 14 }}
+                    style={{ padding: "12px 24px", background: "#fff", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 10, fontWeight: 700, cursor: shiftSaving ? "not-allowed" : "pointer", fontSize: 14, transition: "background 0.2s" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "#fef2f2"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; }}
                   >
                     Delete Shift
                   </button>
@@ -2049,7 +2088,7 @@ export default function SettingsPage() {
                     type="button"
                     onClick={saveShift}
                     disabled={shiftSaving}
-                    style={{ padding: "10px 28px", background: "var(--button-bg-solid, #3b82f6)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: shiftSaving ? "not-allowed" : "pointer", fontSize: 14, opacity: shiftSaving ? 0.6 : 1 }}
+                    style={{ padding: "12px 32px", background: "var(--button-bg-solid, #3b82f6)", color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, cursor: shiftSaving ? "not-allowed" : "pointer", fontSize: 14, opacity: shiftSaving ? 0.6 : 1, boxShadow: "0 4px 12px rgba(59, 130, 246, 0.2)" }}
                   >
                     {shiftSaving ? "Saving..." : "Save Changes"}
                   </button>
