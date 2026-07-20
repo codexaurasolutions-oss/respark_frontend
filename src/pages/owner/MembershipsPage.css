@@ -1,232 +1,236 @@
-/* ════════════════════════════════════
-   Memberships & Packages — Clean UI
-════════════════════════════════════ */
+/* ── MembershipsPage Premium CSS ─────────────────────────── */
 
 .mem-page {
   background: #f8fafc;
-  min-height: 100%;
+  min-height: 100vh;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
 }
 
-.mem-page .page-shell {
-  padding: 0;
-  animation: none;
+.page-shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 0 40px;
 }
 
-/* Module tabs */
-.mem-page .module-tabs-shell {
-  padding: 10px 20px 0;
-  margin-bottom: 0;
-  background: #fff;
-  border-bottom: 1px solid #e2e8f0;
+/* ── Grid layout ─────────────────────────── */
+.settings-section-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 0 28px;
 }
 
-/* ─── FORCE PROPER 2-COLUMN LAYOUT ─── */
-.mem-page .settings-section-grid {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: flex-start !important;
-  gap: 0 !important;
-  min-height: calc(100vh - 155px);
+@media (max-width: 900px) {
+  .settings-section-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-/* Every direct child of grid */
-.mem-page .settings-section-grid > * {
-  min-height: calc(100vh - 155px);
-  overflow-y: auto;
+/* ── Panel Card ─────────────────────────── */
+.panel-card {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-/* First child = form column (left) */
-.mem-page .settings-section-grid > *:first-child {
-  width: 380px !important;
-  min-width: 380px !important;
-  max-width: 380px !important;
-  flex-shrink: 0;
-  background: #fff !important;
-  border: none !important;
-  border-right: 1px solid #e2e8f0 !important;
-  padding: 16px !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
+.panel-card h3 {
+  margin: 0 0 18px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-/* Second child = list column (right) */
-.mem-page .settings-section-grid > *:nth-child(2) {
-  flex: 1;
-  background: #f8fafc !important;
-  padding: 16px !important;
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
+/* ── List items ─────────────────────────── */
+.list-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-/* Third child if exists (assign panel) */
-.mem-page .settings-section-grid > *:nth-child(3) {
-  display: none; /* hide overflow panels */
+.list-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: box-shadow 0.2s, border-color 0.2s;
 }
 
-/* panel-card inside right column */
-.mem-page .panel-card {
-  background: #fff !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 8px !important;
-  padding: 14px 16px !important;
-  box-shadow: none !important;
-  transition: none !important;
+.list-item:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  border-color: #bfdbfe;
 }
 
-.mem-page .panel-card:hover {
-  transform: none !important;
-  box-shadow: none !important;
+.item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
 }
 
-.mem-page .panel-card h3 {
-  font-size: 0.88rem !important;
-  font-weight: 700 !important;
-  color: #0f172a !important;
-  margin: 0 0 12px 0 !important;
-  padding-bottom: 8px !important;
-  border-bottom: 1px solid #f1f5f9 !important;
+.item-head strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
 }
 
-/* ─── FORM ELEMENTS ─── */
-.mem-page label {
-  font-size: 0.78rem;
-  gap: 4px;
-}
-
-.mem-page label span.muted {
-  font-size: 0.72rem;
+.item-meta {
+  font-size: 12px;
   color: #64748b;
-  font-weight: 600;
+  margin-top: 4px;
+  font-weight: 500;
 }
 
+/* ── Badges ─────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  white-space: nowrap;
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ── Inline actions ─────────────────────────── */
+.inline-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── CTA Buttons ─────────────────────────── */
+.cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 16px;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.cta-secondary:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+/* ── Secondary / Lifecycle button ─────────────────────────── */
+.secondary-button {
+  padding: 8px 18px;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.secondary-button:hover {
+  background: #dbeafe;
+}
+
+/* ── Form inputs ─────────────────────────── */
 .mem-page input[type="text"],
 .mem-page input[type="number"],
 .mem-page input[type="date"],
 .mem-page select,
 .mem-page textarea {
-  padding: 6px 10px !important;
-  font-size: 0.78rem !important;
-  border-radius: 6px !important;
-  border: 1px solid #e2e8f0 !important;
-  min-height: unset !important;
-  background: #fff !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #0f172a;
+  background: #fff;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
 }
 
 .mem-page input:focus,
 .mem-page select:focus,
 .mem-page textarea:focus {
-  border-color: #3b82f6 !important;
-  outline: none !important;
-  box-shadow: none !important;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.08);
 }
 
-/* ─── BUTTONS ─── */
-.mem-page button {
-  padding: 5px 12px !important;
-  font-size: 0.75rem !important;
-  border-radius: 6px !important;
-  min-height: unset !important;
-  box-shadow: none !important;
+.mem-page label span.muted {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 5px;
 }
 
-/* ─── LIST ITEMS ─── */
-.mem-page .list-stack {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 6px !important;
+.mem-page label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  color: #0f172a;
 }
 
-.mem-page .list-item {
-  padding: 10px 12px !important;
-  border-radius: 7px !important;
-  border: 1px solid #e2e8f0 !important;
-  background: #fff !important;
-  transition: background 140ms !important;
+.mem-page button[type="button"]:not(.cta-secondary):not(.secondary-button):not(.inline-actions button),
+.mem-page button[type="submit"] {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.mem-page .list-item:hover {
-  background: #f8fafc !important;
-  transform: none !important;
-  box-shadow: none !important;
+.mem-page button[type="submit"] {
+  background: #0f172a;
+  color: #fff;
 }
 
-.mem-page .item-head {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  gap: 10px !important;
+.mem-page button[type="submit"]:hover {
+  background: #1e293b;
 }
 
-.mem-page .item-head strong {
-  font-size: 0.82rem !important;
-  font-weight: 700 !important;
-  color: #0f172a !important;
+/* ── Error / Success texts ─────────────────────────── */
+.error-text {
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
 }
 
-.mem-page .item-meta {
-  font-size: 0.7rem !important;
-  color: #64748b !important;
-  margin-top: 2px !important;
+.success-text {
+  color: #16a34a;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
 }
 
-.mem-page .badge {
-  font-size: 0.68rem !important;
-  padding: 2px 8px !important;
-  background: #f1f5f9 !important;
-  color: #475569 !important;
-  border-radius: 20px !important;
-  border: 1px solid #e2e8f0 !important;
-  font-weight: 600 !important;
-  white-space: nowrap !important;
-  flex-shrink: 0 !important;
-}
-
-/* Edit link */
-.mem-page .inline-actions {
-  margin-top: 6px !important;
-}
-
-.mem-page .cta-secondary,
-.mem-page a.cta-secondary {
-  padding: 3px 10px !important;
-  font-size: 0.7rem !important;
-  border-radius: 5px !important;
-  border: 1px solid #e2e8f0 !important;
-  background: #fff !important;
-  color: #475569 !important;
-  cursor: pointer !important;
-  min-height: unset !important;
-  box-shadow: none !important;
-  font-weight: 600 !important;
-  text-decoration: none !important;
-  display: inline-flex !important;
-  align-items: center !important;
-}
-
-.mem-page .cta-secondary:hover,
-.mem-page a.cta-secondary:hover {
-  background: #eff6ff !important;
-  color: #2563eb !important;
-  border-color: #bfdbfe !important;
-  transform: none !important;
-}
-
-@media (max-width: 900px) {
-  .mem-page .settings-section-grid {
-    flex-direction: column !important;
-  }
-  .mem-page .settings-section-grid > *:first-child {
-    width: 100% !important;
-    min-width: unset !important;
-    max-width: unset !important;
-    min-height: auto !important;
-    border-right: none !important;
-    border-bottom: 1px solid #e2e8f0 !important;
-  }
-  .mem-page .settings-section-grid > *:nth-child(2) {
-    min-height: auto !important;
-  }
+/* ── Muted text ─────────────────────────── */
+.muted {
+  color: #64748b;
+  font-size: 13px;
 }

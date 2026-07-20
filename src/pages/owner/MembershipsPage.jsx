@@ -324,7 +324,19 @@ export default function MembershipsPage() {
   ));
 
   return (
-    <div className="mem-page">
+    <div className="mem-page" style={{ background: "#f8fafc", minHeight: "100vh" }}>
+      {status.error && (
+        <div style={{ position: "fixed", top: 80, right: 24, background: "#fef2f2", color: "#dc2626", padding: "12px 20px", borderRadius: 10, fontSize: 14, zIndex: 9999, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", gap: 12, fontWeight: 600 }}>
+          {status.error}
+          <button onClick={() => setStatus({...status, error: ""})} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontWeight: 700, fontSize: 16 }}>×</button>
+        </div>
+      )}
+      {status.success && (
+        <div style={{ position: "fixed", top: 80, right: 24, background: "#ecfdf5", color: "#059669", padding: "12px 20px", borderRadius: 10, fontSize: 14, zIndex: 9999, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", gap: 12, fontWeight: 600 }}>
+          ✓ {status.success}
+          <button onClick={() => setStatus({...status, success: ""})} style={{ background: "none", border: "none", color: "#059669", cursor: "pointer", fontWeight: 700, fontSize: 16 }}>×</button>
+        </div>
+      )}
       <div className="page-shell">
       {customerId ? (
         <ModuleTabs
@@ -359,12 +371,12 @@ export default function MembershipsPage() {
               <div key={item.id} className="list-item">
                 <div className="item-head">
                   <strong>{customerMembershipMode ? item.membershipPlan?.name : item.name}</strong>
-                  <span className="badge">{customerMembershipMode ? item.status : Number(item.price || 0).toFixed(2)}</span>
+                  <span className="badge">{customerMembershipMode ? item.status : `${formatMoney(Number(item.price || 0))}`}</span>
                 </div>
                 <div className="item-meta">
                   {customerMembershipMode
-                    ? `Ends ${String(item.endsAt).slice(0, 10)} | Wallet ${Number(item.remainingWalletValue || 0).toFixed(2)}`
-                    : `${item.benefitType} | ${item.validityDays} days`}
+                    ? `Ends ${String(item.endsAt).slice(0, 10)} · Wallet ${formatMoney(Number(item.remainingWalletValue || 0))}`
+                    : `${item.benefitType === "WALLET_VALUE" ? "Fixed Wallet" : "Percentage Discount"} · ${item.validityDays} days`}
                 </div>
                 {(customerMembershipMode ? item.membershipPlan?.description : item.description) ? (
                   <p className="muted" style={{ margin: "8px 0 0" }}>{customerMembershipMode ? item.membershipPlan.description : item.description}</p>
@@ -377,7 +389,7 @@ export default function MembershipsPage() {
                   </div>
                 ) : null}
                 {!customerMembershipMode && (
-                  <div className="inline-actions" style={{ marginTop: 10, display: "flex", gap: 8 }}>
+                  <div className="inline-actions" style={{ marginTop: 12, display: "flex", gap: 8 }}>
                     <Link to={`/admin/memberships/${item.id}/edit`} className="cta-secondary">Edit</Link>
                     <button type="button" className="cta-secondary" style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }} disabled={deletingId === item.id} onClick={async () => {
                       if (!window.confirm(`Delete membership plan "${item.name}"?`)) return;
@@ -392,7 +404,7 @@ export default function MembershipsPage() {
                       } finally {
                         setDeletingId(null);
                       }
-                    }}>{deletingId === item.id ? "..." : <Trash2 size={14} />}</button>
+                    }}>{deletingId === item.id ? "Deleting..." : <Trash2 size={14} />}</button>
                   </div>
                 )}
                 {customerMembershipMode && (
@@ -414,15 +426,15 @@ export default function MembershipsPage() {
               <div key={item.id} className="list-item">
                 <div className="item-head">
                   <strong>{customerPackageMode ? item.package?.name : item.name}</strong>
-                  <span className="badge">{customerPackageMode ? item.status : Number(item.price || 0).toFixed(2)}</span>
+                  <span className="badge">{customerPackageMode ? item.status : formatMoney(Number(item.price || 0))}</span>
                 </div>
                 <div className="item-meta">
                   {customerPackageMode
-                    ? `Remaining ${item.remainingSessions} | Ends ${String(item.endsAt).slice(0, 10)}`
-                    : `${item.totalSessions} sessions | ${item.validityDays} days`}
+                    ? `Remaining ${item.remainingSessions} sessions · Ends ${String(item.endsAt).slice(0, 10)}`
+                    : `${item.totalSessions} sessions · ${item.validityDays} days validity`}
                 </div>
                 {!customerPackageMode && (
-                  <div className="inline-actions" style={{ marginTop: 10, display: "flex", gap: 8 }}>
+                  <div className="inline-actions" style={{ marginTop: 12, display: "flex", gap: 8 }}>
                     <Link to={`/admin/packages/${item.id}/edit`} className="cta-secondary">Edit</Link>
                     <button type="button" className="cta-secondary" style={{ background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca" }} disabled={deletingId === item.id} onClick={async () => {
                       if (!window.confirm(`Delete package "${item.name}"?`)) return;
@@ -437,7 +449,7 @@ export default function MembershipsPage() {
                       } finally {
                         setDeletingId(null);
                       }
-                    }}>{deletingId === item.id ? "..." : <Trash2 size={14} />}</button>
+                    }}>{deletingId === item.id ? "Deleting..." : <Trash2 size={14} />}</button>
                   </div>
                 )}
                 {customerPackageMode && (
@@ -453,9 +465,9 @@ export default function MembershipsPage() {
         </div>}
 
       {(activeSection === "memberships") && !customerMembershipMode && (
-          <div style={{ background: "transparent", border: "none", padding: "0" }}>
-            <h3 style={{ color: "#2563eb", margin: "0 0 14px 0", fontSize: "0.88rem", fontWeight: 700, paddingBottom: "8px", borderBottom: "1px solid #f1f5f9" }}>
-              {membershipEditMode ? "Edit Membership Plan" : "Create New Membership Plan"}
+          <div className="panel-card">
+            <h3 style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: 14, marginBottom: 20 }}>
+              {membershipEditMode ? "✏️ Edit Membership Plan" : "✦ Create Membership Plan"}
             </h3>
             
             <form onSubmit={async (event) => {
@@ -704,9 +716,9 @@ export default function MembershipsPage() {
         )}
 
         {(activeSection === "packages") && !customerPackageMode && (
-          <div style={{ background: "transparent", border: "none", padding: "0" }}>
-            <h3 style={{ color: "#2563eb", margin: "0 0 14px 0", fontSize: "0.88rem", fontWeight: 700, paddingBottom: "8px", borderBottom: "1px solid #f1f5f9" }}>
-              {packageEditMode ? "Edit Package" : "Package"}
+          <div className="panel-card">
+            <h3 style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: 14, marginBottom: 20 }}>
+              {packageEditMode ? "✏️ Edit Package" : "✦ Create Package"}
             </h3>
             <form onSubmit={async (event) => {
               event.preventDefault();
@@ -945,7 +957,7 @@ export default function MembershipsPage() {
 
         {(activeSection === "memberships") && <div className="panel-card">
           <h3>Assign Membership</h3>
-          <div className="item-meta" style={{ marginBottom: 10 }}>{customerScopeLabel}</div>
+          <p className="muted" style={{ marginTop: 0, marginBottom: 16 }}>{customerScopeLabel}</p>
           <form onSubmit={async (event) => {
             event.preventDefault();
             setStatus({ error: "", success: "" });
@@ -958,40 +970,46 @@ export default function MembershipsPage() {
               await loadAll(customerId || assignMembershipForm.customerId);
               setAssignMembershipForm({ customerId: customerId || "", membershipPlanId: "", startsAt: "" });
               setStatus({ error: "", success: "Membership assigned." });
+              setTimeout(() => setStatus({ error: "", success: "" }), 3000);
             } catch (error) {
               setStatus({ error: formatApiError(error, "Could not assign membership"), success: "" });
             }
-          }} style={{ display: "grid", gap: 10 }}>
+          }} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {!customerId && (
               <label>
-              <span className="muted">Customer</span>
-              <select value={assignMembershipForm.customerId} onChange={async (event) => {
-                const nextCustomerId = event.target.value;
-                setAssignMembershipForm((current) => ({ ...current, customerId: nextCustomerId }));
-                if (nextCustomerId) await loadAll(nextCustomerId);
-              }}>
-                <option value="">Select customer</option>
-                {loading ? <option value="" disabled>Loading customers...</option> : null}
-                {!loading && !customers.length ? <option value="" disabled>No customers found</option> : null}
-                {customerOptions}
-              </select>
-            </label>
+                <span className="muted">Customer</span>
+                <select value={assignMembershipForm.customerId} onChange={async (event) => {
+                  const nextCustomerId = event.target.value;
+                  setAssignMembershipForm((current) => ({ ...current, customerId: nextCustomerId }));
+                  if (nextCustomerId) await loadAll(nextCustomerId);
+                }}>
+                  <option value="">Select customer</option>
+                  {loading ? <option value="" disabled>Loading customers...</option> : null}
+                  {!loading && !customers.length ? <option value="" disabled>No customers found</option> : null}
+                  {customerOptions}
+                </select>
+              </label>
             )}
             <label>
               <span className="muted">Membership plan</span>
               <select value={assignMembershipForm.membershipPlanId} onChange={(event) => setAssignMembershipForm((current) => ({ ...current, membershipPlanId: event.target.value }))}>
-              <option value="">Select membership plan</option>
-              {memberships.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </select>
+                <option value="">Select membership plan</option>
+                {memberships.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
             </label>
-            <input type="date" value={assignMembershipForm.startsAt} onChange={(event) => setAssignMembershipForm((current) => ({ ...current, startsAt: event.target.value }))} />
-            <button>Assign Membership</button>
+            <label>
+              <span className="muted">Start Date</span>
+              <input type="date" value={assignMembershipForm.startsAt} onChange={(event) => setAssignMembershipForm((current) => ({ ...current, startsAt: event.target.value }))} />
+            </label>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button type="submit" style={{ padding: "10px 28px", borderRadius: 8, border: "none", background: "#0f172a", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>Assign Membership</button>
+            </div>
           </form>
         </div>}
 
         {(activeSection === "packages") && <div className="panel-card">
           <h3>Assign Package</h3>
-          <div className="item-meta" style={{ marginBottom: 10 }}>{customerScopeLabel}</div>
+          <p className="muted" style={{ marginTop: 0, marginBottom: 16 }}>{customerScopeLabel}</p>
           <form onSubmit={async (event) => {
             event.preventDefault();
             setStatus({ error: "", success: "" });
@@ -1004,34 +1022,40 @@ export default function MembershipsPage() {
               await loadAll(customerId || assignPackageForm.customerId);
               setAssignPackageForm({ customerId: customerId || "", packageId: "", startsAt: "" });
               setStatus({ error: "", success: "Package assigned." });
+              setTimeout(() => setStatus({ error: "", success: "" }), 3000);
             } catch (error) {
               setStatus({ error: formatApiError(error, "Could not assign package"), success: "" });
             }
-          }} style={{ display: "grid", gap: 10 }}>
+          }} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {!customerId && (
               <label>
-              <span className="muted">Customer</span>
-              <select value={assignPackageForm.customerId} onChange={async (event) => {
-                const nextCustomerId = event.target.value;
-                setAssignPackageForm((current) => ({ ...current, customerId: nextCustomerId }));
-                if (nextCustomerId) await loadAll(nextCustomerId);
-              }}>
-                <option value="">Select customer</option>
-                {loading ? <option value="" disabled>Loading customers...</option> : null}
-                {!loading && !customers.length ? <option value="" disabled>No customers found</option> : null}
-                {customerOptions}
-              </select>
-            </label>
+                <span className="muted">Customer</span>
+                <select value={assignPackageForm.customerId} onChange={async (event) => {
+                  const nextCustomerId = event.target.value;
+                  setAssignPackageForm((current) => ({ ...current, customerId: nextCustomerId }));
+                  if (nextCustomerId) await loadAll(nextCustomerId);
+                }}>
+                  <option value="">Select customer</option>
+                  {loading ? <option value="" disabled>Loading customers...</option> : null}
+                  {!loading && !customers.length ? <option value="" disabled>No customers found</option> : null}
+                  {customerOptions}
+                </select>
+              </label>
             )}
             <label>
               <span className="muted">Package</span>
               <select value={assignPackageForm.packageId} onChange={(event) => setAssignPackageForm((current) => ({ ...current, packageId: event.target.value }))}>
-              <option value="">Select package</option>
-              {packages.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </select>
+                <option value="">Select package</option>
+                {packages.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
             </label>
-            <input type="date" value={assignPackageForm.startsAt} onChange={(event) => setAssignPackageForm((current) => ({ ...current, startsAt: event.target.value }))} />
-            <button>Assign Package</button>
+            <label>
+              <span className="muted">Start Date</span>
+              <input type="date" value={assignPackageForm.startsAt} onChange={(event) => setAssignPackageForm((current) => ({ ...current, startsAt: event.target.value }))} />
+            </label>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button type="submit" style={{ padding: "10px 28px", borderRadius: 8, border: "none", background: "#0f172a", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>Assign Package</button>
+            </div>
           </form>
         </div>}
       </div>
@@ -1238,12 +1262,7 @@ export default function MembershipsPage() {
         </div>
       )}
 
-      {(status.error || status.success) && (
-        <div className="panel-card" style={{ marginTop: 18 }}>
-          {status.error && <p className="error-text">{status.error}</p>}
-          {status.success && <p className="success-text">{status.success}</p>}
-        </div>
-      )}
+      {/* Status toasts are shown at top of page now */}
     </div>
     </div>
   );
