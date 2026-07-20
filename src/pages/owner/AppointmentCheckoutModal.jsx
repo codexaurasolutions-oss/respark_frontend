@@ -52,6 +52,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
   
   const [paymentDraft, setPaymentDraft] = useState({ online: "", offline: "" });
   const [invoiceDiscount, setInvoiceDiscount] = useState(0);
+  const [consumableOverrides, setConsumableOverrides] = useState({});
   const [status, setStatus] = useState({ error: "", success: "" });
   const [isCompleting, setIsCompleting] = useState(false);
   const [billInvoice, setBillInvoice] = useState(null); // For receipt popup
@@ -432,6 +433,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
         notes: form.notes,
         discount: Number(invoiceDiscount || 0),
         additionalPayments,
+        consumableOverrides,
         items: form.items.map(item => ({
           itemType: item.itemType,
           serviceId: item.itemType === 'SERVICE' ? (item.serviceId || null) : null,
@@ -631,13 +633,30 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
                           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                             <div style={{ fontWeight: 600, color: "#1e293b" }}>{item.name || "Item"}</div>
                             {item.itemType === 'SERVICE' && (
-                              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                                {posContext.services.find(s => s.id === item.serviceId)?.consumables?.map((c, i) => (
-                                  <div key={i} style={{ fontSize: "0.6rem", color: "#64748b", display: "flex", alignItems: "center", gap: "4px" }}>
-                                    <span style={{ color: "#3b82f6" }}>↳</span>
-                                    <span>{c.product?.name} ({c.reqdQty} {c.product?.unit || 'qty'})</span>
-                                  </div>
-                                ))}
+                              <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "3px" }}>
+                                {posContext.services.find(s => s.id === item.serviceId)?.consumables?.map((c, i) => {
+                                  const overrideKey = `${item.serviceId}:${c.productId}`;
+                                  const currentVal = consumableOverrides[overrideKey] !== undefined ? consumableOverrides[overrideKey] : c.reqdQty;
+                                  const unit = c.product?.unit || (c.product?.productType === 'CONSUMABLE' ? 'ml' : 'pcs');
+                                  return (
+                                    <div key={i} style={{ fontSize: "0.65rem", color: "#334155", display: "flex", alignItems: "center", gap: "4px", background: "#f1f5f9", padding: "2px 6px", borderRadius: "4px", width: "fit-content" }}>
+                                      <span style={{ color: "#2563eb", fontWeight: 600 }}>🧪 {c.product?.name}:</span>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={currentVal}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          setConsumableOverrides(prev => ({ ...prev, [overrideKey]: val }));
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        style={{ width: "42px", padding: "1px 3px", border: "1px solid #cbd5e1", borderRadius: "4px", fontSize: "0.65rem", textAlign: "center", fontWeight: 700, background: "#fff" }}
+                                        title="Edit quantity of consumable used for this client"
+                                      />
+                                      <span style={{ fontWeight: 600, color: "#64748b" }}>{unit}</span>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             )}
                           </div>
