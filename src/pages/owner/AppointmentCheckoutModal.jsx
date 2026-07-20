@@ -419,7 +419,7 @@ export default function AppointmentCheckoutModal({ appointment, onClose, onCompl
         await api.patch(`/owner/appointments/${appointment.id}/status`, { status: "COMPLETED" });
         
         // 2. Convert to Invoice (this creates the base invoice from original items)
-        const convertRes = await api.post(`/owner/appointments/${appointment.id}/convert-to-invoice`);
+        const convertRes = await api.post(`/owner/appointments/${appointment.id}/convert-to-invoice`, { consumableOverrides });
         activeInvoiceId = convertRes.data.id;
       }
 
