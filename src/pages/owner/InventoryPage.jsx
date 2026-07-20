@@ -315,7 +315,7 @@ export default function InventoryPage() {
 
   const totalStock = products.reduce((acc, p) => acc + Number(p.currentStock || 0), 0);
   const activeItems = products.filter(p => p.isActive !== false).length;
-  const pendingOrders = orders.filter(o => o.status === "DRAFT" || o.status === "ORDERED").length;
+  const pendingOrders = orders.filter(o => o.status === "DRAFT").length;
   const approvedOrders = orders.filter(o => o.status === "ORDERED" || o.status === "PARTIALLY_RECEIVED" || o.status === "RECEIVED").length;
   const rejectedOrders = orders.filter(o => o.status === "CANCELLED").length;
   const stockYetToBeReceived = orders.reduce((acc, order) => (
