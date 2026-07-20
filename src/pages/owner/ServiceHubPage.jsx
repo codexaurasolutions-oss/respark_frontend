@@ -657,8 +657,8 @@ export default function ServiceHubPage() {
                           setSrvForm({...srvForm, consumables: newItems});
                         }} style={{ flex: 1, minWidth: 0 }} />
                         {item.productId && (
-                          <span style={{ fontSize: 12, color: "#64748b", flexShrink: 0, whiteSpace: "nowrap" }}>
-                            {products.find(p => p.id === item.productId)?.unit || "pcs"}
+                          <span style={{ fontSize: 12, color: "#64748b", flexShrink: 0, whiteSpace: "nowrap", display: "inline-block", minWidth: 24 }}>
+                            {products.find(p => p.id === item.productId)?.unit || (products.find(p => p.id === item.productId)?.productType === "CONSUMABLE" ? "ml" : "pcs")}
                           </span>
                         )}
                       </div>

@@ -605,8 +605,8 @@ export default function CouponsPage() {
               const isExpired = gc.expiresAt && new Date(gc.expiresAt) < new Date();
               const daysLeft = gc.expiresAt ? Math.max(0, Math.ceil((new Date(gc.expiresAt) - new Date()) / (1000 * 60 * 60 * 24))) : null;
               return (
-                <div key={gc.id} style={{ background: gc.isActive ? "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)" : "#f8fafc", border: gc.isActive ? "none" : "1px solid #e2e8f0", borderRadius: 16, padding: 24, color: gc.isActive ? "#fff" : "#64748b", position: "relative", overflow: "hidden", boxShadow: gc.isActive ? "0 10px 25px -5px rgba(15, 23, 42, 0.4)" : "none", transition: "transform 0.2s" }}>
-                  {gc.isActive && <div style={{ position: "absolute", top: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle, rgba(56,189,248,0.15) 0%, rgba(0,0,0,0) 70%)" }} />}
+                <div key={gc.id} style={{ background: gc.isActive ? "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)" : "#f8fafc", border: gc.isActive ? "none" : "1px solid #e2e8f0", borderRadius: 16, padding: 24, color: gc.isActive ? "#fff" : "#64748b", position: "relative", overflow: "hidden", boxShadow: gc.isActive ? "0 10px 25px -5px rgba(79, 70, 229, 0.4)" : "none", transition: "transform 0.2s" }}>
+                  {gc.isActive && <div style={{ position: "absolute", top: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0) 70%)" }} />}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, position: "relative", zIndex: 1 }}>
                     <div>
                       <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, opacity: 0.8, marginBottom: 4 }}>Gift Card</div>
