@@ -11,6 +11,7 @@ import { useSalonSettings } from "../../context/SalonSettingsContext";
 import { downloadFromApi } from "../../utils/download";
 import { formatApiError } from "../../utils/apiError";
 import "./PosDashboard.css";
+import "./PosPage.css";
 const invoiceLabel = (item) => item?.serviceName || item?.productName || item?.name || "Item";
 const invoiceStatusClass = (status) => {
   const normalized = String(status || "").toUpperCase();
@@ -883,119 +884,138 @@ export default function PosDashboardPage() {
               <button type="button" onClick={closeDetail} style={{ position: 'absolute', right: 0, background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '50%', cursor: 'pointer', padding: '6px', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
             </div>
 
-            <div className="pos-detail-split-pane">
-              <div className="pos-detail-left" style={{ opacity: isEditing ? 1 : 0.6, pointerEvents: isEditing ? "auto" : "none" }}>
-                <div className="pos-detail-tabs">
-                  <button className={posGender === "FEMALE" ? "active" : ""} onClick={() => setPosGender("FEMALE")}>Female</button>
-                  <button className={posGender === "MALE" ? "active" : ""} onClick={() => setPosGender("MALE")}>Male</button>
-                  <div className="pos-detail-search">
-                    <input type="text" placeholder="Search Service" value={serviceSearch} onChange={(event) => setServiceSearch(event.target.value)} />
+            <div className="pos-layout" style={{ height: "calc(95vh - 50px)", margin: 0, padding: 0, borderRadius: "0 0 16px 16px" }}>
+              {/* TOP BAR */}
+              <div className="pos-topbar" style={{ padding: "12px 20px" }}>
+                <div className="pos-topbar-left">
+                  <div className="pos-gender-toggles">
+                    <button className={`pos-gender-btn ${posGender === "ALL" ? "active" : ""}`} onClick={() => setPosGender("ALL")}>All</button>
+                    <button className={`pos-gender-btn ${posGender === "FEMALE" ? "active" : ""}`} onClick={() => setPosGender("FEMALE")}>Female</button>
+                    <button className={`pos-gender-btn ${posGender === "MALE" ? "active" : ""}`} onClick={() => setPosGender("MALE")}>Male</button>
+                  </div>
+                  <div className="pos-search-wrapper">
+                    <input 
+                      placeholder={posTab === "billing" ? "Search Service" : "Search Product"} 
+                      value={posTab === "billing" ? serviceSearch : productSearch} 
+                      onChange={(e) => {
+                          const val = e.target.value;
+                          if (posTab === "billing") setServiceSearch(val);
+                          else setProductSearch(val);
+                        }} 
+                    />
+                    <svg className="pos-search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                   </div>
                 </div>
-
-                <div className="pos-detail-cat-grid">
-                  {(() => {
-                    const catColors = [
-                      { bg: "linear-gradient(135deg, #3b82f6, #2563eb)", border: "#2563eb" },
-                      { bg: "linear-gradient(135deg, #10b981, #059669)", border: "#059669" },
-                      { bg: "linear-gradient(135deg, #f472b6, #db2777)", border: "#db2777" },
-                      { bg: "linear-gradient(135deg, #a78bfa, #7c3aed)", border: "#7c3aed" },
-                      { bg: "linear-gradient(135deg, #fb923c, #ea580c)", border: "#ea580c" },
-                      { bg: "linear-gradient(135deg, #facc15, #ca8a04)", border: "#ca8a04" },
-                    ];
-                    const allActive = !serviceCategoryFilter;
-                    const allStyle = allActive ? { background: catColors[0].bg, borderColor: catColors[0].border, color: "#fff" } : {};
-                    return (
-                      <>
-                        <button className={allActive ? "active" : ""} style={!allActive ? { background: "#fff", border: "1px solid #cdd9ea", color: "#334155" } : allStyle} onClick={() => setServiceCategoryFilter("")}>ALL</button>
-                        {(posContext.serviceCategories || []).slice(0, 6).map((category, idx) => {
-                          const isActive = serviceCategoryFilter === category.name;
-                          const c = catColors[(idx + 1) % catColors.length];
-                          return (
-                            <button key={category.id} className={isActive ? "active" : ""} style={isActive ? { background: c.bg, borderColor: c.border, color: "#fff" } : { background: "#fff", border: "1px solid #cdd9ea", color: "#334155" }} onClick={() => setServiceCategoryFilter(category.name)}>
-                              {category.name}
-                            </button>
-                          );
-                        })}
-                      </>
-                    );
-                  })()}
-                </div>
-
-                <div className="pos-detail-cat-list">
-                  {posTab === "products" ? (
-                    productTileGroups.length > 0 ? (
-                      productTileGroups.map((group) => (
-                        <div key={group.title}>
-                          <div className="pos-detail-cat-title">{group.title}</div>
-                          <div className="pos-detail-cat-grid" style={{ gridTemplateColumns: "1fr", gap: "8px", margin: "10px 0" }}>
-                            {group.items.map((product) => (
-                              <div key={product.id} className="pos-detail-mock-card" onClick={() => addQuickProduct(product)}>
-                                <span>{product.name}</span>
-                                <span className="pos-detail-mock-card-price"><span className="green">{product.sellingPrice || product.price || 0}</span></span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: '0.9rem' }}>No products found.</div>
-                    )
-                  ) : (
-                    serviceTileGroups.length > 0 ? (
-                      serviceTileGroups.map((group) => (
-                        <div key={group.title}>
-                          <div className="pos-detail-cat-title">{group.title}</div>
-                          <div className="pos-detail-cat-grid" style={{ gridTemplateColumns: "1fr", gap: "8px", margin: "10px 0" }}>
-                            {group.items.map((service) => (
-                              <div key={service.id} className="pos-detail-mock-card" onClick={() => addQuickService(service)}>
-                                <span>{service.name}</span>
-                                <span className="pos-detail-mock-card-price"><span className="green">{service.salesPrice || service.price}</span></span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: '0.9rem' }}>No services found.</div>
-                    )
-                  )}
+                <div className="pos-topbar-right">
+                  <button className={`pos-top-tab ${posTab === "billing" ? "active" : ""}`} onClick={() => setPosTab("billing")}>Add Service</button>
+                  <button className={`pos-top-tab ${posTab === "products" ? "active" : ""}`} onClick={() => setPosTab("products")}>Add Product</button>
+                  <button className="pos-top-tab" onClick={() => { setPkgModalPkg(null); setPkgDraft({ staffId: "", price: "", validityDays: "", purchaseDate: new Date().toISOString().slice(0,10), customServices: [], customProducts: [], balance: "", online: "", offline: "", remark: "" }); setShowPkgModal(true); }}>Add Package</button>
+                  <button className="pos-top-tab" onClick={() => { setGcModalGc(null); setGcDraft({ staffId: "", price: "", validityDays: "30", purchaseDate: new Date().toISOString().slice(0,10) }); setShowGcModal(true); }}>Add GiftCard</button>
+                  <button className="pos-top-tab" onClick={() => { setMemModalMem(null); setMemDraft({ staffId: "", price: "", validityDays: "", purchaseDate: new Date().toISOString().slice(0,10), customServices: [] }); setShowMemModal(true); }}>Add Membership</button>
                 </div>
               </div>
 
-              <div className="pos-detail-right">
-                <div className="pos-detail-top-tabs">
-                  <button className={posTab === "billing" ? "active" : ""} onClick={() => setPosTab("billing")}>Add Service</button>
-                  <button className={posTab === "products" ? "active" : ""} onClick={() => setPosTab("products")}>Add Product</button>
-                  <button type="button" onClick={() => { setPkgModalPkg(null); setPkgDraft({ staffId: "", price: "", validityDays: "", purchaseDate: new Date().toISOString().slice(0,10), customServices: [] }); setShowPkgModal(true); }}>Add Package</button>
-                  <button type="button" onClick={() => { setGcModalGc(null); setGcDraft({ staffId: "", price: "", validityDays: "30", purchaseDate: new Date().toISOString().slice(0,10) }); setShowGcModal(true); }}>Add GiftCard</button>
-                  <button type="button" onClick={() => { setMemModalMem(null); setMemDraft({ staffId: "", price: "", validityDays: "", purchaseDate: new Date().toISOString().slice(0,10), customServices: [] }); setShowMemModal(true); }}>Add Membership</button>
-                </div>
-
-                <div className="pos-detail-invoice-header" style={{ marginBottom: 12, paddingBottom: 8, borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px" }}>
-                  <strong>Invoice</strong>
-                  <span>{new Date(invoiceDetail?.createdAt || detail.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).replace(/ /g, "-")}</span>
-                </div>
-
-                <div className="pos-detail-guest-grid">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><strong>Guest :</strong> <span style={{ flex: 1, borderBottom: '1px solid #e2e8f0', padding: '2px 4px' }}>{detail.customer?.name || "Walk-in"}</span></div>
-                  <div><strong>DOB :</strong> NA</div>
-                  <div><strong>Last Visited :</strong> NA</div>
-                  <div><strong>Membership:</strong> NA</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><strong>Phone :</strong> <span style={{ flex: 1, borderBottom: '1px solid #e2e8f0', padding: '2px 4px' }}>{detail.customer?.phone || ""}</span></div>
-                  <div><strong>Anniv :</strong> NA</div>
-                  <div><strong>Due Bal :</strong> NA</div>
-                  <div><strong>Package:</strong> NA</div>
-                </div>
-
-                {status.error || status.success ? (
-                  <div style={{ margin: "12px 0", padding: "10px 12px", borderRadius: 10, background: status.error ? "#fee2e2" : "#dcfce7", color: status.error ? "#991b1b" : "#166534", fontWeight: 600 }}>
-                    {status.error || status.success}
+              <div className="pos-body" style={{ height: "calc(100% - 65px)" }}>
+                {/* LEFT SIDEBAR */}
+                <div className="pos-sidebar" style={{ opacity: isEditing ? 1 : 0.6, pointerEvents: isEditing ? "auto" : "none" }}>
+                  <div className="pos-cat-grid">
+                    {posTab === "products" ? (
+                      <>
+                        <button className={`pos-cat-btn ${!productCategoryFilter ? "active" : ""}`} onClick={() => setProductCategoryFilter("")}>ALL</button>
+                        {(posContext.productCategories || []).slice(0, 6).map(c => <button key={c.id || c.name} className={`pos-cat-btn ${productCategoryFilter === (c.id || c.name) ? "active" : ""}`} onClick={() => setProductCategoryFilter(c.id || c.name)}>{c.name}</button>)}
+                      </>
+                    ) : (
+                      <>
+                        <button className={`pos-cat-btn ${!serviceCategoryFilter ? "active" : ""}`} onClick={() => setServiceCategoryFilter("")}>ALL</button>
+                        {(posContext.serviceCategories || []).slice(0, 6).map(c => <button key={c.id} className={`pos-cat-btn ${serviceCategoryFilter === (c.name) ? "active" : ""}`} onClick={() => setServiceCategoryFilter(c.name)}>{c.name}</button>)}
+                      </>
+                    )}
                   </div>
-                ) : null}
 
-                <div className="pos-detail-cart-table">
-                  <div className="cart-table-head">
+                  <div className="pos-item-list-container">
+                    {posTab === "products" ? (
+                      productTileGroups.length > 0 ? (
+                        productTileGroups.map((group) => (
+                          <div key={group.title}>
+                            <div className="pos-group-header">{group.title}</div>
+                            <div className="pos-item-grid">
+                              {group.items.map((product) => (
+                                <button type="button" key={product.id} className="pos-item-card" onClick={() => addQuickProduct(product)}>
+                                  <div className="pos-item-card-name">{product.name}</div>
+                                  <div className="pos-item-card-prices">
+                                    <span className="pos-item-card-price-new">{Number(product.sellingPrice || product.price || 0).toFixed(0)}</span>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{ textAlign: "center", padding: "20px", color: "#94a3b8", fontSize: "0.9rem" }}>No products found.</div>
+                      )
+                    ) : (
+                      serviceTileGroups.length > 0 ? (
+                        serviceTileGroups.map((group) => (
+                          <div key={group.title}>
+                            <div className="pos-group-header">{group.title}</div>
+                            <div className="pos-item-grid">
+                              {group.items.map((service) => (
+                                <button type="button" key={service.id} className="pos-item-card" onClick={() => addQuickService(service)}>
+                                  <div className="pos-item-card-name">{service.name}</div>
+                                  <div className="pos-item-card-prices">
+                                    <span className="pos-item-card-price-new">{Number(service.salesPrice || service.price || 0).toFixed(0)}</span>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{ textAlign: "center", padding: "20px", color: "#94a3b8", fontSize: "0.9rem" }}>No services found.</div>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                <div className="pos-main">
+                  <div className="pos-invoice-section" style={{ height: "100%", overflowY: "auto", padding: "20px" }}>
+                    <div className="pos-invoice-header">
+                      <h4>Invoice</h4>
+                      <div className="pos-invoice-date">
+                        {new Date(invoiceDetail?.createdAt || detail.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).replace(/ /g, "-")}
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", padding: "12px 16px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "16px", fontSize: "12px", color: "#334155" }}>
+                      <div style={{display: "flex", gap: "24px", width: "100%", justifyContent: "space-between"}}>
+                        <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
+                          <div><strong style={{color:"#0f172a"}}>Guest :</strong> {detail.customer?.name || "Walk-in"}</div>
+                          <div><strong style={{color:"#0f172a"}}>Phone :</strong> {detail.customer?.phone || ""}</div>
+                        </div>
+                        <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
+                          <div><strong style={{color:"#0f172a"}}>DOB :</strong> NA</div>
+                          <div><strong style={{color:"#0f172a"}}>Anniv :</strong> NA</div>
+                        </div>
+                        <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
+                          <div><strong style={{color:"#0f172a"}}>Last Visited :</strong> NA</div>
+                          <div><strong style={{color:"#0f172a"}}>Due Bal :</strong> NA</div>
+                        </div>
+                        <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
+                          <div><strong style={{color:"#0f172a"}}>Membership:</strong> NA</div>
+                          <div><strong style={{color:"#0f172a"}}>Package:</strong> NA</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {status.error || status.success ? (
+                      <div style={{ margin: "12px 0", padding: "12px 16px", borderRadius: 8, background: status.error ? "#fef2f2" : "#ecfdf5", color: status.error ? "#991b1b" : "#065f46", fontWeight: 600, border: `1px solid ${status.error ? "#fecaca" : "#a7f3d0"}` }}>
+                        {status.error || status.success}
+                      </div>
+                    ) : null}
+
+                    <div className="pos-cart-table">
+                      <div className="cart-table-head">
                     <div>Name</div>
                     <div>Staff</div>
                     <div>Qty</div>
