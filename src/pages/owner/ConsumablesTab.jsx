@@ -129,7 +129,7 @@ export default function ConsumablesTab({ products, loadAll, branches, selectedBr
                   <input type="number" min="0" step="0.01" value={form.currentStock} onChange={e => setForm({ ...form, currentStock: e.target.value })} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, outline: "none" }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: "block", fontSize: "0.85rem", color: "#475569", fontWeight: 600, marginBottom: 6 }}>Cost Price</label>
+                  <label style={{ display: "block", fontSize: "0.85rem", color: "#475569", fontWeight: 600, marginBottom: 6 }}>Cost Price (per {form.unit})</label>
                   <input type="number" min="0" step="0.01" value={form.costPrice} onChange={e => setForm({ ...form, costPrice: e.target.value })} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 8, outline: "none" }} />
                 </div>
               </div>
