@@ -599,12 +599,19 @@ export default function UsersPage() {
                   <div style={{ display: 'flex', gap: 20, alignItems: 'flex-end' }}>
                     <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'white', padding: 4, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
                       {selectedRow.avatarUrl ? (
-                        <img src={getImageUrl(selectedRow.avatarUrl)} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                      ) : (
-                        <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 28, fontWeight: 600 }}>
-                          {selectedRow.user?.name?.charAt(0).toUpperCase()}
-                        </div>
-                      )}
+                        <img
+                          src={getImageUrl(selectedRow.avatarUrl)}
+                          alt="Avatar"
+                          style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'linear-gradient(135deg, #2563eb, #3b82f6)', display: selectedRow.avatarUrl ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 28, fontWeight: 700 }}>
+                        {selectedRow.user?.name?.charAt(0).toUpperCase()}
+                      </div>
                     </div>
                     <div style={{ paddingBottom: 4 }}>
                       <div style={{ color: '#0f172a', fontWeight: 700, fontSize: 24, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -663,6 +670,21 @@ export default function UsersPage() {
                      <div style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>{selectedRow.serviceAssignments?.length || 0} Assigned</div>
                      <div style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>{selectedRow.showInCatalog ? "Visible in catalog" : "Hidden from catalog"}</div>
                    </div>
+                   {/* Joining Date Card */}
+                   {selectedRow.joiningDate && (
+                     <div style={{ background: 'linear-gradient(135deg, #fef9c3, #fef3c7)', padding: 20, borderRadius: 12, border: '1px solid #fde68a', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', gridColumn: '1 / -1' }}>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                         <div style={{ background: '#fef3c7', padding: 6, borderRadius: 8, color: '#d97706' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></div>
+                         <div style={{ fontSize: 12, textTransform: 'uppercase', color: '#92400e', fontWeight: 700, letterSpacing: '0.05em' }}>Joining Date</div>
+                       </div>
+                       <div style={{ fontSize: 18, fontWeight: 700, color: '#78350f' }}>
+                         {new Date(selectedRow.joiningDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                       </div>
+                       <div style={{ fontSize: 13, color: '#92400e', marginTop: 4 }}>
+                         {Math.floor((new Date() - new Date(selectedRow.joiningDate)) / (1000 * 60 * 60 * 24 * 30))} months with the team
+                       </div>
+                     </div>
+                   )}
                 </div>
 
                 <div style={{ background: 'white', borderRadius: 8, border: '1px solid #e2e8f0', padding: 32 }}>
