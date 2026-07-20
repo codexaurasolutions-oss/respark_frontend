@@ -386,457 +386,284 @@ export default function ServiceCategoriesPage() {
     return <PageLoader title="Loading service catalog" message="Preparing categories, subcategories, and services." />;
   }
 
-  return (
-    <div className="page-shell">
-      <div className="hero-card" style={{ padding: 24, marginBottom: 20 }}>
-        <div className="item-head">
-          <div>
-            <h1 style={{ margin: 0 }}>Service Catalog Workspace</h1>
-            <p style={{ margin: "8px 0 0", color: "#64748b" }}>
-              Manage subcategories within categories and services within subcategories.
-            </p>
-          </div>
-          <div className="badge-row">
-            <span className="badge">Categories {categories.length}</span>
-            <span className="badge">Subcategories {totalSubcategories}</span>
-            <span className="badge">Visible services {items.length}</span>
-          </div>
-        </div>
-      </div>
+  const inputStyle = { width: "100%", padding: "10px 14px", border: "1px solid #cbd5e1", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit", transition: "border-color 0.2s" };
+  const labelStyle = { display: "block", marginBottom: 6, fontWeight: 700, color: "#475569", fontSize: 13 };
 
+  return (
+    <div style={{ background: "#f8fafc", minHeight: "100vh", fontFamily: "'Inter','Segoe UI',sans-serif" }}>
+      {/* Toast Notifications */}
       {status.error && (
-        <div style={{ padding: "10px 16px", marginBottom: 14, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 12, color: "#dc2626", fontSize: 13 }}>
+        <div style={{ position: "fixed", top: 80, right: 24, background: "#fef2f2", color: "#dc2626", padding: "12px 20px", borderRadius: 10, fontSize: 14, zIndex: 99999, boxShadow: "0 4px 20px rgba(0,0,0,0.15)", display: "flex", alignItems: "center", gap: 12, fontWeight: 600, maxWidth: 380 }}>
           {status.error}
+          <button onClick={() => setStatus({...status, error: ""})} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontWeight: 800, fontSize: 18, lineHeight: 1 }}>×</button>
         </div>
       )}
       {status.success && (
-        <div style={{ padding: "10px 16px", marginBottom: 14, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, color: "#16a34a", fontSize: 13 }}>
-          {status.success}
+        <div style={{ position: "fixed", top: 80, right: 24, background: "#ecfdf5", color: "#059669", padding: "12px 20px", borderRadius: 10, fontSize: 14, zIndex: 99999, boxShadow: "0 4px 20px rgba(0,0,0,0.15)", display: "flex", alignItems: "center", gap: 12, fontWeight: 600 }}>
+          ✓ {status.success}
+          <button onClick={() => setStatus({...status, success: ""})} style={{ background: "none", border: "none", color: "#059669", cursor: "pointer", fontWeight: 800, fontSize: 18, lineHeight: 1 }}>×</button>
         </div>
       )}
 
-      <div className="catalog-layout-grid">
-        <div style={{ borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", minHeight: 0 }}>
-          <div style={{ padding: "18px 20px", borderBottom: "1px solid #e2e8f0", textAlign: "center", color: "#2563eb", fontSize: 16, fontWeight: 700 }}>
-            Categories
+      {/* Page Header */}
+      <div style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "20px 28px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#0f172a" }}>Service Catalog</h1>
+          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 14 }}>Manage categories, subcategories and services</p>
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe" }}>
+            {categories.length} Categories
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0" }}>
+            {totalSubcategories} Subcategories
+          </span>
+          {selectedSubcategory && <span style={{ display: "inline-flex", alignItems: "center", padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "#fef3c7", color: "#d97706", border: "1px solid #fde68a" }}>
+            {items.length} Services
+          </span>}
+        </div>
+      </div>
+
+      {/* Three-Column Layout */}
+      <div style={{ display: "grid", gridTemplateColumns: "260px 240px 1fr", height: "calc(100vh - 130px)", overflow: "hidden" }}>
+        
+        {/* Column 1 - Categories */}
+        <div style={{ background: "#fff", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>Categories</span>
+            <span style={{ fontSize: 11, background: "#f1f5f9", color: "#64748b", padding: "3px 8px", borderRadius: 12, fontWeight: 600 }}>{categories.length}</span>
           </div>
-          <div style={{ flex: 1, overflowY: "auto", padding: 18, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
+            {/* All */}
             <div
-              onClick={() => {
-                setSelectedCatId("");
-                setSelectedSubId("");
-                setEditingCatId("");
-                setCatInput("");
-              }}
-              style={{
-                padding: "16px 14px",
-                borderRadius: 14,
-                border: !selectedCatId ? "1px solid #93c5fd" : "1px solid #e2e8f0",
-                background: !selectedCatId ? "#dbeafe" : "#ffffff",
-                cursor: "pointer",
-                color: !selectedCatId ? "#1d4ed8" : "#0f172a",
-                fontWeight: !selectedCatId ? 700 : 500
-              }}
+              onClick={() => { setSelectedCatId(""); setSelectedSubId(""); setEditingCatId(""); setCatInput(""); }}
+              style={{ padding: "10px 14px", borderRadius: 8, cursor: "pointer", marginBottom: 4, display: "flex", alignItems: "center", gap: 10, background: !selectedCatId ? "#eff6ff" : "transparent", color: !selectedCatId ? "#1d4ed8" : "#475569", fontWeight: !selectedCatId ? 700 : 500, fontSize: 14, transition: "all 0.15s" }}
+              onMouseEnter={e => { if(selectedCatId) e.currentTarget.style.background = "#f8fafc"; }}
+              onMouseLeave={e => { if(selectedCatId) e.currentTarget.style.background = "transparent"; }}
             >
-              All
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: !selectedCatId ? "#3b82f6" : "#cbd5e1", flexShrink: 0 }} />
+              All Categories
             </div>
             {categories.map((category) => (
               <div
                 key={category.id}
-                onClick={() => {
-                  setSelectedCatId(category.id);
-                  setSelectedSubId("");
-                  setEditingCatId("");
-                  setEditingSubId("");
-                  setSubInput("");
+                onClick={() => { setSelectedCatId(category.id); setSelectedSubId(""); setEditingCatId(""); setEditingSubId(""); setSubInput(""); }}
+                style={{ padding: "10px 14px", borderRadius: 8, cursor: "pointer", marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, background: selectedCatId === category.id ? "#eff6ff" : "transparent", transition: "all 0.15s" }}
+                onMouseEnter={e => {
+                  if(selectedCatId !== category.id) e.currentTarget.style.background = "#f8fafc";
+                  e.currentTarget.querySelector(".cat-actions").style.opacity = "1";
                 }}
-                style={{
-                  padding: "16px 14px",
-                  borderRadius: 14,
-                  border: selectedCatId === category.id ? "1px solid #93c5fd" : "1px solid #e2e8f0",
-                  background: selectedCatId === category.id ? "#dbeafe" : "#ffffff",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12
+                onMouseLeave={e => {
+                  if(selectedCatId !== category.id) e.currentTarget.style.background = "transparent";
+                  e.currentTarget.querySelector(".cat-actions").style.opacity = "0";
                 }}
               >
-                <div>
-                  <div style={{ color: selectedCatId === category.id ? "#1d4ed8" : "#0f172a", fontWeight: 700 }}>
+                <div style={{ flex: 1, overflow: "hidden" }}>
+                  <div style={{ color: selectedCatId === category.id ? "#1d4ed8" : "#0f172a", fontWeight: 600, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {category.name}
                   </div>
-                  <div style={{ color: "#64748b", fontSize: 12, marginTop: 4 }}>
-                    {(category.children || []).length} subcategories
-                  </div>
+                  <div style={{ color: "#94a3b8", fontSize: 11, marginTop: 2 }}>{(category.children || []).length} subcategories</div>
                 </div>
-                <div style={{ display: "flex", gap: 2 }}>
-                  <IconButton
-                    title="Edit category"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setEditingCatId(category.id);
-                      setCatInput(category.name);
-                    }}
-                  >
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </IconButton>
-                  <IconButton
-                    title="Archive category"
-                    color="#dc2626"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      archiveCategory(category.id);
-                    }}
-                  >
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </IconButton>
+                <div className="cat-actions" style={{ display: "flex", gap: 2, opacity: 0, transition: "opacity 0.15s", flexShrink: 0 }}>
+                  <button type="button" onClick={e => { e.stopPropagation(); setEditingCatId(category.id); setCatInput(category.name); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", padding: 4, borderRadius: 4, display: "flex", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = "#e2e8f0"} onMouseLeave={e => e.currentTarget.style.background = "none"} title="Edit">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                  </button>
+                  <button type="button" onClick={e => { e.stopPropagation(); archiveCategory(category.id); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 4, borderRadius: 4, display: "flex", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"} onMouseLeave={e => e.currentTarget.style.background = "none"} title="Delete">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  </button>
                 </div>
               </div>
             ))}
           </div>
-          <div style={{ borderTop: "1px solid #e2e8f0", padding: 18 }}>
-            <div style={{ display: "flex", gap: 10 }}>
-              <input
-                value={catInput}
-                onChange={(event) => setCatInput(event.target.value)}
-                onKeyDown={(event) => event.key === "Enter" && addCategory()}
-                placeholder="New category..."
-                style={{ flex: 1, padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 14 }}
-              />
-              <button
-                type="button"
-                onClick={addCategory}
-                style={{ padding: "12px 18px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 12, fontWeight: 700, cursor: "pointer" }}
-              >
-                + New
+          <div style={{ borderTop: "1px solid #e2e8f0", padding: "14px" }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input value={catInput} onChange={e => setCatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && addCategory()} placeholder={editingCatId ? "Edit name..." : "New category..."} style={{ ...inputStyle, flex: 1, padding: "9px 12px", fontSize: 13 }} />
+              <button type="button" onClick={addCategory} style={{ padding: "9px 14px", background: "#0f172a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13, whiteSpace: "nowrap" }}>
+                {editingCatId ? "Save" : "+ Add"}
               </button>
             </div>
+            {editingCatId && <button type="button" onClick={() => { setEditingCatId(""); setCatInput(""); }} style={{ marginTop: 6, background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 12 }}>Cancel</button>}
           </div>
         </div>
 
-        <div style={{ borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", minHeight: 0 }}>
-          <div style={{ padding: "18px 20px", borderBottom: "1px solid #e2e8f0", textAlign: "center", color: "#2563eb", fontSize: 16, fontWeight: 700 }}>
-            {selectedCategory ? `${selectedCategory.name}/` : "Choose Category"}
+        {/* Column 2 - Subcategories */}
+        <div style={{ background: "#fdfdff", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
+              {selectedCategory ? selectedCategory.name : "Subcategories"}
+            </span>
+            {selectedCategory && <span style={{ fontSize: 11, background: "#f1f5f9", color: "#64748b", padding: "3px 8px", borderRadius: 12, fontWeight: 600 }}>{subcategories.length}</span>}
           </div>
-          <div style={{ flex: 1, overflowY: "auto", padding: 18, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
             {!selectedCategory ? (
-              <EmptyState title="Select category" message="Select a category from the left side first." />
+              <div style={{ textAlign: "center", padding: "40px 16px", color: "#94a3b8" }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>←</div>
+                <p style={{ margin: 0, fontSize: 13 }}>Select a category first</p>
+              </div>
             ) : subcategories.length === 0 ? (
-              <EmptyState title="No subcategories yet" message="No subcategories have been created in this category yet." />
+              <EmptyState title="No subcategories yet" message="Add a subcategory below to get started." />
             ) : (
               subcategories.map((subcategory) => (
                 <div
                   key={subcategory.id}
-                  onClick={() => {
-                    setSelectedSubId(subcategory.id);
-                    setEditingSubId("");
-                    setSubInput("");
+                  onClick={() => { setSelectedSubId(subcategory.id); setEditingSubId(""); setSubInput(""); }}
+                  style={{ padding: "10px 14px", borderRadius: 8, cursor: "pointer", marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, background: selectedSubId === subcategory.id ? "#eff6ff" : "transparent", transition: "all 0.15s" }}
+                  onMouseEnter={e => {
+                    if(selectedSubId !== subcategory.id) e.currentTarget.style.background = "#f1f5f9";
+                    e.currentTarget.querySelector(".sub-actions").style.opacity = "1";
                   }}
-                  style={{
-                    padding: "16px 14px",
-                    borderRadius: 14,
-                    border: selectedSubId === subcategory.id ? "1px solid #93c5fd" : "1px solid #e2e8f0",
-                    background: selectedSubId === subcategory.id ? "#dbeafe" : "#ffffff",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 12
+                  onMouseLeave={e => {
+                    if(selectedSubId !== subcategory.id) e.currentTarget.style.background = "transparent";
+                    e.currentTarget.querySelector(".sub-actions").style.opacity = "0";
                   }}
                 >
-                  <div>
-                    <div style={{ color: selectedSubId === subcategory.id ? "#1d4ed8" : "#0f172a", fontWeight: 700 }}>
+                  <div style={{ flex: 1, overflow: "hidden" }}>
+                    <div style={{ color: selectedSubId === subcategory.id ? "#1d4ed8" : "#0f172a", fontWeight: 600, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {subcategory.name}
                     </div>
-                    <div style={{ color: "#64748b", fontSize: 12, marginTop: 4 }}>
-                      {(subcategory.services || []).length} services
-                    </div>
+                    <div style={{ color: "#94a3b8", fontSize: 11, marginTop: 2 }}>{(subcategory.services || []).length} services</div>
                   </div>
-                  <div style={{ display: "flex", gap: 2 }}>
-                    <IconButton
-                      title="Edit subcategory"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setEditingSubId(subcategory.id);
-                        setSubInput(subcategory.name);
-                      }}
-                    >
-                      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </IconButton>
-                    <IconButton
-                      title="Archive subcategory"
-                      color="#dc2626"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        archiveSubcategory(subcategory.id);
-                      }}
-                    >
-                      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    </IconButton>
+                  <div className="sub-actions" style={{ display: "flex", gap: 2, opacity: 0, transition: "opacity 0.15s", flexShrink: 0 }}>
+                    <button type="button" onClick={e => { e.stopPropagation(); setEditingSubId(subcategory.id); setSubInput(subcategory.name); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b", padding: 4, borderRadius: 4, display: "flex", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = "#e2e8f0"} onMouseLeave={e => e.currentTarget.style.background = "none"} title="Edit">
+                      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    </button>
+                    <button type="button" onClick={e => { e.stopPropagation(); archiveSubcategory(subcategory.id); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 4, borderRadius: 4, display: "flex", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"} onMouseLeave={e => e.currentTarget.style.background = "none"} title="Delete">
+                      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
                   </div>
                 </div>
               ))
             )}
           </div>
-          <div style={{ borderTop: "1px solid #e2e8f0", padding: 18 }}>
-            <div style={{ display: "flex", gap: 10 }}>
-              <input
-                value={subInput}
-                onChange={(event) => setSubInput(event.target.value)}
-                onKeyDown={(event) => event.key === "Enter" && addSubcategory()}
-                placeholder="New subcategory..."
-                disabled={!selectedCategory}
-                style={{
-                  flex: 1,
-                  padding: "12px 14px",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: 12,
-                  fontSize: 14,
-                  opacity: selectedCategory ? 1 : 0.55
-                }}
-              />
-              <button
-                type="button"
-                onClick={addSubcategory}
-                disabled={!selectedCategory}
-                style={{
-                  padding: "12px 18px",
-                  background: selectedCategory ? "#2563eb" : "#94a3b8",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 12,
-                  fontWeight: 700,
-                  cursor: selectedCategory ? "pointer" : "not-allowed"
-                }}
-              >
-                + New
+          <div style={{ borderTop: "1px solid #e2e8f0", padding: "14px" }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input value={subInput} onChange={e => setSubInput(e.target.value)} onKeyDown={e => e.key === "Enter" && addSubcategory()} placeholder={editingSubId ? "Edit name..." : "New subcategory..."} disabled={!selectedCategory} style={{ ...inputStyle, flex: 1, padding: "9px 12px", fontSize: 13, opacity: selectedCategory ? 1 : 0.5 }} />
+              <button type="button" onClick={addSubcategory} disabled={!selectedCategory} style={{ padding: "9px 14px", background: selectedCategory ? "#0f172a" : "#e2e8f0", color: selectedCategory ? "#fff" : "#94a3b8", border: "none", borderRadius: 8, fontWeight: 700, cursor: selectedCategory ? "pointer" : "not-allowed", fontSize: 13, whiteSpace: "nowrap" }}>
+                {editingSubId ? "Save" : "+ Add"}
               </button>
             </div>
+            {editingSubId && <button type="button" onClick={() => { setEditingSubId(""); setSubInput(""); }} style={{ marginTop: 6, background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 12 }}>Cancel</button>}
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
-          <div style={{ padding: "18px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-            <div style={{ color: "#2563eb", fontSize: 16, fontWeight: 700 }}>
-              {selectedSubcategory
-                ? `${selectedCategory?.name}/${selectedSubcategory.name}/Items`
-                : "Choose Subcategory"}
+        {/* Column 3 - Services */}
+        <div style={{ display: "flex", flexDirection: "column", background: "#f8fafc" }}>
+          {/* Top bar */}
+          <div style={{ padding: "12px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "#fff" }}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a", flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {selectedSubcategory ? `${selectedCategory?.name} / ${selectedSubcategory.name}` : "Services"}
             </div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={handleImportClick}
-                style={{ padding: "8px 16px", borderRadius: 10, fontSize: 13, whiteSpace: "nowrap", fontWeight: 700 }}
-              >
-                Import CSV
-              </button>
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={handleExport}
-                style={{ padding: "8px 16px", borderRadius: 10, fontSize: 13, whiteSpace: "nowrap", fontWeight: 700 }}
-              >
-                Export CSV
-              </button>
-              <button
-                type="button"
-                onClick={openNewService}
-                style={{ padding: "8px 16px", borderRadius: 10, fontSize: 13, whiteSpace: "nowrap", fontWeight: 700 }}
-              >
-                + Add service
-              </button>
+              <button type="button" onClick={handleImportClick} style={{ padding: "7px 14px", background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Import CSV</button>
+              <button type="button" onClick={handleExport} style={{ padding: "7px 14px", background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Export CSV</button>
+              <button type="button" onClick={openNewService} style={{ padding: "7px 18px", background: "#0f172a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>+ Add Service</button>
             </div>
           </div>
 
-          <div style={{ padding: "14px 18px", borderBottom: "1px solid #e2e8f0" }}>
-            <input
-              placeholder="Search items"
-              value={svcSearch}
-              onChange={(event) => setSvcSearch(event.target.value)}
-              style={{ width: "100%", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 14 }}
-            />
+          {/* Search */}
+          <div style={{ padding: "12px 20px", borderBottom: "1px solid #e2e8f0", background: "#fff" }}>
+            <div style={{ position: "relative" }}>
+              <svg style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }} width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              <input placeholder="Search services..." value={svcSearch} onChange={e => setSvcSearch(e.target.value)} style={{ ...inputStyle, paddingLeft: 36, fontSize: 13 }} />
+            </div>
           </div>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Service List */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
             {!selectedSubcategory ? (
-              <EmptyState title="Select subcategory" message="Choose a subcategory from the middle column to view and add services." />
-            ) : items.length === 0 ? (
-              <EmptyState title={svcSearch ? "No matching services" : "No services yet"} message={svcSearch ? "Clear the search and try again." : "Add the first service to this subcategory."} />
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#94a3b8", gap: 12 }}>
+                <div style={{ width: 64, height: 64, background: "#f1f5f9", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>✂️</div>
+                <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "#64748b" }}>Select a subcategory</p>
+                <p style={{ margin: 0, fontSize: 13 }}>Choose from the left columns to view services</p>
+              </div>
+            ) : currentItems.length === 0 ? (
+              <EmptyState title={svcSearch ? "No matching services" : "No services yet"} message={svcSearch ? "Clear the search and try again." : "Click '+ Add Service' to add the first service."} />
             ) : (
               <>
-                {currentItems.map((service) => (
-                  <div
-                    key={service.id}
-                    style={{
-                      padding: "16px 14px",
-                      border: "1px solid #e2e8f0",
-                      borderRadius: 14,
-                      display: "flex",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between",
-                      gap: 14
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a" }}>{service.name}</div>
-                      <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <span className="badge">₹ {Number(service.price || 0)}</span>
-                        <span className="badge">{service.durationMin || 30} min</span>
-                        <span className="badge">{service.gender || "UNISEX"}</span>
-                        <span className="badge">{service.branch?.name || "Salon wide"}</span>
-                        <span className="badge">{service.onlineBookingEnabled ? "Online booking on" : "Online booking off"}</span>
-                      </div>
-                      {service.description && (
-                        <div style={{ marginTop: 10, color: "#64748b", fontSize: 13 }}>
-                          {service.description}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
+                  {currentItems.map((service) => (
+                    <div
+                      key={service.id}
+                      style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: "16px", boxShadow: "0 1px 4px rgba(0,0,0,0.03)", transition: "box-shadow 0.2s, transform 0.2s" }}
+                      onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.07)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.03)"; e.currentTarget.style.transform = "translateY(0)"; }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 12 }}>
+                        <span style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", lineHeight: 1.3 }}>{service.name}</span>
+                        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                          <button type="button" onClick={() => startEditService(service)} style={{ background: "#f1f5f9", border: "none", borderRadius: 6, padding: "5px 8px", cursor: "pointer", color: "#475569", display: "flex", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = "#dbeafe"} onMouseLeave={e => e.currentTarget.style.background = "#f1f5f9"} title="Edit">
+                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                          </button>
+                          <button type="button" onClick={() => archiveService(service.id)} style={{ background: "#f1f5f9", border: "none", borderRadius: 6, padding: "5px 8px", cursor: "pointer", color: "#ef4444", display: "flex", transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"} onMouseLeave={e => e.currentTarget.style.background = "#f1f5f9"} title="Delete">
+                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
                         </div>
-                      )}
+                      </div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <span style={{ background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe", padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700 }}>₹{Number(service.price || 0)}</span>
+                        <span style={{ background: "#f1f5f9", color: "#475569", padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600 }}>{service.durationMin || 30} min</span>
+                        <span style={{ background: "#f1f5f9", color: "#475569", padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600 }}>{service.gender || "UNISEX"}</span>
+                        {service.isFeatured && <span style={{ background: "#fef3c7", color: "#d97706", padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700 }}>★ Featured</span>}
+                        {service.onlineBookingEnabled && <span style={{ background: "#f0fdf4", color: "#16a34a", padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600 }}>Online</span>}
+                      </div>
+                      {service.description && <p style={{ margin: "10px 0 0", color: "#64748b", fontSize: 12, lineHeight: 1.5 }}>{service.description}</p>}
                     </div>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <IconButton title="Edit service" onClick={() => startEditService(service)}>
-                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </IconButton>
-                      <IconButton title="Archive service" color="#dc2626" onClick={() => archiveService(service.id)}>
-                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </IconButton>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
                 {totalPages > 1 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      style={{ padding: "6px 14px", borderRadius: 8, fontSize: 13 }}
-                    >
-                      Previous
-                    </button>
-                    <div style={{ fontSize: 13, color: "#64748b", fontWeight: 500 }}>
-                      Page {currentPage} of {totalPages}
-                    </div>
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      style={{ padding: "6px 14px", borderRadius: 8, fontSize: 13 }}
-                    >
-                      Next
-                    </button>
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 20, paddingTop: 16, borderTop: "1px solid #e2e8f0" }}>
+                    <button type="button" disabled={currentPage === 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} style={{ padding: "7px 18px", background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, fontWeight: 600, cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.5 : 1 }}>← Prev</button>
+                    <span style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>Page {currentPage} of {totalPages}</span>
+                    <button type="button" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} style={{ padding: "7px 18px", background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, fontWeight: 600, cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.5 : 1 }}>Next →</button>
                   </div>
                 )}
               </>
             )}
           </div>
-
-          <div style={{ borderTop: "1px solid #e2e8f0", padding: 18, display: "flex", justifyContent: "flex-end" }}>
-            <button
-              type="button"
-              onClick={openNewService}
-              style={{ padding: "12px 18px", borderRadius: 12, background: "#2563eb", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer" }}
-            >
-              + Add service
-            </button>
-          </div>
         </div>
       </div>
 
+      {/* Service Modal */}
       {serviceModalOpen && (
-        <div
-          onClick={() => setServiceModalOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(15, 23, 42, 0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-            zIndex: 9999
-          }}
-        >
-          <form
-            onSubmit={saveService}
-            onClick={(event) => event.stopPropagation()}
-            style={{
-              width: "min(760px, 100%)",
-              maxHeight: "90vh",
-              overflowY: "auto",
-              background: "#ffffff",
-              borderRadius: 24,
-              boxShadow: "0 30px 80px rgba(15, 23, 42, 0.25)"
-            }}
-          >
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid #e2e8f0", fontSize: 24, fontWeight: 800, color: "#0f172a" }}>
-              {editingServiceId ? "Edit Service" : "Create Service"}
+        <div onClick={() => setServiceModalOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, zIndex: 9999 }}>
+          <form onSubmit={saveService} onClick={e => e.stopPropagation()} style={{ width: "min(720px, 100%)", maxHeight: "90vh", overflowY: "auto", background: "#fff", borderRadius: 18, boxShadow: "0 25px 60px rgba(15,23,42,0.3)", display: "flex", flexDirection: "column" }}>
+            {/* Modal Header */}
+            <div style={{ padding: "20px 28px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", borderTopLeftRadius: 18, borderTopRightRadius: 18 }}>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "#0f172a" }}>{editingServiceId ? "✏️ Edit Service" : "✦ Create Service"}</span>
+              <button type="button" onClick={() => setServiceModalOpen(false)} style={{ background: "#e2e8f0", border: "none", borderRadius: "50%", width: 32, height: 32, cursor: "pointer", color: "#475569", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 16, transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = "#cbd5e1"} onMouseLeave={e => e.currentTarget.style.background = "#e2e8f0"}>×</button>
             </div>
 
             {status.error && (
-              <div style={{ margin: "12px 24px 0", padding: "10px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, color: "#dc2626", fontSize: 13 }}>
+              <div style={{ margin: "16px 28px 0", padding: "10px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, color: "#dc2626", fontSize: 13, fontWeight: 600 }}>
                 {status.error}
               </div>
             )}
 
-            <div style={{ padding: 24, display: "grid", gap: 18 }}>
+            <div style={{ padding: "24px 28px", display: "grid", gap: 20 }}>
+              {/* Name + Branch */}
               <div style={{ display: "grid", gridTemplateColumns: "1.7fr 1fr", gap: 16 }}>
                 <div>
-                  <label style={{ display: "block", marginBottom: 8, fontWeight: 700, color: "#334155" }}>Name *</label>
-                  <input
-                    value={serviceForm.name}
-                    onChange={(event) => { setServiceForm((current) => ({ ...current, name: event.target.value })); if (status.error) setStatus((c) => ({ ...c, error: "" })); }}
-                    placeholder="Trendy Cut, Cleanup, Facial..."
-                    style={{ width: "100%", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 14 }}
-                  />
+                  <label style={labelStyle}>Service Name *</label>
+                  <input value={serviceForm.name} onChange={e => { setServiceForm(c => ({ ...c, name: e.target.value })); if (status.error) setStatus(c => ({ ...c, error: "" })); }} placeholder="e.g. Trendy Cut, Deep Cleanup..." style={inputStyle} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 8, fontWeight: 700, color: "#334155" }}>Branch</label>
-                  <select
-                    value={serviceForm.branchId}
-                    onChange={(event) => setServiceForm((current) => ({ ...current, branchId: event.target.value }))}
-                    style={{ width: "100%", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 14 }}
-                  >
+                  <label style={labelStyle}>Branch</label>
+                  <select value={serviceForm.branchId} onChange={e => setServiceForm(c => ({ ...c, branchId: e.target.value }))} style={inputStyle}>
                     <option value="">Salon wide</option>
-                    {branches.map((branch) => (
-                      <option key={branch.id} value={branch.id}>
-                        {branch.name}
-                      </option>
-                    ))}
+                    {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
                 </div>
               </div>
 
+              {/* Subcategory + Gender */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 <div>
-                  <label style={{ display: "block", marginBottom: 8, fontWeight: 700, color: "#334155" }}>Subcategory</label>
-                  <input
-                    value={selectedSubcategory ? `${selectedCategory?.name} / ${selectedSubcategory.name}` : ""}
-                    disabled
-                    style={{ width: "100%", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 14, background: "#f8fafc" }}
-                  />
+                  <label style={labelStyle}>Subcategory</label>
+                  <input value={selectedSubcategory ? `${selectedCategory?.name} / ${selectedSubcategory.name}` : ""} disabled style={{ ...inputStyle, background: "#f8fafc", color: "#64748b" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 8, fontWeight: 700, color: "#334155" }}>Gender</label>
-                  <select
-                    value={serviceForm.gender}
-                    onChange={(event) => setServiceForm((current) => ({ ...current, gender: event.target.value }))}
-                    style={{ width: "100%", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 14 }}
-                  >
+                  <label style={labelStyle}>Gender</label>
+                  <select value={serviceForm.gender} onChange={e => setServiceForm(c => ({ ...c, gender: e.target.value }))} style={inputStyle}>
                     <option value="UNISEX">Unisex</option>
                     <option value="FEMALE">Female</option>
                     <option value="MALE">Male</option>
@@ -844,181 +671,101 @@ export default function ServiceCategoriesPage() {
                 </div>
               </div>
 
+              {/* Price + Duration */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 <div>
-                  <label style={{ display: "block", marginBottom: 8, fontWeight: 700, color: "#334155" }}>Price</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={serviceForm.price}
-                    onChange={(event) => setServiceForm((current) => ({ ...current, price: event.target.value }))}
-                    style={{ width: "100%", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 14 }}
-                  />
+                  <label style={labelStyle}>Price *</label>
+                  <input type="number" min="0" value={serviceForm.price} onChange={e => setServiceForm(c => ({ ...c, price: e.target.value }))} style={inputStyle} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 8, fontWeight: 700, color: "#334155" }}>Duration</label>
-                  <select
-                    value={serviceForm.durationMin}
-                    onChange={(event) => setServiceForm((current) => ({ ...current, durationMin: event.target.value }))}
-                    style={{ width: "100%", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 14 }}
-                  >
-                    {DURATION_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
+                  <label style={labelStyle}>Duration</label>
+                  <select value={serviceForm.durationMin} onChange={e => setServiceForm(c => ({ ...c, durationMin: e.target.value }))} style={inputStyle}>
+                    {DURATION_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                   </select>
                 </div>
               </div>
 
+              {/* Tax + Commission */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 <div>
-                  <label style={{ display: "block", marginBottom: 8, fontWeight: 700, color: "#334155" }}>Tax Rate %</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={serviceForm.taxRate}
-                    onChange={(event) => setServiceForm((current) => ({ ...current, taxRate: event.target.value }))}
-                    style={{ width: "100%", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 14 }}
-                  />
+                  <label style={labelStyle}>Tax Rate %</label>
+                  <input type="number" min="0" value={serviceForm.taxRate} onChange={e => setServiceForm(c => ({ ...c, taxRate: e.target.value }))} style={inputStyle} />
                 </div>
                 <div>
-                  <label style={{ display: "block", marginBottom: 8, fontWeight: 700, color: "#334155" }}>Commission %</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={serviceForm.commissionPct}
-                    onChange={(event) => setServiceForm((current) => ({ ...current, commissionPct: event.target.value }))}
-                    style={{ width: "100%", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 14 }}
-                  />
+                  <label style={labelStyle}>Commission %</label>
+                  <input type="number" min="0" value={serviceForm.commissionPct} onChange={e => setServiceForm(c => ({ ...c, commissionPct: e.target.value }))} style={inputStyle} />
                 </div>
               </div>
 
+              {/* Description */}
               <div>
-                <label style={{ display: "block", marginBottom: 8, fontWeight: 700, color: "#334155" }}>Description</label>
-                <textarea
-                  rows={4}
-                  value={serviceForm.description}
-                  onChange={(event) => setServiceForm((current) => ({ ...current, description: event.target.value }))}
-                  placeholder="Optional service notes..."
-                  style={{ width: "100%", padding: "12px 14px", border: "1px solid #cbd5e1", borderRadius: 12, fontSize: 14, resize: "vertical", marginBottom: 16 }}
-                />
+                <label style={labelStyle}>Description</label>
+                <textarea rows={3} value={serviceForm.description} onChange={e => setServiceForm(c => ({ ...c, description: e.target.value }))} placeholder="Optional service notes..." style={{ ...inputStyle, resize: "vertical" }} />
               </div>
 
-              <div style={{ padding: "12px 0", borderTop: "1px solid #f1f5f9" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <label style={{ fontSize: 13, fontWeight: 700, color: "#334155", margin: 0 }}>Consumables</label>
-                  <button type="button" onClick={() => setServiceForm({...serviceForm, consumables: [...(serviceForm.consumables || []), { productId: '', reqdQty: 0, productName: '' }]})} style={{ background: "#2563eb", color: "white", border: "none", borderRadius: "50%", width: 24, height: 24, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+              {/* Consumables */}
+              <div style={{ background: "#f8fafc", padding: "16px 20px", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>Consumables</label>
+                  <button type="button" onClick={() => setServiceForm({...serviceForm, consumables: [...(serviceForm.consumables || []), { productId: "", reqdQty: 0, productName: "" }]})} style={{ background: "#0f172a", color: "#fff", border: "none", borderRadius: 6, padding: "5px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Add</button>
                 </div>
                 {(serviceForm.consumables || []).map((item, idx) => (
-                  <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "end" }}>
-                    <div style={{ flex: 2, minWidth: 0 }}>
-                      {idx === 0 && <label style={{ fontSize: 12, color: "#64748b", marginBottom: 4, display: "block" }}>Item</label>}
-                      <select value={item.productId} onChange={e => {
-                        const newItems = [...serviceForm.consumables];
-                        const prod = products.find(p => p.id === e.target.value);
-                        newItems[idx] = {...newItems[idx], productId: e.target.value, productName: prod?.name || ''};
-                        setServiceForm({...serviceForm, consumables: newItems});
-                      }} style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 10, fontSize: 13, background: "white" }}>
+                  <div key={idx} style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-end" }}>
+                    <div style={{ flex: 2 }}>
+                      {idx === 0 && <label style={{ ...labelStyle, fontSize: 11, marginBottom: 4 }}>Product</label>}
+                      <select value={item.productId} onChange={e => { const ni = [...serviceForm.consumables]; const prod = products.find(p => p.id === e.target.value); ni[idx] = {...ni[idx], productId: e.target.value, productName: prod?.name || ""}; setServiceForm({...serviceForm, consumables: ni}); }} style={{ ...inputStyle, padding: "8px 12px", fontSize: 13 }}>
                         <option value="">Select product</option>
                         {products.filter(p => p.isActive && p.productType === "CONSUMABLE").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                     </div>
-                    <div style={{ flex: 3, minWidth: 0 }}>
-                      {idx === 0 && <label style={{ fontSize: 12, color: "#64748b", marginBottom: 4, display: "block" }}>Reqd Qty</label>}
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <input type="number" min="0" value={item.reqdQty} onChange={e => {
-                          const newItems = [...serviceForm.consumables];
-                          newItems[idx] = {...newItems[idx], reqdQty: e.target.value};
-                          setServiceForm({...serviceForm, consumables: newItems});
-                        }} style={{ flex: 1, minWidth: 0, padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: 10, fontSize: 13 }} />
-                        {item.productId && (
-                          <span style={{ fontSize: 12, color: "#64748b", flexShrink: 0, whiteSpace: "nowrap" }}>
-                            {products.find(p => p.id === item.productId)?.unit || "pcs"}
-                          </span>
-                        )}
-                      </div>
+                    <div style={{ flex: 1 }}>
+                      {idx === 0 && <label style={{ ...labelStyle, fontSize: 11, marginBottom: 4 }}>Qty</label>}
+                      <input type="number" min="0" value={item.reqdQty} onChange={e => { const ni = [...serviceForm.consumables]; ni[idx] = {...ni[idx], reqdQty: e.target.value}; setServiceForm({...serviceForm, consumables: ni}); }} style={{ ...inputStyle, padding: "8px 12px", fontSize: 13 }} />
                     </div>
-                    <button type="button" onClick={() => {
-                      const newItems = serviceForm.consumables.filter((_, i) => i !== idx);
-                      setServiceForm({...serviceForm, consumables: newItems});
-                    }} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 18, padding: "4px 8px", lineHeight: 1, marginBottom: 2 }}>✕</button>
+                    <button type="button" onClick={() => setServiceForm({...serviceForm, consumables: serviceForm.consumables.filter((_, i) => i !== idx)})} style={{ background: "#fee2e2", border: "none", borderRadius: 6, padding: "8px 10px", cursor: "pointer", color: "#dc2626", marginBottom: 0, display: "flex", alignItems: "center" }}>✕</button>
                   </div>
                 ))}
+                {!(serviceForm.consumables || []).length && <p style={{ margin: 0, fontSize: 13, color: "#94a3b8", fontStyle: "italic" }}>No consumables added</p>}
               </div>
 
-              <div style={{ marginBottom: 16, padding: "12px 0", borderTop: "1px solid #f1f5f9" }}>
-                <label style={{ fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 8, display: "block" }}>Service Image</label>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-start" }}>
-                  {serviceForm.imageUrl && (
-                    <div style={{ position: "relative", width: 80, height: 80, borderRadius: 8, overflow: "hidden", border: "1px solid #e2e8f0" }}>
+              {/* Service Image */}
+              <div>
+                <label style={labelStyle}>Service Image</label>
+                <div style={{ display: "flex", gap: 10 }}>
+                  {serviceForm.imageUrl ? (
+                    <div style={{ position: "relative", width: 80, height: 80, borderRadius: 10, overflow: "hidden", border: "1px solid #e2e8f0" }}>
                       <img src={serviceForm.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      <button type="button" onClick={() => setServiceForm({...serviceForm, imageUrl: ""})} style={{ position: "absolute", top: 2, right: 2, background: "#dc2626", color: "white", border: "none", borderRadius: "50%", width: 18, height: 18, fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>x</button>
+                      <button type="button" onClick={() => setServiceForm({...serviceForm, imageUrl: ""})} style={{ position: "absolute", top: 2, right: 2, background: "#dc2626", color: "#fff", border: "none", borderRadius: "50%", width: 18, height: 18, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
                     </div>
-                  )}
-                  {!serviceForm.imageUrl && (
-                    <label style={{ width: 80, height: 80, borderRadius: 8, border: "2px dashed #cbd5e1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#94a3b8", fontSize: 10, gap: 4, transition: "border-color 0.2s" }} onMouseEnter={e => e.currentTarget.style.borderColor = "#2563eb"} onMouseLeave={e => e.currentTarget.style.borderColor = "#cbd5e1"}>
-                      <span style={{ fontSize: 20 }}>+</span>
+                  ) : (
+                    <label style={{ width: 80, height: 80, borderRadius: 10, border: "2px dashed #cbd5e1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#94a3b8", fontSize: 11, gap: 4, transition: "border-color 0.2s" }} onMouseEnter={e => e.currentTarget.style.borderColor = "#3b82f6"} onMouseLeave={e => e.currentTarget.style.borderColor = "#cbd5e1"}>
+                      <span style={{ fontSize: 24 }}>+</span>
                       Add Image
-                      <input type="file" accept="image/*" hidden onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        if (file.size > 2 * 1024 * 1024) {
-                          alert("Image exceeds 2MB limit.");
-                          return;
-                        }
-                        const reader = new FileReader();
-                        reader.onload = (ev) => {
-                          setServiceForm(prev => ({...prev, imageUrl: ev.target.result}));
-                        };
-                        reader.readAsDataURL(file);
-                        e.target.value = "";
-                      }} />
+                      <input type="file" accept="image/*" hidden onChange={e => { const file = e.target.files?.[0]; if (!file) return; if (file.size > 2 * 1024 * 1024) { setError("Image exceeds 2MB."); return; } const reader = new FileReader(); reader.onload = ev => setServiceForm(p => ({...p, imageUrl: ev.target.result})); reader.readAsDataURL(file); e.target.value = ""; }} />
                     </label>
                   )}
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-                <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600, color: "#334155" }}>
-                  <input
-                    type="checkbox"
-                    checked={serviceForm.onlineBookingEnabled}
-                    onChange={(event) => setServiceForm((current) => ({ ...current, onlineBookingEnabled: event.target.checked }))}
-                  />
-                  Enable Online Booking
-                </label>
-                <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600, color: "#334155" }}>
-                  <input
-                    type="checkbox"
-                    checked={serviceForm.isFeatured}
-                    onChange={(event) => setServiceForm((current) => ({ ...current, isFeatured: event.target.checked }))}
-                  />
-                  Featured
-                </label>
-                <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600, color: "#334155" }}>
-                  <input
-                    type="checkbox"
-                    checked={serviceForm.isPopular}
-                    onChange={(event) => setServiceForm((current) => ({ ...current, isPopular: event.target.checked }))}
-                  />
-                  Popular
-                </label>
+              {/* Toggles */}
+              <div style={{ display: "flex", gap: 24, flexWrap: "wrap", padding: "12px 0", borderTop: "1px solid #f1f5f9" }}>
+                {[
+                  { key: "onlineBookingEnabled", label: "Enable Online Booking" },
+                  { key: "isFeatured", label: "Featured" },
+                  { key: "isPopular", label: "Popular" }
+                ].map(({ key, label }) => (
+                  <label key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, color: "#334155", fontSize: 14, cursor: "pointer" }}>
+                    <input type="checkbox" checked={serviceForm[key]} onChange={e => setServiceForm(c => ({ ...c, [key]: e.target.checked }))} style={{ width: 16, height: 16, accentColor: "#2563eb" }} />
+                    {label}
+                  </label>
+                ))}
               </div>
             </div>
 
-            <div style={{ padding: "20px 24px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end", gap: 12 }}>
-              <button
-                type="button"
-                onClick={() => setServiceModalOpen(false)}
-                style={{ padding: "12px 18px", background: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", borderRadius: 12, fontWeight: 700, cursor: "pointer" }}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                style={{ padding: "12px 18px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 12, fontWeight: 700, cursor: "pointer" }}
-              >
+            {/* Modal Footer */}
+            <div style={{ padding: "16px 28px", borderTop: "1px solid #e2e8f0", display: "flex", justifyContent: "flex-end", gap: 12, background: "#f8fafc", borderBottomLeftRadius: 18, borderBottomRightRadius: 18 }}>
+              <button type="button" onClick={() => setServiceModalOpen(false)} style={{ padding: "10px 24px", background: "#fff", color: "#334155", border: "1px solid #cbd5e1", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>Cancel</button>
+              <button type="submit" style={{ padding: "10px 28px", background: "#0f172a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
                 {editingServiceId ? "Save Changes" : "Create Service"}
               </button>
             </div>
