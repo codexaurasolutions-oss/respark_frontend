@@ -73,17 +73,20 @@ export default function ProductCategoriesPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  const filteredCategories = categories.filter(c => selectedBranchId ? c.branchId === selectedBranchId || !c.branchId : true);
+
   const filteredProducts = products.filter(p => {
+    const matchBranch = selectedBranchId ? p.branchId === selectedBranchId : true;
     const matchCat = selectedCategory ? p.categoryId === selectedCategory.id : true;
     const matchQ = searchQ ? p.name.toLowerCase().includes(searchQ.toLowerCase()) || (p.sku || "").toLowerCase().includes(searchQ.toLowerCase()) : true;
-    return matchCat && matchQ && p.isActive;
+    return matchBranch && matchCat && matchQ && p.isActive;
   });
 
   const handleSaveCategory = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.post("/owner/inventory/categories", categoryForm);
+      await api.post("/owner/inventory/categories", { ...categoryForm, branchId: selectedBranchId });
       setStatus({ success: "Category saved", error: "" });
       setShowCategoryModal(false);
       setCategoryForm({ name: "", sortOrder: categories.length + 1, isPublicVisible: true });
@@ -237,7 +240,7 @@ export default function ProductCategoriesPage() {
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: !selectedCategory ? "#3b82f6" : "#cbd5e1" }} />
             All Categories
           </div>
-          {categories.map(cat => (
+          {filteredCategories.map(cat => (
             <div
               key={cat.id}
               style={{
@@ -280,7 +283,7 @@ export default function ProductCategoriesPage() {
               </button>
             </div>
           ))}
-          {categories.length === 0 && <div style={{ padding: "32px 16px", color: "#94a3b8", fontSize: 13, textAlign: "center" }}>No categories yet</div>}
+          {filteredCategories.length === 0 && <div style={{ padding: "32px 16px", color: "#94a3b8", fontSize: 13, textAlign: "center" }}>No categories yet</div>}
         </div>
       </div>
 
@@ -578,7 +581,7 @@ export default function ProductCategoriesPage() {
                   <label style={{ fontSize: 13, fontWeight: 600, color: "#475569", marginBottom: 6, display: "block" }}>Category</label>
                   <select className="hub-input" value={productForm.categoryId} onChange={e => setProductForm({...productForm, categoryId: e.target.value})} style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff" }}>
                     <option value="">No Category</option>
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {filteredCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
 
