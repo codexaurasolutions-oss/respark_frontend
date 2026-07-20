@@ -748,15 +748,44 @@ export default function ServiceCategoriesPage() {
                 <label style={labelStyle}>Service Image</label>
                 <div style={{ display: "flex", gap: 10 }}>
                   {serviceForm.imageUrl ? (
-                    <div style={{ position: "relative", width: 80, height: 80, borderRadius: 10, overflow: "hidden", border: "1px solid #e2e8f0" }}>
-                      <img src={serviceForm.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      <button type="button" onClick={() => setServiceForm({...serviceForm, imageUrl: ""})} style={{ position: "absolute", top: 2, right: 2, background: "#dc2626", color: "#fff", border: "none", borderRadius: "50%", width: 18, height: 18, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
-                    </div>
+                    serviceForm.imageUrl === "uploading" ? (
+                      <div style={{ width: 80, height: 80, borderRadius: 10, border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc" }}>
+                        <div style={{ width: 20, height: 20, border: "2px solid #e2e8f0", borderTopColor: "#3b82f6", borderRadius: "50%", animation: "spinAround 0.8s linear infinite" }} />
+                      </div>
+                    ) : (
+                      <div style={{ position: "relative", width: 80, height: 80, borderRadius: 10, overflow: "hidden", border: "1px solid #e2e8f0" }}>
+                        <img src={serviceForm.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <button type="button" onClick={() => setServiceForm({...serviceForm, imageUrl: ""})} style={{ position: "absolute", top: 2, right: 2, background: "#dc2626", color: "#fff", border: "none", borderRadius: "50%", width: 18, height: 18, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+                      </div>
+                    )
                   ) : (
                     <label style={{ width: 80, height: 80, borderRadius: 10, border: "2px dashed #cbd5e1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#94a3b8", fontSize: 11, gap: 4, transition: "border-color 0.2s" }} onMouseEnter={e => e.currentTarget.style.borderColor = "#3b82f6"} onMouseLeave={e => e.currentTarget.style.borderColor = "#cbd5e1"}>
                       <span style={{ fontSize: 24 }}>+</span>
                       Add Image
-                      <input type="file" accept="image/*" hidden onChange={e => { const file = e.target.files?.[0]; if (!file) return; if (file.size > 2 * 1024 * 1024) { setError("Image exceeds 2MB."); return; } const reader = new FileReader(); reader.onload = ev => setServiceForm(p => ({...p, imageUrl: ev.target.result})); reader.readAsDataURL(file); e.target.value = ""; }} />
+                      <input type="file" accept="image/*" hidden onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 2 * 1024 * 1024) {
+                          setError("Image exceeds 2MB.");
+                          return;
+                        }
+                        try {
+                          setStatus({ error: "", success: "" });
+                          // Temporarily show a loading placeholder
+                          setServiceForm(p => ({ ...p, imageUrl: "uploading" }));
+                          const formData = new FormData();
+                          formData.append("image", file, file.name);
+                          const response = await api.post("/upload", formData, {
+                            headers: { "Content-Type": "multipart/form-data" }
+                          });
+                          const url = response.data?.url || "";
+                          setServiceForm(p => ({ ...p, imageUrl: url }));
+                        } catch (err) {
+                          setError("Failed to upload image. Please try again.");
+                          setServiceForm(p => ({ ...p, imageUrl: "" }));
+                        }
+                        e.target.value = "";
+                      }} />
                     </label>
                   )}
                 </div>
@@ -787,6 +816,9 @@ export default function ServiceCategoriesPage() {
           </form>
         </div>
       )}
+      <style>{`
+        @keyframes spinAround { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }
