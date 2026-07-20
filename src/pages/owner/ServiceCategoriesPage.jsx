@@ -719,25 +719,25 @@ export default function ServiceCategoriesPage() {
                 </div>
                 {(serviceForm.consumables || []).map((item, idx) => (
                   <div key={idx} style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-end" }}>
-                    <div style={{ flex: 2 }}>
+                    <div style={{ flex: 3 }}>
                       {idx === 0 && <label style={{ ...labelStyle, fontSize: 11, marginBottom: 4 }}>Product</label>}
                       <select value={item.productId} onChange={e => { const ni = [...serviceForm.consumables]; const prod = products.find(p => p.id === e.target.value); ni[idx] = {...ni[idx], productId: e.target.value, productName: prod?.name || ""}; setServiceForm({...serviceForm, consumables: ni}); }} style={{ ...inputStyle, padding: "8px 12px", fontSize: 13 }}>
                         <option value="">Select product</option>
                         {products.filter(p => p.isActive && p.productType === "CONSUMABLE").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                     </div>
-                    <div style={{ flex: 1.5 }}>
+                    <div style={{ flex: 1.2 }}>
                       {idx === 0 && <label style={{ ...labelStyle, fontSize: 11, marginBottom: 4 }}>Qty</label>}
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <input type="number" min="0" value={item.reqdQty} onChange={e => { const ni = [...serviceForm.consumables]; ni[idx] = {...ni[idx], reqdQty: e.target.value}; setServiceForm({...serviceForm, consumables: ni}); }} style={{ ...inputStyle, padding: "8px 12px", fontSize: 13, flex: 1, minWidth: 0 }} />
+                      <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 8, overflow: "hidden", background: "#fff", height: 38, boxSizing: "border-box" }}>
+                        <input type="number" min="0" value={item.reqdQty} onChange={e => { const ni = [...serviceForm.consumables]; ni[idx] = {...ni[idx], reqdQty: e.target.value}; setServiceForm({...serviceForm, consumables: ni}); }} style={{ border: "none", outline: "none", padding: "8px 12px", fontSize: 13, flex: 1, minWidth: 0, width: "100%", background: "transparent" }} />
                         {item.productId && (
-                          <span style={{ fontSize: 12, color: "#64748b", flexShrink: 0, whiteSpace: "nowrap", display: "inline-block", minWidth: 24 }}>
+                          <span style={{ fontSize: 11, color: "#64748b", background: "#f1f5f9", padding: "0 10px", borderLeft: "1px solid #cbd5e1", flexShrink: 0, height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600 }}>
                             {products.find(p => p.id === item.productId)?.unit || (products.find(p => p.id === item.productId)?.productType === "CONSUMABLE" ? "ml" : "pcs")}
                           </span>
                         )}
                       </div>
                     </div>
-                    <button type="button" onClick={() => setServiceForm({...serviceForm, consumables: serviceForm.consumables.filter((_, i) => i !== idx)})} style={{ background: "#fee2e2", border: "none", borderRadius: 6, padding: "8px 10px", cursor: "pointer", color: "#dc2626", marginBottom: 0, display: "flex", alignItems: "center" }}>✕</button>
+                    <button type="button" onClick={() => setServiceForm({...serviceForm, consumables: serviceForm.consumables.filter((_, i) => i !== idx)})} style={{ background: "#fee2e2", border: "none", borderRadius: 6, padding: "8px 10px", cursor: "pointer", color: "#dc2626", marginBottom: 0, display: "flex", alignItems: "center", height: 38 }}>✕</button>
                   </div>
                 ))}
                 {!(serviceForm.consumables || []).length && <p style={{ margin: 0, fontSize: 13, color: "#94a3b8", fontStyle: "italic" }}>No consumables added</p>}
