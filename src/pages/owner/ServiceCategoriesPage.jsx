@@ -726,9 +726,16 @@ export default function ServiceCategoriesPage() {
                         {products.filter(p => p.isActive && p.productType === "CONSUMABLE").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: 1.5 }}>
                       {idx === 0 && <label style={{ ...labelStyle, fontSize: 11, marginBottom: 4 }}>Qty</label>}
-                      <input type="number" min="0" value={item.reqdQty} onChange={e => { const ni = [...serviceForm.consumables]; ni[idx] = {...ni[idx], reqdQty: e.target.value}; setServiceForm({...serviceForm, consumables: ni}); }} style={{ ...inputStyle, padding: "8px 12px", fontSize: 13 }} />
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <input type="number" min="0" value={item.reqdQty} onChange={e => { const ni = [...serviceForm.consumables]; ni[idx] = {...ni[idx], reqdQty: e.target.value}; setServiceForm({...serviceForm, consumables: ni}); }} style={{ ...inputStyle, padding: "8px 12px", fontSize: 13, flex: 1, minWidth: 0 }} />
+                        {item.productId && (
+                          <span style={{ fontSize: 12, color: "#64748b", flexShrink: 0, whiteSpace: "nowrap", display: "inline-block", minWidth: 24 }}>
+                            {products.find(p => p.id === item.productId)?.unit || (products.find(p => p.id === item.productId)?.productType === "CONSUMABLE" ? "ml" : "pcs")}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <button type="button" onClick={() => setServiceForm({...serviceForm, consumables: serviceForm.consumables.filter((_, i) => i !== idx)})} style={{ background: "#fee2e2", border: "none", borderRadius: 6, padding: "8px 10px", cursor: "pointer", color: "#dc2626", marginBottom: 0, display: "flex", alignItems: "center" }}>✕</button>
                   </div>
