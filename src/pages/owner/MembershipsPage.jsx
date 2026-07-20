@@ -323,6 +323,14 @@ export default function MembershipsPage() {
     <option key={customer.id} value={customer.id}>{customer.name} {customer.phone ? `- ${customer.phone}` : ""}</option>
   ));
 
+  // Branch-wise filtering on the client side
+  const filteredMemberships = selectedBranchId
+    ? memberships.filter(m => !m.branchId || m.branchId === selectedBranchId)
+    : memberships;
+  const filteredPackages = selectedBranchId
+    ? packages.filter(p => !p.branchId || p.branchId === selectedBranchId)
+    : packages;
+
   return (
     <div className="mem-page" style={{ background: "#f8fafc", minHeight: "100vh" }}>
       {status.error && (
@@ -367,7 +375,7 @@ export default function MembershipsPage() {
           <h3>{customerMembershipMode ? "Assigned Memberships" : "Membership Plans"}</h3>
           {loading ? <PageLoader compact title="Loading memberships" message="Preparing plans, assignments, and customer usage balances." /> : null}
           <div className="list-stack" style={{ maxHeight: "55vh", overflowY: "auto" }}>
-            {(customerMembershipMode ? (selectedCustomerHistory?.memberships || []) : memberships).map((item) => (
+            {(customerMembershipMode ? (selectedCustomerHistory?.memberships || []) : filteredMemberships).map((item) => (
               <div key={item.id} className="list-item">
                 <div className="item-head">
                   <strong>{customerMembershipMode ? item.membershipPlan?.name : item.name}</strong>
@@ -415,14 +423,14 @@ export default function MembershipsPage() {
               </div>
             ))}
             {customerMembershipMode && !loading && !selectedCustomerHistory?.memberships?.length && <EmptyState title="No memberships assigned yet" message="Assign a membership to start tracking customer benefits and renewal activity." />}
-            {!customerMembershipMode && !loading && !memberships.length && <EmptyState title="No membership plans yet" message="Create your first membership plan to launch recurring loyalty offers." />}
+            {!customerMembershipMode && !loading && !filteredMemberships.length && <EmptyState title="No membership plans yet" message="Create your first membership plan to launch recurring loyalty offers." />}
           </div>
         </div>}
 
         {(activeSection === "packages") && <div className="panel-card">
           <h3>{customerPackageMode ? "Assigned Packages" : "Packages"}</h3>
           <div className="list-stack" style={{ maxHeight: "55vh", overflowY: "auto" }}>
-            {(customerPackageMode ? (selectedCustomerHistory?.packages || []) : packages).map((item) => (
+            {(customerPackageMode ? (selectedCustomerHistory?.packages || []) : filteredPackages).map((item) => (
               <div key={item.id} className="list-item">
                 <div className="item-head">
                   <strong>{customerPackageMode ? item.package?.name : item.name}</strong>
@@ -460,7 +468,7 @@ export default function MembershipsPage() {
               </div>
             ))}
             {customerPackageMode && !loading && !selectedCustomerHistory?.packages?.length && <EmptyState title="No packages assigned yet" message="Assign a package to start tracking prepaid sessions for this customer." />}
-            {!customerPackageMode && !loading && !packages.length && <EmptyState title="No packages yet" message="Create your first package to launch prepaid session bundles." />}
+            {!customerPackageMode && !loading && !filteredPackages.length && <EmptyState title="No packages yet" message="Create your first package to launch prepaid session bundles." />}
           </div>
         </div>}
 
@@ -994,7 +1002,7 @@ export default function MembershipsPage() {
               <span className="muted">Membership plan</span>
               <select value={assignMembershipForm.membershipPlanId} onChange={(event) => setAssignMembershipForm((current) => ({ ...current, membershipPlanId: event.target.value }))}>
                 <option value="">Select membership plan</option>
-                {memberships.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                {filteredMemberships.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
               </select>
             </label>
             <label>
@@ -1046,7 +1054,7 @@ export default function MembershipsPage() {
               <span className="muted">Package</span>
               <select value={assignPackageForm.packageId} onChange={(event) => setAssignPackageForm((current) => ({ ...current, packageId: event.target.value }))}>
                 <option value="">Select package</option>
-                {packages.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                {filteredPackages.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
               </select>
             </label>
             <label>
@@ -1167,7 +1175,7 @@ export default function MembershipsPage() {
               <span className="muted">Upgrade to plan</span>
               <select value={membershipLifecycleForm.upgradePlanId} onChange={(event) => setMembershipLifecycleForm((current) => ({ ...current, upgradePlanId: event.target.value }))}>
                   <option value="">Upgrade to plan</option>
-                  {memberships.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  {filteredMemberships.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                 </select>
             </label>
                 <label>
