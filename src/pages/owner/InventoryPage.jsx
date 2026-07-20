@@ -374,6 +374,24 @@ export default function InventoryPage() {
     });
   }, [products, reconSearch, reconCategoryId]);
 
+  const mostUsedConsumables = useMemo(() => {
+    const consumedMap = {};
+    movements.forEach(m => {
+      if (m.product?.productType === "CONSUMABLE" && m.quantity < 0) {
+        if (!consumedMap[m.product.id]) {
+          consumedMap[m.product.id] = { product: m.product, totalConsumed: 0, lastUsed: m.createdAt };
+        }
+        consumedMap[m.product.id].totalConsumed += Math.abs(m.quantity);
+        if (new Date(m.createdAt) > new Date(consumedMap[m.product.id].lastUsed)) {
+          consumedMap[m.product.id].lastUsed = m.createdAt;
+        }
+      }
+    });
+    return Object.values(consumedMap)
+      .sort((a, b) => b.totalConsumed - a.totalConsumed)
+      .slice(0, 5);
+  }, [movements]);
+
 
   useEffect(() => {
     if (selectedOrder) {
@@ -733,21 +751,21 @@ export default function InventoryPage() {
                 <thead>
                   <tr style={{ background: "#e0f2fe", color: "#0369a1", fontSize: "0.85rem", textTransform: "uppercase" }}>
                     <th style={{ padding: "12px 24px", fontWeight: 600 }}>Product Name</th>
-                    <th style={{ padding: "12px 24px", fontWeight: 600 }}>Type</th>
+                    <th style={{ padding: "12px 24px", fontWeight: 600 }}>Category</th>
                     <th style={{ padding: "12px 24px", fontWeight: 600 }}>Total Consumed</th>
-                    <th style={{ padding: "12px 24px", fontWeight: 600 }}>Date Recorded</th>
+                    <th style={{ padding: "12px 24px", fontWeight: 600 }}>Last Used</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {movements.slice(0, 5).map(m => (
-                    <tr key={m.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                      <td style={{ padding: "14px 24px", fontSize: "0.9rem", color: "#334155", fontWeight: 500 }}>{m.product?.name || "-"}</td>
-                      <td style={{ padding: "14px 24px", fontSize: "0.9rem", color: "#334155" }}>{m.movementType}</td>
-                      <td style={{ padding: "14px 24px", fontSize: "0.9rem", color: "#0f172a", fontWeight: 600 }}>{m.quantity}</td>
-                      <td style={{ padding: "14px 24px", fontSize: "0.9rem", color: "#64748b" }}>{new Date(m.createdAt).toLocaleDateString()}</td>
+                  {mostUsedConsumables.map(m => (
+                    <tr key={m.product.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "14px 24px", fontSize: "0.9rem", color: "#334155", fontWeight: 500 }}>{m.product.name}</td>
+                      <td style={{ padding: "14px 24px", fontSize: "0.9rem", color: "#334155" }}>{m.product.category?.name || "Consumable"}</td>
+                      <td style={{ padding: "14px 24px", fontSize: "0.9rem", color: "#ef4444", fontWeight: 600 }}>{m.totalConsumed} {m.product.unit || ""}</td>
+                      <td style={{ padding: "14px 24px", fontSize: "0.9rem", color: "#64748b" }}>{new Date(m.lastUsed).toLocaleDateString()}</td>
                     </tr>
                   ))}
-                  {movements.length === 0 && <tr><td colSpan="4" style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>No records found.</td></tr>}
+                  {mostUsedConsumables.length === 0 && <tr><td colSpan="4" style={{ padding: 24, textAlign: "center", color: "#94a3b8" }}>No consumables used yet.</td></tr>}
                 </tbody>
               </table>
             </div>
