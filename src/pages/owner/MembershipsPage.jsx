@@ -323,12 +323,12 @@ export default function MembershipsPage() {
     <option key={customer.id} value={customer.id}>{customer.name} {customer.phone ? `- ${customer.phone}` : ""}</option>
   ));
 
-  // Branch-wise filtering on the client side
+  // Strict branch-wise filtering — only show items for the selected branch
   const filteredMemberships = selectedBranchId
-    ? memberships.filter(m => !m.branchId || m.branchId === selectedBranchId)
+    ? memberships.filter(m => m.branchId === selectedBranchId)
     : memberships;
   const filteredPackages = selectedBranchId
-    ? packages.filter(p => !p.branchId || p.branchId === selectedBranchId)
+    ? packages.filter(p => p.branchId === selectedBranchId)
     : packages;
 
   return (

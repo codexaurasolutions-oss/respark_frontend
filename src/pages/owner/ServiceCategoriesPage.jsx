@@ -101,9 +101,17 @@ export default function ServiceCategoriesPage() {
     load();
   }, [selectedBranchId]);
 
+  // Strict client-side branch filter — only show categories belonging to selected branch
+  const filteredCategories = useMemo(
+    () => selectedBranchId
+      ? categories.filter(cat => cat.branchId === selectedBranchId)
+      : categories,
+    [categories, selectedBranchId]
+  );
+
   const selectedCategory = useMemo(
-    () => categories.find((category) => category.id === selectedCatId) || null,
-    [categories, selectedCatId]
+    () => filteredCategories.find((category) => category.id === selectedCatId) || null,
+    [filteredCategories, selectedCatId]
   );
 
   const subcategories = selectedCategory?.children || [];
@@ -141,13 +149,13 @@ export default function ServiceCategoriesPage() {
 
 
   const totalSubcategories = useMemo(
-    () => categories.reduce((count, category) => count + (category.children?.length || 0), 0),
-    [categories]
+    () => filteredCategories.reduce((count, category) => count + (category.children?.length || 0), 0),
+    [filteredCategories]
   );
 
   useEffect(() => {
-    if (!selectedCatId || !categories.length) return;
-    const freshCategory = categories.find((category) => category.id === selectedCatId);
+    if (!selectedCatId || !filteredCategories.length) return;
+    const freshCategory = filteredCategories.find((category) => category.id === selectedCatId);
     if (!freshCategory) {
       setSelectedCatId("");
       setSelectedSubId("");
@@ -157,7 +165,7 @@ export default function ServiceCategoriesPage() {
       const freshSub = (freshCategory.children || []).find((subcategory) => subcategory.id === selectedSubId);
       if (!freshSub) setSelectedSubId("");
     }
-  }, [categories, selectedCatId, selectedSubId]);
+  }, [filteredCategories, selectedCatId, selectedSubId]);
 
   const resetServiceForm = (categoryId = selectedSubId || "") => {
     setEditingServiceId("");
@@ -413,7 +421,7 @@ export default function ServiceCategoriesPage() {
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <span style={{ display: "inline-flex", alignItems: "center", padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "#eff6ff", color: "#2563eb", border: "1px solid #bfdbfe" }}>
-            {categories.length} Categories
+            {filteredCategories.length} Categories
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0" }}>
             {totalSubcategories} Subcategories
@@ -431,7 +439,7 @@ export default function ServiceCategoriesPage() {
         <div style={{ background: "#fff", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>Categories</span>
-            <span style={{ fontSize: 11, background: "#f1f5f9", color: "#64748b", padding: "3px 8px", borderRadius: 12, fontWeight: 600 }}>{categories.length}</span>
+            <span style={{ fontSize: 11, background: "#f1f5f9", color: "#64748b", padding: "3px 8px", borderRadius: 12, fontWeight: 600 }}>{filteredCategories.length}</span>
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
             {/* All */}
@@ -444,7 +452,7 @@ export default function ServiceCategoriesPage() {
               <div style={{ width: 8, height: 8, borderRadius: "50%", background: !selectedCatId ? "#3b82f6" : "#cbd5e1", flexShrink: 0 }} />
               All Categories
             </div>
-            {categories.map((category) => (
+            {filteredCategories.map((category) => (
               <div
                 key={category.id}
                 onClick={() => { setSelectedCatId(category.id); setSelectedSubId(""); setEditingCatId(""); setEditingSubId(""); setSubInput(""); }}
