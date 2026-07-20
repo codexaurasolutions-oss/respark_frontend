@@ -12,11 +12,17 @@ import {
   Calendar, CheckCircle2, Clock, AlertCircle, XCircle, LayoutDashboard,
   Building, ArrowUpRight, ArrowDownRight, Edit, Check, X, ChevronRight, Plus, Trash2
 } from "lucide-react";
+const getLocalDateString = (d = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const emptyForm = {
   title: "",
   amount: "",
-  expenseDate: new Date().toISOString().slice(0, 10),
+  expenseDate: getLocalDateString(),
   categoryId: "",
   branchId: "",
   paymentMode: "CASH",
@@ -57,8 +63,8 @@ export default function ExpensesPage() {
   const [filters, setFilters] = useState({
     paymentMode: "",
     categoryId: "",
-    startDate: new Date(new Date().getFullYear(), new Date().getMonth() - 3, 1).toISOString().slice(0, 10),
-    endDate: new Date().toISOString().slice(0, 10),
+    startDate: getLocalDateString(new Date(new Date().getFullYear(), new Date().getMonth() - 3, 1)),
+    endDate: getLocalDateString(),
     status: "",
   });
 
@@ -137,7 +143,8 @@ export default function ExpensesPage() {
 
   // Filtered lists
   const baseFilteredExpenses = rows.filter(row => {
-    const rowDate = new Date(row.expenseDate).toISOString().slice(0, 10);
+    // Slice ISO string directly to prevent local timezone shift
+    const rowDate = row.expenseDate ? row.expenseDate.slice(0, 10) : "";
     const dateMatch = (!filters.startDate || rowDate >= filters.startDate) &&
                       (!filters.endDate || rowDate <= filters.endDate);
     const branchMatch = !selectedBranchId || row.branchId === selectedBranchId;
@@ -294,7 +301,7 @@ export default function ExpensesPage() {
       const payload = {
         title: form.title,
         amount: Number(form.amount),
-        expenseDate: new Date(form.expenseDate).toISOString().slice(0, 10),
+        expenseDate: form.expenseDate,
         paymentMode: form.paymentMode,
         notes: form.notes || null,
         categoryId: form.categoryId || null,
@@ -326,7 +333,7 @@ export default function ExpensesPage() {
     setForm({
       title: expense.title || "",
       amount: String(expense.amount || ""),
-      expenseDate: expense.expenseDate ? expense.expenseDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      expenseDate: expense.expenseDate ? expense.expenseDate.slice(0, 10) : getLocalDateString(),
       categoryId: expense.categoryId || "",
       branchId: expense.branchId || "",
       paymentMode: expense.paymentMode || "CASH",
@@ -1015,7 +1022,9 @@ export default function ExpensesPage() {
                       {filteredExpenses.map((row) => {
                         return (
                           <tr key={row.id}>
-                            <td style={{ fontWeight: 600 }}>{new Date(row.expenseDate).toLocaleDateString()}</td>
+                            <td style={{ fontWeight: 600 }}>
+                              {row.expenseDate ? row.expenseDate.slice(0, 10).split('-').reverse().join('/') : ""}
+                            </td>
                             <td>
                               <span style={{ background: "#f1f5f9", padding: "4px 8px", borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
                                 {row.category?.name || "Uncategorized"}
@@ -1305,7 +1314,9 @@ export default function ExpensesPage() {
                         const isIncome = tx.type.startsWith("INCOME");
                         return (
                           <tr key={tx.id || idx}>
-                            <td>{new Date(tx.date).toLocaleDateString()}</td>
+                            <td>
+                              {tx.date ? tx.date.slice(0, 10).split('-').reverse().join('/') : ""}
+                            </td>
                             <td style={{ fontWeight: 600 }}>{tx.title}</td>
                             <td>{tx.reference}</td>
                             <td>
