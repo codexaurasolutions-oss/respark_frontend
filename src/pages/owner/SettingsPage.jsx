@@ -2107,6 +2107,7 @@ export default function SettingsPage() {
     const updateRow = (id, patch) => updateAdvancedObject("rosterManagement", {
       rows: roster.rows.map((row) => row.id === id ? { ...row, ...patch } : row)
     });
+    const visibleRosterRows = roster.rows.filter((row) => summary.staffRows.some((s) => String(s.id) === String(row.id)));
     const applyShiftTemplate = () => {
       if (!rosterModuleEnabled) return;
       const selectedShift = shifts.find((item) => item.id === roster.useShiftId);
@@ -2120,14 +2121,16 @@ export default function SettingsPage() {
         toTime = firstDay.endTime || toTime;
       }
       updateAdvancedObject("rosterManagement", {
-        rows: roster.rows.map((row) => ({
-          ...row,
-          applyToAll: true,
-          fromTime: fromTime || "09:00",
-          toTime: toTime || "21:00",
-          isWorking: selectedShift.active !== false ? true : row.isWorking ?? true,
-          breakLabel: selectedShift.breakLabel || row.breakLabel || ""
-        }))
+        rows: roster.rows.map((row) => {
+          if (!row.applyToAll) return row;
+          return {
+            ...row,
+            fromTime: fromTime || "09:00",
+            toTime: toTime || "21:00",
+            isWorking: selectedShift.active !== false ? true : row.isWorking ?? true,
+            breakLabel: selectedShift.breakLabel || row.breakLabel || ""
+          };
+        })
       });
     };
     const handleDateNav = (offset) => {
@@ -2249,10 +2252,13 @@ export default function SettingsPage() {
               <input
                 type="checkbox"
                 disabled={!rosterModuleEnabled}
-                checked={roster.rows.length > 0 && roster.rows.every((row) => row.applyToAll)}
-                onChange={(event) => updateAdvancedObject("rosterManagement", {
-                  rows: roster.rows.map((row) => ({ ...row, applyToAll: event.target.checked }))
-                })}
+                checked={visibleRosterRows.length > 0 && visibleRosterRows.every((row) => row.applyToAll)}
+                onChange={(event) => {
+                  const visibleIds = new Set(visibleRosterRows.map(r => r.id));
+                  updateAdvancedObject("rosterManagement", {
+                    rows: roster.rows.map((row) => visibleIds.has(row.id) ? { ...row, applyToAll: event.target.checked } : row)
+                  });
+                }}
                 style={{ width: 16, height: 16 }}
               />
               <span>Apply to All</span>
@@ -2263,7 +2269,7 @@ export default function SettingsPage() {
             <div>Is Working</div>
             <div>Add Break</div>
           </div>
-          {roster.rows.map((row) => (
+          {visibleRosterRows.map((row) => (
             <div key={row.id} style={{ padding: "12px 16px", borderBottom: "1px solid #f1f5f9", display: "grid", gridTemplateColumns: "100px 1fr 180px 180px 120px 1fr", alignItems: "center", gap: 12 }}>
               <input
                 type="checkbox"
@@ -2304,10 +2310,9 @@ export default function SettingsPage() {
               />
             </div>
           ))}
-          {roster.rows.length === 0 && (
-            <div style={{ padding: "48px 24px", textAlign: "center", color: "#64748b", background: "#f8fafc" }}>
-              <strong>No staff members found</strong>
-              <div style={{ fontSize: "12px", marginTop: 4 }}>Staff roster is dynamically populated from your Users/Staff list.</div>
+          {visibleRosterRows.length === 0 && (
+            <div style={{ padding: "30px", textAlign: "center", color: "#64748b" }}>
+              <strong>No staff members found in this branch</strong>
             </div>
           )}
           </div>
