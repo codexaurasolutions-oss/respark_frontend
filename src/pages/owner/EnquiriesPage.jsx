@@ -97,19 +97,17 @@ export default function EnquiriesPage() {
   // Load basic dropdown options (Services & Branches)
   const loadOptions = useCallback(async () => {
     try {
+      const params = selectedBranchId ? { branchId: selectedBranchId } : {};
       const [servicesRes, branchesRes] = await Promise.all([
-        api.get("/owner/services").catch(() => ({ data: [] })),
+        api.get("/owner/services", { params }).catch(() => ({ data: [] })),
         api.get("/owner/branches").catch(() => ({ data: [] }))
       ]);
       setServices(servicesRes.data || []);
       setBranches(branchesRes.data || []);
-      if (branchesRes.data?.length) {
-        setForm(f => ({ ...f, interestedBranchId: branchesRes.data[0].id }));
-      }
     } catch (e) {
       console.error("Failed to load options", e);
     }
-  }, []);
+  }, [selectedBranchId]);
 
   const load = useCallback(async () => {
     try {
@@ -154,7 +152,7 @@ export default function EnquiriesPage() {
         email: form.email || null,
         source: "PHONE", // default enum
         interestedServiceId: form.interestedServiceId || null,
-        interestedBranchId: form.interestedBranchId || null,
+        interestedBranchId: selectedBranchId || (branches.length > 0 ? branches[0].id : null),
         priority: form.priority.toUpperCase(),
         followUpAt: form.followUpAt ? new Date(form.followUpAt).toISOString() : null,
         notes: form.notes || null
@@ -172,9 +170,6 @@ export default function EnquiriesPage() {
       }
 
       setForm(emptyForm);
-      if (branches.length) {
-        setForm(f => ({ ...f, interestedBranchId: branches[0].id }));
-      }
       setShowModal(false);
       setStatus({ error: "", success: "Enquiry successfully captured." });
       setTimeout(() => setStatus({ error: "", success: "" }), 3000);
