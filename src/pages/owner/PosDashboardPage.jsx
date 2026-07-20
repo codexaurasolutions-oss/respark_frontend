@@ -1220,7 +1220,9 @@ export default function PosDashboardPage() {
             </div>
           </div>
         </div>
-      ) : null}
+      </div>
+    </div>
+  ) : null}
 
       {reminderModal.open ? (
         <div className="premium-modal-overlay" onClick={() => setReminderModal({ open: false, index: -1, date: "", note: "" })} style={{ zIndex: 10010, background: "rgba(0,0,0,0.55)" }}>
