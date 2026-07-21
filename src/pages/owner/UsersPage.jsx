@@ -594,8 +594,8 @@ export default function UsersPage() {
           {selectedRow ? (
             <>
               <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'white', borderBottom: '1px solid #e2e8f0' }}>
-                <div style={{ padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: 900, margin: '0 auto' }}>
-                  <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+                <div className="responsive-profile-header" style={{ padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: 900, margin: '0 auto' }}>
+                  <div className="responsive-profile-header-user" style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
                     <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'white', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)' }}>
                       {selectedRow.avatarUrl ? (
                         <img
@@ -624,7 +624,7 @@ export default function UsersPage() {
                       <div style={{ color: '#64748b', fontSize: 14, marginTop: 4 }}>{selectedRow.user?.email}</div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 12 }}>
+                  <div className="responsive-profile-header-actions" style={{ display: 'flex', gap: 12 }}>
                     <button
                       type="button"
                       onClick={() => toggleUserStatus(selectedRow)}
@@ -645,8 +645,8 @@ export default function UsersPage() {
                 </div>
               </div>
 
-              <div style={{ padding: '32px', maxWidth: 900, margin: '0 auto' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 32 }}>
+              <div className="responsive-profile-padding" style={{ padding: '32px', maxWidth: 900, margin: '0 auto' }}>
+                <div className="responsive-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 32 }}>
                    <div style={{ background: 'white', padding: 20, borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                        <div style={{ background: '#f0fdf4', padding: 6, borderRadius: 8, color: '#16a34a' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
@@ -745,7 +745,7 @@ export default function UsersPage() {
                         })()}
                       </div>
                       
-                      <div className="responsive-grid" className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                         <div className="hub-form-group">
                           <label>System role (fallback) <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 11 }}>— auto-set when access role picked</span></label>
                           <select className="hub-input" value={form.salonRole} onChange={(event) => applyRolePreset(event.target.value)} disabled={Boolean(form.customRoleId)} style={form.customRoleId ? { background: '#f1f5f9', cursor: 'not-allowed' } : undefined}>
@@ -846,7 +846,7 @@ export default function UsersPage() {
                     {/* Employment & HR Details */}
                     <div style={{ marginBottom: 32 }}>
                       <h4 style={{ fontSize: 15, color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 16 }}>Employment & HR Details</h4>
-                      <div className="responsive-grid" className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <div className="responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                         <div className="hub-form-group">
                           <label>Date of Joining</label>
                           <input type="date" className="hub-input" value={form.joiningDate} onChange={(event) => setForm({ ...form, joiningDate: event.target.value })} />

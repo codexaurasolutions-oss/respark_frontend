@@ -424,3 +424,33 @@
     gap: 12px;
   }
 }
+
+/* Responsive layout for Staff Directory Profile */
+@media (max-width: 900px) {
+  .responsive-profile-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 16px 20px !important;
+    gap: 16px !important;
+  }
+  .responsive-profile-header-user {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  .responsive-profile-header-actions {
+    width: 100% !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+  }
+  .responsive-stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .responsive-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .responsive-profile-padding {
+    padding: 16px !important;
+  }
+}
