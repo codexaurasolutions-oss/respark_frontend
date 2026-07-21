@@ -290,19 +290,20 @@ export default function ProductCategoriesPage() {
       {/* Right Panel - Products */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#f8fafc" }}>
         {/* Header */}
-        <div style={{ padding: "20px 32px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
+        <div className="responsive-header" style={{ padding: "20px 32px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" }}>
           <h3 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: "#0f172a", display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ background: "#eff6ff", padding: 8, borderRadius: 8, color: "#3b82f6", display: "flex" }}><Package size={20} /></div>
             {selectedCategory ? selectedCategory.name : "All Products"}
           </h3>
-          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-            <div style={{ position: "relative" }}>
+          <div className="responsive-header-actions" style={{ display: "flex", gap: 16, alignItems: "center" }}>
+            <div style={{ position: "relative", flex: 1 }}>
               <Search size={16} style={{ position: "absolute", left: 12, top: 12, color: "#94a3b8" }} />
               <input
                 type="text"
                 value={searchQ}
                 onChange={(e) => setSearchQ(e.target.value)}
                 placeholder="Search products, SKU..."
+                className="responsive-search-input"
                 style={{ border: "1px solid #cbd5e1", borderRadius: 8, padding: "10px 12px 10px 36px", fontSize: 14, width: 260, outline: "none", transition: "border-color 0.2s" }}
                 onFocus={e => e.target.style.borderColor = "#3b82f6"}
                 onBlur={e => e.target.style.borderColor = "#cbd5e1"}
@@ -315,9 +316,9 @@ export default function ProductCategoriesPage() {
         </div>
 
         {/* Product List */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px" }}>
+        <div className="responsive-product-grid-container" style={{ flex: 1, overflowY: "auto", padding: "24px 32px" }}>
           {filteredProducts.length > 0 ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
+            <div className="responsive-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
               {filteredProducts.map(p => (
                 <div key={p.id} style={{ background: "#ffffff", borderRadius: 12, padding: 20, border: "1px solid #e2e8f0", boxShadow: "0 2px 6px rgba(0,0,0,0.02)", display: "flex", flexDirection: "column", gap: 16, transition: "transform 0.2s, box-shadow 0.2s" }} onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 16px rgba(0,0,0,0.06)"; }} onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.02)"; }}>
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>

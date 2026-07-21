@@ -364,3 +364,36 @@
     flex-wrap: wrap;
   }
 }
+
+/* Responsive layout for Product Categories Page */
+@media (max-width: 900px) {
+  .responsive-page-layout {
+    flex-direction: column !important;
+  }
+  .responsive-sidebar {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 40vh;
+    border-right: none !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+    flex: 0 0 40vh;
+  }
+  .responsive-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 16px;
+    padding: 16px !important;
+  }
+  .responsive-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  .responsive-product-grid {
+    grid-template-columns: 1fr !important;
+    padding: 16px !important;
+  }
+  .responsive-search-input {
+    width: 100% !important;
+  }
+}
