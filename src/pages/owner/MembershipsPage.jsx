@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit2, Plus, PackageOpen } from "lucide-react";
 import { api } from "../../api/client";
 import { useSalonSettings } from "../../context/SalonSettingsContext";
 import { useBranch } from "../../context/BranchContext";
@@ -474,9 +474,11 @@ export default function MembershipsPage() {
 
       {(activeSection === "memberships") && !customerMembershipMode && (
           <div className="panel-card">
-            <h3 style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: 14, marginBottom: 20 }}>
-              {membershipEditMode ? "✏️ Edit Membership Plan" : "✦ Create Membership Plan"}
-            </h3>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", borderTopLeftRadius: 18, borderTopRightRadius: 18 }}>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: 8 }}>
+                {membershipEditMode ? <><Edit2 size={20} color="#64748b" /> Edit Membership Plan</> : <><Plus size={20} color="#64748b" /> Create Membership Plan</>}
+              </span>
+            </div>
             
             <form onSubmit={async (event) => {
               event.preventDefault();
@@ -725,9 +727,11 @@ export default function MembershipsPage() {
 
         {(activeSection === "packages") && !customerPackageMode && (
           <div className="panel-card">
-            <h3 style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: 14, marginBottom: 20 }}>
-              {packageEditMode ? "✏️ Edit Package" : "✦ Create Package"}
-            </h3>
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", borderTopLeftRadius: 18, borderTopRightRadius: 18 }}>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: 8 }}>
+                {packageEditMode ? <><Edit2 size={20} color="#64748b" /> Edit Package</> : <><Package size={20} color="#64748b" /> Create Package</>}
+              </span>
+            </div>
             <form onSubmit={async (event) => {
               event.preventDefault();
               setStatus({ error: "", success: "" });

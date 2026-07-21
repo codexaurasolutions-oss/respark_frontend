@@ -594,10 +594,9 @@ export default function UsersPage() {
           {selectedRow ? (
             <>
               <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'white', borderBottom: '1px solid #e2e8f0' }}>
-                <div style={{ height: 100, background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)' }}></div>
-                <div style={{ padding: '0 32px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: -40 }}>
-                  <div style={{ display: 'flex', gap: 20, alignItems: 'flex-end' }}>
-                    <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'white', padding: 4, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                <div style={{ padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: 900, margin: '0 auto' }}>
+                  <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+                    <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'white', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)' }}>
                       {selectedRow.avatarUrl ? (
                         <img
                           src={getImageUrl(selectedRow.avatarUrl)}
@@ -609,27 +608,27 @@ export default function UsersPage() {
                           }}
                         />
                       ) : null}
-                      <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'linear-gradient(135deg, #2563eb, #3b82f6)', display: selectedRow.avatarUrl ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 28, fontWeight: 700 }}>
+                      <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', display: selectedRow.avatarUrl ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', fontSize: 24, fontWeight: 700, border: '1px solid #cbd5e1' }}>
                         {selectedRow.user?.name?.charAt(0).toUpperCase()}
                       </div>
                     </div>
-                    <div style={{ paddingBottom: 4 }}>
-                      <div style={{ color: '#0f172a', fontWeight: 700, fontSize: 24, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div>
+                      <div style={{ color: '#0f172a', fontWeight: 800, fontSize: 24, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
                         {selectedRow.user?.name}
                         {selectedRow.user?.isActive ? (
-                          <span style={{ fontSize: 11, background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: 12, fontWeight: 600 }}>ACTIVE</span>
+                          <span style={{ fontSize: 11, background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>ACTIVE</span>
                         ) : (
-                          <span style={{ fontSize: 11, background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: 12, fontWeight: 600 }}>INACTIVE</span>
+                          <span style={{ fontSize: 11, background: '#f1f5f9', color: '#64748b', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>INACTIVE</span>
                         )}
                       </div>
-                      <div style={{ color: '#64748b', fontSize: 14, marginTop: 2 }}>{selectedRow.user?.email}</div>
+                      <div style={{ color: '#64748b', fontSize: 14, marginTop: 4 }}>{selectedRow.user?.email}</div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 12, paddingBottom: 4 }}>
+                  <div style={{ display: 'flex', gap: 12 }}>
                     <button
                       type="button"
                       onClick={() => toggleUserStatus(selectedRow)}
-                      style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: selectedRow.user?.isActive ? '1px solid #fca5a5' : '1px solid #86efac', background: selectedRow.user?.isActive ? '#fef2f2' : '#f0fdf4', color: selectedRow.user?.isActive ? '#dc2626' : '#16a34a', transition: 'all 0.2s' }}
+                      style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: selectedRow.user?.isActive ? '1px solid #fecaca' : '1px solid #bbf7d0', background: selectedRow.user?.isActive ? '#fef2f2' : '#f0fdf4', color: selectedRow.user?.isActive ? '#dc2626' : '#16a34a', transition: 'all 0.2s' }}
                     >
                       {selectedRow.user?.isActive ? "Deactivate Login" : "Activate Login"}
                     </button>
@@ -637,6 +636,8 @@ export default function UsersPage() {
                       type="button" 
                       onClick={() => archiveUser(selectedRow)}
                       style={{ padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', transition: 'all 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'white'}
                     >
                       Archive Profile
                     </button>
