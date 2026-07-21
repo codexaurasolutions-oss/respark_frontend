@@ -5,6 +5,7 @@ import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
 import { useBranch } from "../../context/BranchContext";
 import { formatApiError } from "../../utils/apiError";
+import "./ServiceHubPage.css";
 
 const DURATION_OPTIONS = [
   { value: 15, label: "15 min" },
@@ -433,10 +434,10 @@ export default function ServiceCategoriesPage() {
       </div>
 
       {/* Three-Column Layout */}
-      <div style={{ display: "grid", gridTemplateColumns: "260px 240px 1fr", height: "calc(100vh - 130px)", overflow: "hidden" }}>
+      <div className="responsive-service-grid" style={{ display: "grid", gridTemplateColumns: "260px 240px 1fr", height: "calc(100vh - 130px)", overflow: "hidden" }}>
         
         {/* Column 1 - Categories */}
-        <div style={{ background: "#fff", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column" }}>
+        <div className="responsive-service-col-1" style={{ background: "#fff", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>Categories</span>
             <span style={{ fontSize: 11, background: "#f1f5f9", color: "#64748b", padding: "3px 8px", borderRadius: 12, fontWeight: 600 }}>{filteredCategories.length}</span>
@@ -495,7 +496,7 @@ export default function ServiceCategoriesPage() {
         </div>
 
         {/* Column 2 - Subcategories */}
-        <div style={{ background: "#fdfdff", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column" }}>
+        <div className="responsive-service-col-2" style={{ background: "#fdfdff", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
               {selectedCategory ? selectedCategory.name : "Subcategories"}
@@ -555,13 +556,13 @@ export default function ServiceCategoriesPage() {
         </div>
 
         {/* Column 3 - Services */}
-        <div style={{ display: "flex", flexDirection: "column", background: "#f8fafc" }}>
+        <div className="responsive-service-col-3" style={{ display: "flex", flexDirection: "column", background: "#f8fafc" }}>
           {/* Top bar */}
-          <div style={{ padding: "12px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "#fff" }}>
+          <div className="responsive-header-services" style={{ padding: "12px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "#fff" }}>
             <div style={{ fontWeight: 700, fontSize: 14, color: "#0f172a", flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {selectedSubcategory ? `${selectedCategory?.name} / ${selectedSubcategory.name}` : "Services"}
             </div>
-            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            <div style={{ display: "flex", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
               <button type="button" onClick={handleImportClick} style={{ padding: "7px 14px", background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Import CSV</button>
               <button type="button" onClick={handleExport} style={{ padding: "7px 14px", background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Export CSV</button>
               <button type="button" onClick={openNewService} style={{ padding: "7px 18px", background: "#0f172a", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>+ Add Service</button>
