@@ -856,3 +856,38 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Responsive layout for Business Settings Grid */
+.business-settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.5fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.weekly-off-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+
+@media (max-width: 900px) {
+  .business-settings-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .weekly-off-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .timing-inputs {
+    flex-direction: row !important;
+  }
+  
+  .radio-group {
+    flex-direction: row !important;
+    flex-wrap: wrap;
+  }
+}

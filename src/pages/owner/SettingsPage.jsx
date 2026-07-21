@@ -1083,7 +1083,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="business-settings-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.5fr", gap: "24px", alignItems: "start", marginBottom: "24px" }}>
+            <div className="business-settings-grid" style={{ marginBottom: "24px" }}>
               <label className="checkbox-option" style={{ gridColumn: "1 / -1" }}>
                 <span style={{ fontWeight: 600, display: "block", marginBottom: 6 }}>Display Salon Name on Invoice :</span>
                 <input
@@ -1096,7 +1096,7 @@ export default function SettingsPage() {
               </label>
             </div>
 
-            <div className="business-settings-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1.5fr", gap: "24px", alignItems: "start" }}>
+            <div className="business-settings-grid">
               <div>
                 <span className="sub-section-title">Business Timing</span>
                 <div className="timing-inputs" style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
@@ -1159,7 +1159,7 @@ export default function SettingsPage() {
 
               <div className="weekly-off-section">
                 <span className="sub-section-title">Set weekly off</span>
-                <div className="checkbox-group" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginTop: "8px" }}>
+                <div className="checkbox-group weekly-off-grid">
                   <label className="checkbox-option">
                     <input
                       type="checkbox"
