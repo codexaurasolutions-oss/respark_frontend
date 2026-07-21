@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Scissors, Edit2, Plus } from "lucide-react";
 import { api } from "../../api/client";
 import { downloadFromApi } from "../../utils/download";
 import EmptyState from "../../components/EmptyState";
@@ -581,7 +582,9 @@ export default function ServiceCategoriesPage() {
           <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
             {!selectedSubcategory ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", color: "#94a3b8", gap: 12 }}>
-                <div style={{ width: 64, height: 64, background: "#f1f5f9", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>✂️</div>
+                <div style={{ width: 64, height: 64, background: "#f1f5f9", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Scissors size={28} color="#94a3b8" />
+                </div>
                 <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: "#64748b" }}>Select a subcategory</p>
                 <p style={{ margin: 0, fontSize: 13 }}>Choose from the left columns to view services</p>
               </div>
@@ -638,7 +641,9 @@ export default function ServiceCategoriesPage() {
           <form onSubmit={saveService} onClick={e => e.stopPropagation()} style={{ width: "min(720px, 100%)", maxHeight: "90vh", overflowY: "auto", background: "#fff", borderRadius: 18, boxShadow: "0 25px 60px rgba(15,23,42,0.3)", display: "flex", flexDirection: "column" }}>
             {/* Modal Header */}
             <div style={{ padding: "20px 28px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", borderTopLeftRadius: 18, borderTopRightRadius: 18 }}>
-              <span style={{ fontSize: 18, fontWeight: 800, color: "#0f172a" }}>{editingServiceId ? "✏️ Edit Service" : "✦ Create Service"}</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: 8 }}>
+                {editingServiceId ? <><Edit2 size={20} color="#64748b" /> Edit Service</> : <><Plus size={20} color="#64748b" /> Create Service</>}
+              </span>
               <button type="button" onClick={() => setServiceModalOpen(false)} style={{ background: "#e2e8f0", border: "none", borderRadius: "50%", width: 32, height: 32, cursor: "pointer", color: "#475569", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 16, transition: "background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background = "#cbd5e1"} onMouseLeave={e => e.currentTarget.style.background = "#e2e8f0"}>×</button>
             </div>
 
@@ -720,14 +725,14 @@ export default function ServiceCategoriesPage() {
                 </div>
                 {(serviceForm.consumables || []).map((item, idx) => (
                   <div key={idx} style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "flex-end" }}>
-                    <div style={{ flex: 3 }}>
+                    <div style={{ flex: "2 1 120px" }}>
                       {idx === 0 && <label style={{ ...labelStyle, fontSize: 11, marginBottom: 4 }}>Product</label>}
                       <select value={item.productId} onChange={e => { const ni = [...serviceForm.consumables]; const prod = products.find(p => p.id === e.target.value); ni[idx] = {...ni[idx], productId: e.target.value, productName: prod?.name || ""}; setServiceForm({...serviceForm, consumables: ni}); }} style={{ ...inputStyle, padding: "8px 12px", fontSize: 13 }}>
                         <option value="">Select product</option>
                         {products.filter(p => p.isActive && p.productType === "CONSUMABLE").map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                     </div>
-                    <div style={{ flex: 1.2 }}>
+                    <div style={{ flex: "1 1 100px", minWidth: 100 }}>
                       {idx === 0 && <label style={{ ...labelStyle, fontSize: 11, marginBottom: 4 }}>Qty</label>}
                       <div style={{ display: "flex", alignItems: "center", border: "1px solid #cbd5e1", borderRadius: 8, overflow: "hidden", background: "#fff", height: 38, boxSizing: "border-box" }}>
                         <input type="number" min="0" value={item.reqdQty} onChange={e => { const ni = [...serviceForm.consumables]; ni[idx] = {...ni[idx], reqdQty: e.target.value}; setServiceForm({...serviceForm, consumables: ni}); }} style={{ border: "none", outline: "none", padding: "8px 12px", fontSize: 13, flex: 1, minWidth: 0, width: "100%", background: "transparent" }} />
