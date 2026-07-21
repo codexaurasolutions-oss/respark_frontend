@@ -182,6 +182,7 @@ export default function PosDashboardPage() {
   const [form, setForm] = useState({ items: [], payments: [] });
   const [reminderModal, setReminderModal] = useState({ open: false, index: -1, date: "", note: "" });
   const [consumableModal, setConsumableModal] = useState({ open: false, index: -1, rows: [{ name: "", qty: 1, cost: 0 }] });
+  const [consumableOverrides, setConsumableOverrides] = useState({});
 
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [discountDraft, setDiscountDraft] = useState({ type: "FIX", value: "" });
@@ -722,6 +723,7 @@ export default function PosDashboardPage() {
         notes: [stripStructuredMeta(detailNote), buildStructuredMeta(form.items)].filter(Boolean).join("\n\n"),
         discount: Number(invoiceDiscountDraft || 0),
         additionalPayments,
+        consumableOverrides,
         items: form.items.map((item) => ({
           id: item.id,
           itemType: item.itemType,
@@ -1049,6 +1051,34 @@ export default function PosDashboardPage() {
                                 Reminder: {new Date(item.serviceReminder.date).toLocaleDateString("en-GB")} {item.serviceReminder.note ? `- ${item.serviceReminder.note}` : ""}
                               </div>
                             ) : null}
+                            {item.itemType === 'SERVICE' && (
+                              <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 4 }}>
+                                {(posContext.services?.find(s => s.id === item.serviceId)?.consumables || [])?.map((c, ci) => {
+                                  const overrideKey = `${item.serviceId}:${c.productId}`;
+                                  const currentVal = consumableOverrides[overrideKey] !== undefined ? consumableOverrides[overrideKey] : c.reqdQty;
+                                  const unit = c.product?.unit || (c.product?.productType === 'CONSUMABLE' ? 'ml' : 'pcs');
+                                  return (
+                                    <div key={ci} style={{ fontSize: 11, color: "#334155", display: "flex", alignItems: "center", gap: 4, background: "#f1f5f9", padding: "2px 6px", borderRadius: 4, width: "fit-content" }}>
+                                      <span style={{ color: "#2563eb", fontWeight: 600 }}>🧪 {c.product?.name || "Consumable"}:</span>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        disabled={!isEditing}
+                                        value={currentVal}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          setConsumableOverrides(prev => ({ ...prev, [overrideKey]: val }));
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        style={{ width: 44, padding: "1px 3px", border: "1px solid #cbd5e1", borderRadius: 4, fontSize: 11, textAlign: "center", fontWeight: 700, background: "#fff" }}
+                                        title="Edit quantity of consumable used for this client"
+                                      />
+                                      <span style={{ fontWeight: 600, color: "#64748b" }}>{unit}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                             {item.consumables?.length ? (
                               <div style={{ fontSize: 11, color: "#16a34a", marginTop: 4 }}>
                                 Consumables: {item.consumables.map((entry) => `${entry.name} x${entry.qty}`).join(", ")}

@@ -122,6 +122,7 @@ export default function PosPage() {
   const [consumableItemIndex, setConsumableItemIndex] = useState(null);
   const [consumableItems, setConsumableItems] = useState([]);
   const [consumableSearch, setConsumableSearch] = useState("");
+  const [consumableOverrides, setConsumableOverrides] = useState({});
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [timeModalDraft, setTimeModalDraft] = useState({ index: null, startTime: "", endTime: "" });
   const [showReminderModal, setShowReminderModal] = useState(false);
@@ -1397,6 +1398,7 @@ export default function PosPage() {
       discount: Number(form.discount || 0),
       tax: Number(form.tax || 0),
       loyaltyPointsUsed: Number(form.loyaltyPointsUsed || 0),
+      consumableOverrides,
       items: activeItems.map((item) => ({
         ...item,
         qty: Number(item.qty || 1),
@@ -1853,11 +1855,44 @@ export default function PosPage() {
                     return (
                       <tr key={index}>
                         <td style={{ color: "#334155" }}>
-                          {baseObj.name}
+                          <div style={{ fontWeight: 600 }}>{baseObj.name}</div>
                           {couponValidation?.eligibleItems?.find(ei => ei.index === index && ei.isEligible) && (
-                            <span style={{ display: "inline-block", marginLeft: 6, padding: "1px 6px", borderRadius: 4, fontSize: 9, fontWeight: 700, background: "#dcfce7", color: "#166534", whiteSpace: "nowrap", verticalAlign: "middle" }}>
+                            <span style={{ display: "inline-block", marginTop: 2, padding: "1px 6px", borderRadius: 4, fontSize: 9, fontWeight: 700, background: "#dcfce7", color: "#166534", whiteSpace: "nowrap" }}>
                               {couponValidation.coupon.code}
                             </span>
+                          )}
+                          {item.itemType === 'SERVICE' && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 4 }}>
+                              {(serviceLookup[item.serviceId]?.consumables || baseObj.consumables || [])?.map((c, ci) => {
+                                const overrideKey = `${item.serviceId}:${c.productId}`;
+                                const currentVal = consumableOverrides[overrideKey] !== undefined ? consumableOverrides[overrideKey] : c.reqdQty;
+                                const unit = c.product?.unit || (c.product?.productType === 'CONSUMABLE' ? 'ml' : 'pcs');
+                                return (
+                                  <div key={ci} style={{ fontSize: 11, color: "#334155", display: "flex", alignItems: "center", gap: 4, background: "#f1f5f9", padding: "2px 6px", borderRadius: 4, width: "fit-content" }}>
+                                    <span style={{ color: "#2563eb", fontWeight: 600 }}>🧪 {c.product?.name || "Consumable"}:</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={currentVal}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setConsumableOverrides(prev => ({ ...prev, [overrideKey]: val }));
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      style={{ width: 44, padding: "1px 3px", border: "1px solid #cbd5e1", borderRadius: 4, fontSize: 11, textAlign: "center", fontWeight: 700, background: "#fff" }}
+                                      title="Edit quantity of consumable used for this client"
+                                    />
+                                    <span style={{ fontWeight: 600, color: "#64748b" }}>{unit}</span>
+                                  </div>
+                                );
+                              })}
+                              {item.consumableItems?.map((ci, cidx) => (
+                                <div key={`extra-${cidx}`} style={{ fontSize: 11, color: "#16a34a", display: "flex", alignItems: "center", gap: 4, background: "#f0fdf4", padding: "2px 6px", borderRadius: 4, width: "fit-content" }}>
+                                  <span style={{ fontWeight: 600 }}>➕ {ci.name}:</span>
+                                  <span style={{ fontWeight: 700 }}>{ci.qty} {ci.unit || 'pcs'}</span>
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </td>
                         <td>
