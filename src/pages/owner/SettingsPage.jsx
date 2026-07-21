@@ -1897,7 +1897,7 @@ export default function SettingsPage() {
             </button>
           </div>
 
-          <div style={{ background: "#fff", border: "1px solid rgba(226, 232, 240, 0.8)", borderRadius: 16, padding: 32, boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}>
+          <div className="shift-management-card" style={{ background: "#fff", border: "1px solid rgba(226, 232, 240, 0.8)", borderRadius: 16, padding: 32, boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}>
             {!selectedShift || !shiftDraft ? (
               <div style={{ padding: "60px 20px", textAlign: "center", color: "#64748b" }}>
                 <div style={{ fontSize: 40, opacity: 0.3, marginBottom: 16 }}>🗓️</div>
@@ -1906,7 +1906,7 @@ export default function SettingsPage() {
               </div>
             ) : (
               <>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, paddingBottom: 16, borderBottom: "1px solid #f1f5f9" }}>
+                <div className="shift-header-mobile" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, paddingBottom: 16, borderBottom: "1px solid #f1f5f9" }}>
                   <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#1e293b", display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ background: "#eff6ff", color: "#3b82f6", width: 36, height: 36, display: "flex", justifyContent: "center", alignItems: "center", borderRadius: 10, fontSize: 18 }}>🕒</span> 
                     Shift Details
@@ -1933,7 +1933,7 @@ export default function SettingsPage() {
                     />
                   </label>
                   <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", paddingTop: 20 }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", background: shiftDraft.sameForAllDays ? "#eff6ff" : "#f8fafc", borderRadius: 12, border: shiftDraft.sameForAllDays ? "1px solid #bfdbfe" : "1px solid #e2e8f0", cursor: "pointer", transition: "all 0.2s" }}>
+                    <label className="responsive-same-timing-box" style={{ background: shiftDraft.sameForAllDays ? "#eff6ff" : "#f8fafc", border: shiftDraft.sameForAllDays ? "1px solid #bfdbfe" : "1px solid #e2e8f0" }}>
                       <div className="toggle-switch-label" style={{ margin: 0 }}>
                         <input type="checkbox" checked={Boolean(shiftDraft.sameForAllDays)} onChange={(event) => toggleSameForAllDays(event.target.checked)} />
                         <span className="toggle-switch-slider" />
@@ -1947,7 +1947,7 @@ export default function SettingsPage() {
                 </div>
 
                 {shiftDraft.sameForAllDays ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24, background: "#f8fafc", padding: 24, borderRadius: 12, border: "1px solid #e2e8f0" }}>
+                  <div className="responsive-shift-timing-grid">
                     <label>
                       <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>Start Time</div>
                       <input
