@@ -3189,7 +3189,7 @@ export default function PosPage() {
               {consumableSearch && (
                 <div style={{ position: 'absolute', top: '100%', left: 24, right: 24, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', maxHeight: 200, overflowY: 'auto', zIndex: 1010 }}>
                   {(context.products || [])
-                    .filter(p => p.productType === "CONSUMABLE" || true)
+                    .filter(p => p.productType === "CONSUMABLE")
                     .filter(p => (p.name || "").toLowerCase().includes(consumableSearch.toLowerCase()))
                     .slice(0, 10)
                     .map(p => (
