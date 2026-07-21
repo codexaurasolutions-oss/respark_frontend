@@ -5,6 +5,7 @@ import EmptyState from "../../components/EmptyState";
 import PageLoader from "../../components/PageLoader";
 import { useBranch } from '../../context/BranchContext';
 import { TrendingUp, Users, ShoppingBag, CreditCard, Scissors, Receipt, Calendar, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, Activity, Wallet, UserPlus } from "lucide-react";
+import "./Dashboard.css";
 
 function PaginatedList({ items = [], renderItem, emptyState, title, badge, icon: Icon }) {
   const [page, setPage] = useState(1);
@@ -93,9 +94,9 @@ export default function OwnerDashboard() {
   ];
 
   return (
-    <div className="page-shell" style={{ maxWidth: 1400, margin: "0 auto", padding: "0 24px" }}>
+    <div className="page-shell dashboard-page-shell" style={{ maxWidth: 1400, margin: "0 auto" }}>
       {/* Hero Section */}
-      <div style={{ padding: "32px 40px", marginBottom: 32, background: "linear-gradient(135deg, #1e293b, #0f172a)", borderRadius: 24, color: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)", flexWrap: "wrap", gap: 20 }}>
+      <div className="dashboard-hero" style={{ marginBottom: 32, background: "linear-gradient(135deg, #1e293b, #0f172a)", borderRadius: 24, color: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)", flexWrap: "wrap", gap: 20 }}>
         <div>
           <h1 style={{ marginTop: 0, fontSize: "2.5rem", letterSpacing: "-0.03em", color: "#f8fafc", marginBottom: 8 }}>Dashboard Overview</h1>
           <p style={{ margin: 0, fontSize: "1.05rem", color: "#94a3b8", maxWidth: 500, lineHeight: 1.5 }}>Track daily salon operations, revenue snapshots, and team activity from your unified admin panel.</p>
@@ -119,7 +120,7 @@ export default function OwnerDashboard() {
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 24, marginBottom: 24 }}>
+      <div className="dashboard-grid-1">
         {/* Operations & Financials */}
         <div style={{ background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)", border: "1px solid #f1f5f9", display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, paddingBottom: 16, borderBottom: "1px solid #f1f5f9" }}>
@@ -131,7 +132,7 @@ export default function OwnerDashboard() {
           
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             {/* Financial Cards */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+            <div className="dashboard-grid-2">
               <div style={{ background: "linear-gradient(135deg, #f8fafc, #f1f5f9)", padding: 24, borderRadius: 16, border: "1px solid #e2e8f0" }}>
                 <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>Total Revenue (Paid)</div>
                 <div style={{ fontSize: "2rem", fontWeight: 800, color: "#10b981" }}>{formatMoney(data.paymentSummary?.totalPaid)}</div>
@@ -145,7 +146,7 @@ export default function OwnerDashboard() {
             </div>
 
             {/* Appointments */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+            <div className="dashboard-grid-2">
               <div style={{ background: "#fff", padding: 20, borderRadius: 16, border: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 16, transition: "background 0.2s", cursor: "pointer" }} onClick={() => navigate("/admin/appointments")} onMouseEnter={e => e.currentTarget.style.background="#f8fafc"} onMouseLeave={e => e.currentTarget.style.background="#fff"}>
                 <div style={{ background: "#e0e7ff", color: "#4f46e5", padding: 12, borderRadius: 12 }}><Calendar size={24} /></div>
                 <div>
@@ -229,7 +230,7 @@ export default function OwnerDashboard() {
         />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, paddingBottom: 40 }}>
+      <div className="dashboard-grid-3">
         {/* Recent Invoices */}
         <PaginatedList
           title="Recent Invoices"
