@@ -473,7 +473,7 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="page-shell" style={{ padding: 0, height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div className="page-shell users-page-shell" style={{ padding: 0, height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {enrollmentCameraOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 16 }}>
           <div style={{ width: 'min(100%, 480px)', display: 'flex', flexDirection: 'column', gap: 14 }}>

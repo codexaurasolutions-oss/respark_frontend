@@ -454,3 +454,27 @@
     padding: 16px !important;
   }
 }
+
+/* Full page scrolling for Users Page on Mobile */
+@media (max-width: 900px) {
+  .users-page-shell {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow: visible !important;
+  }
+  .users-page-shell .hub-container {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .users-page-shell .hub-sidebar {
+    height: auto !important;
+    max-height: 35vh !important;
+    overflow-y: auto !important;
+    flex-shrink: 0 !important;
+  }
+  .users-page-shell .hub-items-col {
+    height: auto !important;
+    overflow: visible !important;
+    flex: none !important;
+  }
+}
