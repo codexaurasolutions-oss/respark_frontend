@@ -1056,7 +1056,7 @@ export default function PosDashboardPage() {
                                 {(posContext.services?.find(s => s.id === item.serviceId)?.consumables || [])?.map((c, ci) => {
                                   const overrideKey = `${item.serviceId}:${c.productId}`;
                                   const currentVal = consumableOverrides[overrideKey] !== undefined ? consumableOverrides[overrideKey] : c.reqdQty;
-                                  const unit = c.product?.unit || (c.product?.productType === 'CONSUMABLE' ? 'ml' : 'pcs');
+                                  const unit = c.product?.unit || 'pcs';
                                   return (
                                     <div key={ci} style={{ fontSize: 11, color: "#334155", display: "flex", alignItems: "center", gap: 4, background: "#f1f5f9", padding: "2px 6px", borderRadius: 4, width: "fit-content" }}>
                                       <span style={{ color: "#2563eb", fontWeight: 600 }}>🧪 {c.product?.name || "Consumable"}:</span>

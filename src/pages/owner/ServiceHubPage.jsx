@@ -658,7 +658,7 @@ export default function ServiceHubPage() {
                         }} style={{ flex: 1, minWidth: 0 }} />
                         {item.productId && (
                           <span style={{ fontSize: 12, color: "#64748b", flexShrink: 0, whiteSpace: "nowrap", display: "inline-block", minWidth: 24 }}>
-                            {products.find(p => p.id === item.productId)?.unit || (products.find(p => p.id === item.productId)?.productType === "CONSUMABLE" ? "ml" : "pcs")}
+                            {products.find(p => p.id === item.productId)?.unit || 'pcs'}
                           </span>
                         )}
                       </div>

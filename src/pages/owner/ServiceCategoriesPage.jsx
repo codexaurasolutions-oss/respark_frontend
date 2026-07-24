@@ -738,7 +738,7 @@ export default function ServiceCategoriesPage() {
                         <input type="number" min="0" value={item.reqdQty} onChange={e => { const ni = [...serviceForm.consumables]; ni[idx] = {...ni[idx], reqdQty: e.target.value}; setServiceForm({...serviceForm, consumables: ni}); }} style={{ border: "none", outline: "none", padding: "8px 12px", fontSize: 13, flex: 1, minWidth: 0, width: "100%", background: "transparent" }} />
                         {item.productId && (
                           <span style={{ fontSize: 11, color: "#64748b", background: "#f1f5f9", padding: "0 10px", borderLeft: "1px solid #cbd5e1", flexShrink: 0, height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600 }}>
-                            {products.find(p => p.id === item.productId)?.unit || (products.find(p => p.id === item.productId)?.productType === "CONSUMABLE" ? "ml" : "pcs")}
+                            {products.find(p => p.id === item.productId)?.unit || 'pcs'}
                           </span>
                         )}
                       </div>
