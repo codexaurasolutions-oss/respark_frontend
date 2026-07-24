@@ -6,7 +6,6 @@ import { useBranch } from "../../context/BranchContext";
 import { formatApiError } from "../../utils/apiError";
 import PageLoader from "../../components/PageLoader";
 import VendorManagement from "./VendorManagement";
-import ConsumablesTab from "./ConsumablesTab";
 import IndianPhoneInput from "../../components/IndianPhoneInput";
 import { Package, Search, ShoppingCart, CheckCircle, XCircle, AlertTriangle, ArrowLeft, Tag, Layers, RefreshCw, Users, FileText, Activity, Plus, Trash2, ChevronDown, Save, Upload, Download } from "lucide-react";
 import "./InventoryPage.css";
@@ -22,7 +21,6 @@ const getInventoryTabFromPath = (path) => {
   if (path.includes("/reconciliation")) return "Stock Reconciliation";
   if (path.includes("/purchases/vendors")) return "Vendor Management";
   if (path.includes("/purchases/orders")) return "Purchase Order";
-  if (path.includes("/consumables")) return "Consumables";
   return "Dashboard";
 };
 
@@ -569,8 +567,7 @@ export default function InventoryPage() {
     { name: "Purchase Order", icon: <ShoppingCart size={18} /> },
     { name: "Approval", icon: <CheckCircle size={18} /> },
     { name: "Stock Reconciliation", icon: <RefreshCw size={18} /> },
-    { name: "Vendor Management", icon: <Users size={18} /> },
-    { name: "Consumables", icon: <Layers size={18} /> },
+    { name: "Vendor Management", icon: <Users size={18} /> }
   ];
 
   return (
@@ -594,7 +591,6 @@ export default function InventoryPage() {
                   if (tab.name === "Approval") navigate("/admin/inventory/approval");
                   if (tab.name === "Stock Reconciliation") navigate("/admin/inventory/reconciliation");
                   if (tab.name === "Vendor Management") navigate("/admin/purchases/vendors");
-                  if (tab.name === "Consumables") navigate("/admin/inventory/consumables");
                 }}
                 style={{
                   display: "flex", alignItems: "center", gap: "11px", width: "100%",
@@ -773,16 +769,8 @@ export default function InventoryPage() {
         )}
 
         {/* Dynamic Tab Implementations */}
-        {activeTab === "Consumables" && (
-          <ConsumablesTab 
-            products={products} 
-            loadAll={loadAll} 
-            branches={branches} 
-            selectedBranchId={selectedBranchId} 
-          />
-        )}
 
-        {activeTab !== "Dashboard" && activeTab !== "Consumables" && activeTab === "Purchase Order" && (
+        {activeTab !== "Dashboard" && activeTab === "Purchase Order" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             {/* Filters Row */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>

@@ -336,7 +336,7 @@ export default function ProductCategoriesPage() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: 16, marginTop: "auto" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <span style={{ fontSize: 18, fontWeight: 800, color: "#0f172a" }}>{currencySymbol}{Number(p.sellingPrice).toFixed(0)}</span>
-                      {p.productType === "CONSUMABLE" && <span style={{ fontSize: 11, background: "#f1f5f9", color: "#475569", padding: "4px 8px", borderRadius: 6, fontWeight: 600 }}>Customisable</span>}
+                      {p.productType === "CONSUMABLE" && <span style={{ fontSize: 11, background: "#f1f5f9", color: "#475569", padding: "4px 8px", borderRadius: 6, fontWeight: 600 }}>Consumable</span>}
                     </div>
                     <button onClick={() => openEditProduct(p)} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px", cursor: "pointer", color: "#334155", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }} onMouseEnter={e => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.color = "#2563eb"; e.currentTarget.style.borderColor = "#bfdbfe"; }} onMouseLeave={e => { e.currentTarget.style.background = "#f8fafc"; e.currentTarget.style.color = "#334155"; e.currentTarget.style.borderColor = "#e2e8f0"; }} title="Edit Product">
                       <Edit2 size={16} />
